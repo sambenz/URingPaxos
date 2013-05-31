@@ -1,0 +1,54 @@
+
+To build:
+mvn package
+
+To deploy/run:
+Use the tar file in target/Paxos-1.0.tar.gz
+it includes all config files and start scripts
+
+To work in eclipse:
+mvn eclipse:eclipse -DdownloadSources -DdownloadJavadocs
+
+
+Simple Paxos (IP multicast)
+---------------------------
+The project specific config is in: paxos.conf
+
+The implementation specific config is in
+lib/paxos.properties
+
+The start scripts are accepor.sh/learner.sh/proposer.sh
+
+
+Ring Paxos (Unicast TCP)
+---------------------------
+You need not configuration files; everything is on zookeeper!
+
+Start a Node with "ringpaxos.sh 1,1:PAL [zookeeper.host:port]" 
+     (ringID,nodeID:roles;ringID,nodeID:roles;...)
+
+
+Ring Paxos with Thrift Interface
+---------------------------
+Like "ringpaxos.sh"; but "thriftnode.sh"
+
+
+
+ch.usi.da.paxos
+	Simple Paxos Impl. (IP Multicast)
+	
+ch.usi.da.paxos.lab
+	Different classes for testing purpose
+	
+ch.usi.da.paxos.messages
+	The internal message format for all Paxos Impl.
+	
+ch.usi.da.paxos.ring
+	The Ring Paxos (Multi-Ring Paxos) Impl.
+	
+ch.usi.da.paxos.storage
+	Storage Impl. (mainly for RingPaxos)
+
+ch.usi.da.paxos.thrift
+	Ring Paxos with thrift server for proposer/learner
+
