@@ -1,3 +1,5 @@
+URingPaxos : A high throughput atomic broadcast protocol
+--------------------------------------------------------
 
 To build:
 mvn package
@@ -10,7 +12,7 @@ To work in eclipse:
 mvn eclipse:eclipse -DdownloadSources -DdownloadJavadocs
 
 
-Simple Paxos (IP multicast)
+Paxos (IP multicast)
 ---------------------------
 The project specific config is in: paxos.conf
 
@@ -20,7 +22,7 @@ lib/paxos.properties
 The start scripts are accepor.sh/learner.sh/proposer.sh
 
 
-Ring Paxos (Unicast TCP)
+Ring Paxos / Multi-Ring Paxos (Unicast TCP)
 ---------------------------
 You need no configuration files; everything is on zookeeper!
 
