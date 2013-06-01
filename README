@@ -22,7 +22,7 @@ The start scripts are accepor.sh/learner.sh/proposer.sh
 
 Ring Paxos (Unicast TCP)
 ---------------------------
-You need not configuration files; everything is on zookeeper!
+You need no configuration files; everything is on zookeeper!
 
 Start a Node with "ringpaxos.sh 1,1:PAL [zookeeper.host:port]" 
      (ringID,nodeID:roles;ringID,nodeID:roles;...)
@@ -52,3 +52,6 @@ ch.usi.da.paxos.storage
 ch.usi.da.paxos.thrift
 	Ring Paxos with thrift server for proposer/learner
 
+
+---------------------------
+Copyright (c) 2013 Università della Svizzera italiana (USI)
