@@ -21,25 +21,23 @@ package ch.usi.da.paxos.ring;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 
-import ch.usi.da.paxos.message.PaxosRole;
-import ch.usi.da.paxos.thrift.ThriftLearner;
-import ch.usi.da.paxos.thrift.ThriftProposer;
+import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.PaxosNode;
+import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.api.Proposer;
+import ch.usi.da.paxos.examples.Util;
 
 /**
  * Name: Node<br>
@@ -50,8 +48,7 @@ import ch.usi.da.paxos.thrift.ThriftProposer;
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class Node {
-	
+public class Node implements PaxosNode {
 	static {
 		// get hostname and pid for log file name
 		String host = "localhost";
@@ -81,17 +78,20 @@ public class Node {
 	
 	private final List<RingDescription> rings;
 	
-	private final boolean thrift_service;
+	private boolean running = false;
 
+	private final Map<Integer, Proposer> ringProposer = new HashMap<Integer, Proposer>(); 
+
+	private Learner learner;
+	
 	/**
 	 * @param zoo_host
 	 * @param rings
 	 */
-	public Node(String zoo_host,List<RingDescription> rings,boolean thrift_service) {
+	public Node(String zoo_host,List<RingDescription> rings) {
 		this.logger = Logger.getLogger(Node.class);
 		this.zoo_host = zoo_host;
 		this.rings = rings;
-		this.thrift_service = thrift_service;
 	}
 
 	public void start() throws IOException, KeeperException, InterruptedException{
@@ -101,7 +101,7 @@ public class Node {
 		} catch (NumberFormatException | IOException e) {
 		}
 		// node address
-		final InetAddress ip = Node.getHostAddress(false);
+		final InetAddress ip = Util.getHostAddress(false);
 		boolean start_multi_learner = isMultiLearner(rings);
 		for(RingDescription ring : rings){
 			// ring socket port
@@ -118,19 +118,13 @@ public class Node {
 			for(PaxosRole role : ring.getRoles()){
 				if(!role.equals(PaxosRole.Learner) || !start_multi_learner){
 					if(role.equals(PaxosRole.Proposer)){
-						if(thrift_service){
-							ThriftProposer p = new ThriftProposer(rm);
-							Thread t = new Thread(p);
-							t.setName("ThriftProposer");
-							t.start();
-						}else{
-							Role r = new ProposerRole(rm);
-							logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-							rm.registerRole(role);		
-							Thread t = new Thread(r);
-							t.setName(role.toString());
-							t.start();
-						}
+						ProposerRole r = new ProposerRole(rm);
+						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+						rm.registerRole(role);
+						ringProposer.put(ring.getRingID(), r);
+						Thread t = new Thread(r);
+						t.setName(role.toString());
+						t.start();
 					}else if(role.equals(PaxosRole.Acceptor)){
 						Role r = new AcceptorRole(rm);
 						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
@@ -139,38 +133,30 @@ public class Node {
 						t.setName(role.toString());
 						t.start();						
 					}else if(role.equals(PaxosRole.Learner)){
-						if(thrift_service){
-							ThriftLearner l = new ThriftLearner(rm);
-							Thread t = new Thread(l);
-							t.setName("ThriftLearner");
-							t.start();
-						}else{
-							Role r = new LearnerRole(rm);
-							logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-							rm.registerRole(role);		
-							Thread t = new Thread(r);
-							t.setName(role.toString());
-							t.start();
-						}
+						LearnerRole r = new LearnerRole(rm);
+						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+						rm.registerRole(role);
+						learner = r;
+						Thread t = new Thread(r);
+						t.setName(role.toString());
+						t.start();
 					}
 				}
 			}			
 		}
 		if(start_multi_learner){ // start only one super learner
-			if(thrift_service){
-				logger.error("Node thrift MultiRingLearner not implemented!");
-			}else{
-				logger.debug("starting a MultiRingLearner");
-				Thread t = new Thread(new MultiLearnerRole(rings));
-				t.setName("MultiRingLearner");
-				t.start();
-			}
-		}	
+			//TODO: the multilearner should implement the Learner interface and be stored into this.learner!
+			logger.debug("starting a MultiRingLearner");
+			Thread t = new Thread(new MultiLearnerRole(rings));
+			t.setName("MultiRingLearner");
+			t.start();
+		}
+		running = true;
 	}
 	
 	public void stop() throws InterruptedException{
 		for(RingDescription r : rings){
-			RingManager ring = r.getRingmanger();
+			RingManager ring = r.getRingManager();
 			if(ring.getNetwork().getAcceptor() != null){
 		    	((AcceptorRole)ring.getNetwork().getAcceptor()).getStableStorage().close();
 		    }
@@ -180,6 +166,7 @@ public class Node {
 		for(ZooKeeper zoo : zoos){
 			zoo.close();
 		}
+		running = false;
 	}
 	
 	/**
@@ -189,45 +176,6 @@ public class Node {
 		return rings;
 	}
 						
-	/**
-	 * @param args
-	 * @throws UnknownHostException 
-	 */
-	public static void main(String[] args) {
-		String zoo_host = "127.0.0.1:2181";		
-		if(args.length > 1){
-			zoo_host = args[1];
-		}
-		if(args.length < 1){
-			System.err.println("Plese use \"Node\" \"ring ID,node ID:roles[;ring,ID:roles]\" (eg. 1,1:PAL)");
-		}else{
-			try {
-				// process rings
-				List<RingDescription> rings = new ArrayList<RingDescription>();
-				for(String r : args[0].split(";")){
-					int ringID = Integer.parseInt(r.split(":")[0].split(",")[0]);
-					int nodeID = Integer.parseInt(r.split(":")[0].split(",")[1]);
-					String roles = r.split(":")[1];
-					rings.add(new RingDescription(ringID,nodeID,getPaxosRoles(roles)));
-				}
-				// start node
-				final Node node = new Node(zoo_host,rings,false);
-				Runtime.getRuntime().addShutdownHook(new Thread(){
-	                @Override
-	                public void run(){
-	                	try {
-							node.stop();
-						} catch (InterruptedException e) {
-						}
-	                }
-	            });
-				node.start();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}			
-		}
-	}
-
 	private boolean isMultiLearner(List<RingDescription> rings) {
 		int learner_count = 0;
 		for(RingDescription ring : rings){
@@ -238,54 +186,19 @@ public class Node {
 		return learner_count > 1 ? true : false;
 	}
 
-	/**
-	 * Get the host IP address
-	 * 
-	 * @param ipv6 include IPv6 addresses in search
-	 * @return return the host IP address or null
-	 */
-	public static InetAddress getHostAddress(boolean ipv6){
-		try {
-			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
-			while (ni.hasMoreElements()){
-				NetworkInterface n = ni.nextElement();
-				if(n.getDisplayName().equals("eth0")){
-					Enumeration<InetAddress> ia = n.getInetAddresses();
-					while(ia.hasMoreElements()){
-						InetAddress addr = ia.nextElement();
-						if(!(addr.isLinkLocalAddress() || addr.isLoopbackAddress() || addr.toString().contains("192.168.122"))){
-							if(addr instanceof Inet6Address && ipv6){
-								return addr;
-							}else if (addr instanceof Inet4Address && !ipv6){
-								return addr;
-							}
-						}
-					}
-				}
-			}
-			return InetAddress.getLoopbackAddress();
-		} catch (SocketException e) {
-			return InetAddress.getLoopbackAddress();
+	@Override
+	public Learner getLearner() {
+		if (!running) {
+			throw new RuntimeException("Paxos node is not running. Call node.start()");
 		}
+		return learner;
 	}
 
-	/**
-	 * Get the list of PaxosRole from String
-	 * 
-	 * @param rs roles as string
-	 * @return return PaxosRole enum list
-	 */
-	public static List<PaxosRole> getPaxosRoles(String rs){
-		List<PaxosRole> roles = new ArrayList<PaxosRole>();
-		if(rs.toLowerCase().contains("p")){
-			roles.add(PaxosRole.Proposer);
+	@Override
+	public Proposer getProposer(int ringID) {
+		if (!running) {
+			throw new RuntimeException("Paxos node is not running. Call node.start()");
 		}
-		if(rs.toLowerCase().contains("a")){
-			roles.add(PaxosRole.Acceptor);
-		}
-		if(rs.toLowerCase().contains("l")){
-			roles.add(PaxosRole.Learner);
-		}
-		return roles;	
-	}	
+		return ringProposer.get(ringID);
+	}
 }

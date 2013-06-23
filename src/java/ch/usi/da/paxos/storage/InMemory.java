@@ -21,6 +21,8 @@ package ch.usi.da.paxos.storage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import ch.usi.da.paxos.api.StableStorage;
+
 
 /**
  * Name: InMemory<br>

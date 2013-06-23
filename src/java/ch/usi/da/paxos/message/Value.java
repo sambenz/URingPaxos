@@ -114,4 +114,8 @@ public class Value implements Serializable {
 		return this.ID.hashCode();
 	}
 
+	public boolean isSkip() {
+		return this.getID().equals(Value.skipID);
+	}
+
 }

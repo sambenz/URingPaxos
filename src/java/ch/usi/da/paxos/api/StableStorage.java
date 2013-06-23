@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.message;
+package ch.usi.da.paxos.api;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,30 +18,24 @@ package ch.usi.da.paxos.message;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import ch.usi.da.paxos.storage.Decision;
+
 /**
- * Name: PaxosRole<br>
+ * Name: StableStorage<br>
  * Description: <br>
  * 
- * Creation date: Mar 31, 2012<br>
+ * Creation date: Feb 7, 2013<br>
  * $Id$
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public enum PaxosRole {
-	/**
-	 * The proposer
-	 */
-	Proposer,
-	/**
-	 * The acceptors
-	 */
-	Acceptor,
-	/**
-	 * The learners
-	 */
-	Learner,
-	/**
-	 * The leader
-	 */
-	Leader,
+public interface StableStorage {
+
+	public void put(Integer instance, Decision decision);
+	
+	public Decision get(Integer instance);
+	
+	public boolean contains(Integer instance);
+	
+	public void close();
 }

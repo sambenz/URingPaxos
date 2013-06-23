@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.ring;
+package ch.usi.da.paxos.api;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,54 +18,30 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.Collections;
-import java.util.List;
-
-import ch.usi.da.paxos.api.PaxosRole;
-
-
 /**
- * Name: Ring<br>
+ * Name: PaxosRole<br>
  * Description: <br>
  * 
- * Creation date: Mar 04, 2013<br>
+ * Creation date: Mar 31, 2012<br>
  * $Id$
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class RingDescription {
-
-	private final int ringID;
-	
-	private final int nodeID;
-	
-	private final List<PaxosRole> roles;
-	
-	private RingManager ring;
-	
-	public RingDescription(int ringID,int nodeID,List<PaxosRole> roles){
-		this.ringID = ringID;
-		this.nodeID = nodeID;
-		this.roles = roles;
-	}
-
-	public int getRingID() {
-		return ringID;
-	}
-
-	public int getNodeID() {
-		return nodeID;
-	}
-
-	public List<PaxosRole> getRoles() {
-		return Collections.unmodifiableList(roles);
-	}
-	
-	public synchronized void setRingManager(RingManager ring){
-		this.ring = ring;
-	}
-	
-	public synchronized RingManager getRingManager(){
-		return ring;
-	}
+public enum PaxosRole {
+	/**
+	 * The proposer
+	 */
+	Proposer,
+	/**
+	 * The acceptors
+	 */
+	Acceptor,
+	/**
+	 * The learners
+	 */
+	Learner,
+	/**
+	 * The leader
+	 */
+	Leader,
 }

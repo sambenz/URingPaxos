@@ -4,7 +4,7 @@
     <format>tar.gz</format>
     <format>zip</format>
   </formats>
-  <baseDirectory>${name}-${project.version}</baseDirectory>
+  <baseDirectory>${project.name}-${project.version}</baseDirectory>
   <fileSets>
     <fileSet>
       <!-- <directory>${project.basedir}</directory> -->

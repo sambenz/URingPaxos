@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import ch.usi.da.paxos.Configuration;
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
-import ch.usi.da.paxos.message.PaxosRole;
 
 /**
  * Name: MulticastListener<br>

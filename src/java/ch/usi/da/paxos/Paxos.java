@@ -23,8 +23,8 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;

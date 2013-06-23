@@ -21,9 +21,7 @@ package ch.usi.da.paxos.thrift;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
-import ch.usi.da.paxos.message.PaxosRole;
-import ch.usi.da.paxos.ring.ProposerRole;
-import ch.usi.da.paxos.ring.RingManager;
+import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.FutureDecision;
 import ch.usi.da.paxos.thrift.gen.PaxosProposerService;
@@ -42,16 +40,10 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 
 	private final static Logger logger = Logger.getLogger(PaxosProposerServiceImpl.class);
 	
-	private final ProposerRole proposer;
+	private final Proposer proposer;
 	
-	public PaxosProposerServiceImpl(RingManager ring) {
-		PaxosRole role = PaxosRole.Proposer;
-		proposer = new ProposerRole(ring,true);
-		logger.debug("register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-		ring.registerRole(role);
-		Thread t = new Thread(proposer);
-		t.setName(role.toString());
-		t.start();
+	public PaxosProposerServiceImpl(Proposer proposer) {
+		this.proposer = proposer;
 	}
 
 	@Override

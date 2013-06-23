@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import ch.usi.da.paxos.message.PaxosRole;
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.storage.Decision;
 
 /**

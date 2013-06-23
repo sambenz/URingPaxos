@@ -23,13 +23,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.NoStorage;
-import ch.usi.da.paxos.storage.StableStorage;
 
 /**
  * Name: AcceptorRole<br>

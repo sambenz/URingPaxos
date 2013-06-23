@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.storage;
+package ch.usi.da.paxos.api;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,22 +18,17 @@ package ch.usi.da.paxos.storage;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import ch.usi.da.paxos.storage.FutureDecision;
+
 /**
- * Name: StableStorage<br>
+ * Name: Proposer<br>
  * Description: <br>
  * 
- * Creation date: Feb 7, 2013<br>
+ * Creation date: Jun 21, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author leandro.pacheco.de.sousa@usi.ch
  */
-public interface StableStorage {
-
-	public void put(Integer instance, Decision decision);
-	
-	public Decision get(Integer instance);
-	
-	public boolean contains(Integer instance);
-	
-	public void close();
+public interface Proposer {
+	public FutureDecision propose(byte[] b);
 }

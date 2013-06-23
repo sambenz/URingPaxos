@@ -28,9 +28,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 
@@ -43,11 +44,9 @@ import ch.usi.da.paxos.storage.Decision;
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class LearnerRole extends Role {
+public class LearnerRole extends Role implements Learner {
 
 	private final static Logger logger = Logger.getLogger(LearnerRole.class);
-	
-	private final static Logger valuelogger = Logger.getLogger(Value.class);
 		
 	private final RingManager ring;
 	
@@ -55,7 +54,6 @@ public class LearnerRole extends Role {
 	
 	private final LinkedList<Decision> delivery = new LinkedList<Decision>();
 	
-	// filled if learner acts as "service"
 	private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>();
 	
 	private final CountDownLatch latch; // used to synchronize multi-learner start
@@ -65,9 +63,7 @@ public class LearnerRole extends Role {
 	private int delivered_instance = 0;
 	
 	private boolean recovery = false;
-	
-	private final boolean service;
-	
+		
 	public long deliver_count = 0;
 	
 	public long deliver_bytes = 0;
@@ -76,16 +72,15 @@ public class LearnerRole extends Role {
 	 * @param ring
 	 */
 	public LearnerRole(RingManager ring) {
-		this(ring,false,null);
+		this(ring, null);
 	}
 	
 	/**
 	 * @param ring
-	 * @param service
+	 * @param latch
 	 */
-	public LearnerRole(RingManager ring,boolean service,CountDownLatch latch) {
+	public LearnerRole(RingManager ring, CountDownLatch latch) {
 		this.ring = ring;
-		this.service = service;
 		this.latch = latch;
 		if(ring.getConfiguration().containsKey(ConfigKey.learner_recovery)){
 			if(ring.getConfiguration().get(ConfigKey.learner_recovery).equals("1")){
@@ -140,15 +135,7 @@ public class LearnerRole extends Role {
 				if(!recovery){
 					deliver_count++;
 					deliver_bytes = deliver_bytes + d.getValue().getValue().length;
-					if(service){
-						values.add(d);
-					}else{
-						if(valuelogger.isDebugEnabled()){
-							valuelogger.debug("Learner " + ring.getNodeID() + " " + d);
-						}else if(valuelogger.isInfoEnabled() && !d.getValue().getID().equals(Value.skipID)){
-							valuelogger.info(d.getValue().asString());
-						}
-					}
+					values.add(d);
 				}else{
 					if(d.getInstance() == next_instance){
 						delivery.add(d);
@@ -170,15 +157,7 @@ public class LearnerRole extends Role {
 						delivered_instance = de.getInstance();
 						deliver_count++;
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
-						if(service){
-							values.add(de);
-						}else{
-							if(valuelogger.isDebugEnabled()){
-								valuelogger.debug("Learner " + ring.getNodeID() + " " + de);
-							}else if(valuelogger.isInfoEnabled()  && !d.getValue().getID().equals(Value.skipID)){
-								valuelogger.info(de.getValue().asString());
-							}
-						}
+						values.add(de);
 					}else{
 						delivery.poll(); // remove duplicate
 					}
@@ -191,7 +170,7 @@ public class LearnerRole extends Role {
 		}		
 	}
 	
-	public BlockingQueue<Decision> getValues(){
+	public BlockingQueue<Decision> getDecisions(){
 		return values;
 	}
 	

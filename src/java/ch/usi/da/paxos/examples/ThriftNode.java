@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.thrift;
+package ch.usi.da.paxos.examples;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,12 +18,18 @@ package ch.usi.da.paxos.thrift;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.zookeeper.KeeperException;
+
+import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingDescription;
+import ch.usi.da.paxos.thrift.ThriftLearner;
+import ch.usi.da.paxos.thrift.ThriftProposer;
 
 /**
  * Name: ThriftNode<br>
@@ -35,44 +41,59 @@ import ch.usi.da.paxos.ring.RingDescription;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class ThriftNode {
-							
+
 	/**
 	 * @param args
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) {
-		String zoo_host = "127.0.0.1:2181";		
-		if(args.length > 1){
+		String zoo_host = "127.0.0.1:2181";
+		if (args.length > 1) {
 			zoo_host = args[1];
 		}
-		
-		if(args.length < 1){
+
+		if (args.length < 1) {
 			System.err.println("Plese use \"ThriftNode\" \"ring ID,node ID:roles[;ring,ID:roles]\" (eg. 1,1:PAL)");
-		}else{
+		} else {
+			// process rings
+			List<RingDescription> rings = Util.parseRingsArgument(args[0]);
+
+			if (rings.size() != 1) {
+				System.err.println("Thrift proposer/learner only works with a SINGLE RING");
+				System.exit(1);
+			}
+
+			// start paxos node
+			final Node node = new Node(zoo_host, rings);
 			try {
-				// process rings
-				List<RingDescription> rings = new ArrayList<RingDescription>();
-				for(String r : args[0].split(";")){
-					int ringID = Integer.parseInt(r.split(":")[0].split(",")[0]);
-					int nodeID = Integer.parseInt(r.split(":")[0].split(",")[1]);
-					String roles = r.split(":")[1];
-					rings.add(new RingDescription(ringID,nodeID,Node.getPaxosRoles(roles)));
-				}
-				// start node in thrift mode
-				final Node node = new Node(zoo_host,rings,true);
+				node.start();
 				Runtime.getRuntime().addShutdownHook(new Thread(){
-	                @Override
-	                public void run(){
-	                	try {
+					@Override
+					public void run(){
+						try {
 							node.stop();
 						} catch (InterruptedException e) {
 						}
-	                }
-	            });
-				node.start();
-			} catch (Exception e) {
+					}
+				});
+			} catch (IOException | KeeperException | InterruptedException e) {
 				e.printStackTrace();
-			}			
+				System.exit(1);
+			}
+
+			// start thrift learner
+			Learner l = node.getLearner();
+			if (l != null) {
+				Thread tl = new Thread(new ThriftLearner(l, rings.get(0).getNodeID() + 9090));
+				tl.start();
+			}
+
+			// start thrift proposer
+			Proposer p = node.getProposer(rings.get(0).getRingID());
+			if (p != null) {
+				Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
+				tp.start();
+			}
 		}
 	}
 

@@ -21,6 +21,9 @@ package ch.usi.da.paxos.message;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
+import ch.usi.da.paxos.api.PaxosRole;
+
+
 /**
  * Name: Message<br>
  * Description: <br>

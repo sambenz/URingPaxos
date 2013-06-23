@@ -25,7 +25,7 @@ import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TNonblockingServerTransport;
 import org.apache.thrift.transport.TTransportException;
 
-import ch.usi.da.paxos.ring.RingManager;
+import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.thrift.gen.PaxosProposerService;
 import ch.usi.da.paxos.thrift.gen.PaxosProposerService.Iface;
 import ch.usi.da.paxos.thrift.gen.PaxosProposerService.Processor;
@@ -45,18 +45,18 @@ public class ThriftProposer implements Runnable {
 
 	private final int port;
 	
-	private final RingManager ring;
+	private final Proposer proposer;
 	
-	public ThriftProposer(RingManager ring) {
-		this.ring = ring;
-		port = 9080 + ring.getNodeID();
+	public ThriftProposer(Proposer proposer, int port) {
+		this.proposer = proposer;
+		this.port = port; 
 	}
 
 	@Override
 	public void run() {
 		try {
            TNonblockingServerTransport serverTransport = new TNonblockingServerSocket(port);
-           PaxosProposerService.Processor<Iface> processor = new Processor<Iface>(new PaxosProposerServiceImpl(ring));
+           PaxosProposerService.Processor<Iface> processor = new Processor<Iface>(new PaxosProposerServiceImpl(proposer));
            TServer server = new TNonblockingServer(new TNonblockingServer.Args(serverTransport).processor(processor));
            logger.info("Starting thrift proposer server on port " + port);
            server.serve();

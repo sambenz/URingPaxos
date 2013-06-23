@@ -33,8 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.storage.Promise;
 

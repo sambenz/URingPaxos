@@ -24,11 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
-import ch.usi.da.paxos.message.PaxosRole;
+import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 
@@ -41,7 +44,7 @@ import ch.usi.da.paxos.storage.Decision;
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class MultiLearnerRole extends Role {
+public class MultiLearnerRole extends Role implements Learner {
 
 	private final static Logger logger = Logger.getLogger(MultiLearnerRole.class);
 	
@@ -52,6 +55,8 @@ public class MultiLearnerRole extends Role {
 	private final List<Integer> ring = new ArrayList<Integer>();
 	
 	private final int maxRing = 20;
+	
+	private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>(); 
 	
 	private final LearnerRole[] learner = new LearnerRole[maxRing];
 	
@@ -74,7 +79,7 @@ public class MultiLearnerRole extends Role {
 			this.ringmap.put(ring.getRingID(),ring);
 		}
 		Collections.sort(ring);
-		RingManager firstRing = rings.get(0).getRingmanger();
+		RingManager firstRing = rings.get(0).getRingManager();
 		deliverRing = minRing;
 		logger.debug("MultiRingLearner initial deliverRing=" + deliverRing);
 		if(firstRing.getConfiguration().containsKey(ConfigKey.multi_ring_m)){
@@ -88,8 +93,8 @@ public class MultiLearnerRole extends Role {
 		CountDownLatch latch = new CountDownLatch(ringmap.size());
 		for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
 			// create learners
-			RingManager ring = e.getValue().getRingmanger();
-			Role r = new LearnerRole(ring,true,latch);
+			RingManager ring = e.getValue().getRingManager();
+			Role r = new LearnerRole(ring, latch);
 			learner[e.getKey()] = (LearnerRole) r;
 			logger.debug("MultiRingLeaner register role: " + PaxosRole.Learner + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
 			ring.registerRole(PaxosRole.Learner);		
@@ -109,21 +114,18 @@ public class MultiLearnerRole extends Role {
 				if(skip_count[deliverRing] > 0){
 					count++;
 					skip_count[deliverRing]--;
-					if(valuelogger.isDebugEnabled()){
-						valuelogger.info("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
-					}
+					valuelogger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
-					Decision d = learner[deliverRing].getValues().take();
+					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().getID().equals(Value.skipID) && d.getValue().getValue().length == 4){
+						// skip message
 						int skip = NetworkManager.byteToInt(d.getValue().getValue());
 						skip_count[deliverRing] = skip_count[deliverRing] + skip;
 					}else{
 						count++;
-						if(valuelogger.isDebugEnabled()){
-							valuelogger.info("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " " + d);
-						}else if(valuelogger.isInfoEnabled()){
-							valuelogger.info(d.getValue().asString());
-						}
+						// learning an actual proposed value
+						values.add(d);
+						valuelogger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " " + d);
 					}
 				}
 				if(count >= M){
@@ -144,6 +146,11 @@ public class MultiLearnerRole extends Role {
 		}else{
 			return ring.get(pos+1);
 		}
+	}
+
+	@Override
+	public BlockingQueue<Decision> getDecisions() {
+		return values;
 	}
 
 }

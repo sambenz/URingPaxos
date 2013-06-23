@@ -1,4 +1,6 @@
 package ch.usi.da.paxos.storage;
+
+import ch.usi.da.paxos.api.StableStorage;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 

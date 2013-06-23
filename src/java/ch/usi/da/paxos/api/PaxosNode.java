@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.ring;
+package ch.usi.da.paxos.api;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,54 +18,36 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.Collections;
 import java.util.List;
 
-import ch.usi.da.paxos.api.PaxosRole;
-
+import ch.usi.da.paxos.ring.RingDescription;
 
 /**
- * Name: Ring<br>
+ * Name: PaxosNode<br>
  * Description: <br>
  * 
- * Creation date: Mar 04, 2013<br>
+ * Creation date: Jun 21, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author leandro.pacheco.de.sousa@usi.ch
  */
-public class RingDescription {
-
-	private final int ringID;
+public interface PaxosNode {
+	/**
+	 * Get a list of descriptions for the rings this node is part of.
+	 * @return list of ring descriptions
+	 */
+	public List<RingDescription> getRings();
 	
-	private final int nodeID;
+	/**
+	 * Get the learner interface.
+	 * @return The learner. If the node is not initialized as a Learner in any ring, returns null.
+	 */
+	public Learner getLearner();
 	
-	private final List<PaxosRole> roles;
-	
-	private RingManager ring;
-	
-	public RingDescription(int ringID,int nodeID,List<PaxosRole> roles){
-		this.ringID = ringID;
-		this.nodeID = nodeID;
-		this.roles = roles;
-	}
-
-	public int getRingID() {
-		return ringID;
-	}
-
-	public int getNodeID() {
-		return nodeID;
-	}
-
-	public List<PaxosRole> getRoles() {
-		return Collections.unmodifiableList(roles);
-	}
-	
-	public synchronized void setRingManager(RingManager ring){
-		this.ring = ring;
-	}
-	
-	public synchronized RingManager getRingManager(){
-		return ring;
-	}
+	/**
+	 * Get the proposer interface. 
+	 * @param ringID the ID of the ring where the value is to be proposed.
+	 * @return The proposer. If the node is not initialized as a Proposer in the given ring, returns null.
+	 */
+	public Proposer getProposer(int ringID);
 }

@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import ch.usi.da.paxos.message.PaxosRole;
+import ch.usi.da.paxos.api.PaxosRole;
 
 /**
  * Name: Configuration<br>

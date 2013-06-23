@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ch.usi.da.paxos.message.PaxosRole;
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.storage.Decision;
 
 

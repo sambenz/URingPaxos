@@ -96,6 +96,5 @@ public class Decision implements Serializable {
 	
 	public int hashCode() {
 		return this.getInstance().intValue();
-	}
-
+	}	
 }

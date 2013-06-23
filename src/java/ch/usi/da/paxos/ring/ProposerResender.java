@@ -23,9 +23,9 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.storage.Proposal;
 
 /**

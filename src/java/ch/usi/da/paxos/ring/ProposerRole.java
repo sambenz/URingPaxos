@@ -18,9 +18,6 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.PaxosRole;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.FutureDecision;
@@ -47,7 +45,7 @@ import ch.usi.da.paxos.storage.Proposal;
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class ProposerRole extends Role {
+public class ProposerRole extends Role implements Proposer {
 	
 	private final static Logger logger = Logger.getLogger(ProposerRole.class);
 
@@ -67,8 +65,6 @@ public class ProposerRole extends Role {
 	
 	private long send_count = 0;
 	
-	private final boolean service;
-	
 	private boolean test = false;
 	
 	private final List<Long> latency = new ArrayList<Long>();
@@ -77,16 +73,8 @@ public class ProposerRole extends Role {
 	 * @param ring 
 	 */
 	public ProposerRole(RingManager ring) {
-		this(ring,false);
-	}
-	
-	/**
-	 * @param ring 
-	 * @param service
-	 */
-	public ProposerRole(RingManager ring,boolean service) {
 		this.ring = ring;
-		this.service = service;
+
 		if(ring.getConfiguration().containsKey(ConfigKey.concurrent_values)){
 			concurrent_values = Integer.parseInt(ring.getConfiguration().get(ConfigKey.concurrent_values));
 			logger.info("Proposer concurrent_values: " + concurrent_values);
@@ -107,28 +95,6 @@ public class ProposerRole extends Role {
 		Thread t = new Thread(new ProposerResender(this));
 		t.setName("ProposerResender");
 		t.start();
-		if(!service){
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		    String s;
-		    try {
-			    while ((s = in.readLine()) != null && s.length() != 0){
-		    		if(s.contains("start")){
-		    			test = true;
-    					for(int i=0;i<concurrent_values;i++){
-	    					Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),new byte[value_size]);
-		    				send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v));			    						
-    					}
-			    	}else{
-			    		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),s.getBytes());
-		    			send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v));
-			    	}
-			    }
-			    in.close();
-			    System.exit(0); // used to stop properly in eclipse
-		    }catch(IOException e){
-		    	logger.error(e);
-		    }
-		}
 	}
 
 	/**
@@ -220,6 +186,22 @@ public class ProposerRole extends Role {
 		return ring;
 	}
 	
+	public void setTestMode(){
+		test = true;
+	}
+	
+	public int getValueSize(){
+		return value_size;
+	}
+
+	public int getValueCount(){
+		return value_count;
+	}
+
+	public int getConcurrentValues(){
+		return concurrent_values;
+	}
+
 	private void printHistogram(){
 		Map<Long,Long> histogram = new HashMap<Long,Long>();
 		int a = 0,b = 0,b2 = 0,c = 0,d = 0,e = 0,f = 0;

@@ -26,6 +26,7 @@ import net.spy.memcached.MemcachedClient;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Value;
 
 

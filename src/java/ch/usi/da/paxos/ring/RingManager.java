@@ -41,7 +41,8 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
-import ch.usi.da.paxos.message.PaxosRole;
+import ch.usi.da.paxos.api.PaxosRole;
+
 
 /**
  * Name: RingManager<br>

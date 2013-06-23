@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Value;
 
 import com.sleepycat.bind.EntryBinding;
