@@ -148,9 +148,7 @@ public class AcceptorRole extends Role {
 					value = m.getValue();
 				}
 				if(value != null){ // 2b
-					if(value.equals(m.getValue())){
-						m.incrementVoteCount(); //TODO: this could cause undecided instances when |coord| > 1
-					}
+					m.incrementVoteCount(); // always increment vote count (even value is not equal!) otherwise you risk undecided instances when |coord| > 1 & one process fails
 					if(ring.getNodeID() == ring.getLastAcceptor()){
 						if(m.getVoteCount() >= ring.getQuorum()){
 							Decision d = new Decision(instance,ballot,value);
