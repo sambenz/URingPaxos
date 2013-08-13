@@ -68,13 +68,18 @@ public class SessionHandler {
 					key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
 					ch.socket().shutdownInput();
 				}else if (count > 0) {
+					outerloop:
 					while(readBuffer.hasRemaining()){
 						if(preamble){
 							if(readBuffer.limit()-readBuffer.position() >= 8){
 								while(readBuffer.getInt() != NetworkManager.MAGIC_NUMBER){
 									readBuffer.position(readBuffer.position()-3);
+									if(readBuffer.limit()-readBuffer.position() < 4){
+										break outerloop;
+									}
 								}
 								msize = readBuffer.getInt();
+								if(manager.crc_32) msize += 8;
 								preamble = false;
 							}else{
 								break;
@@ -84,9 +89,17 @@ public class SessionHandler {
 							if(readBuffer.limit()-readBuffer.position() >= msize){
 								try{
 									Message msg = Message.fromBuffer(readBuffer);
-									manager.recv_count++;
-									manager.recv_bytes = manager.recv_bytes + Message.length(msg);
-									manager.receive(msg);
+									if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)){
+										manager.recv_count++;
+										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+										manager.receive(msg);
+									}else if(!manager.crc_32){
+										manager.recv_count++;
+										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+										manager.receive(msg);										
+									}else{
+										logger.error("Error in SessionHandler: Message CRC fail!");
+									}
 								}catch(Exception e){
 									logger.error("Error in SessionHandler during de-serializing!",e);
 								}

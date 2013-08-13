@@ -187,6 +187,7 @@ public class RingManager implements Watcher {
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.NoStorage".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}

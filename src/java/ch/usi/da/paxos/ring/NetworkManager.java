@@ -72,6 +72,8 @@ public class NetworkManager {
 
 	private boolean tcp_nodelay = false;
 	
+	public boolean crc_32 = false;
+	
 	public int buf_size = 131071;
 
 	public long recv_count = 0;
@@ -111,6 +113,12 @@ public class NetworkManager {
 				tcp_nodelay = true;
 			}
 			logger.info("NetworkManager tcp_nodelay: " + tcp_nodelay);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.tcp_crc)){
+			if(Integer.parseInt(ring.getConfiguration().get(ConfigKey.tcp_crc)) == 1){
+				crc_32 = true;
+			}
+			logger.info("NetworkManager tcp_crc: " + crc_32);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.buffer_size)){
 			buf_size = Integer.parseInt(ring.getConfiguration().get(ConfigKey.buffer_size));

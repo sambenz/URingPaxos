@@ -74,6 +74,9 @@ public class TCPSender implements Runnable {
 						buffer.putInt(NetworkManager.MAGIC_NUMBER);
 						buffer.putInt(lenght);
 						Message.toBuffer(buffer, m);
+						if(manager.crc_32){
+							buffer.putLong(Message.getCRC32(m));
+						}
 						buffer.flip();
 						client.write(buffer); // client runs in blocking mode !
 						buffer.compact();

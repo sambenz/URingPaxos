@@ -20,6 +20,7 @@ package ch.usi.da.paxos.message;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.zip.CRC32;
 
 import ch.usi.da.paxos.api.PaxosRole;
 
@@ -225,6 +226,24 @@ public class Message implements Serializable {
 		return length;
 	}
 
+	/**
+	 * Get the CRC32 of the Message (without the Value)
+	 * 
+	 * @param m
+	 * @return crc32 of the message (without the Value)
+	 */
+	public static long getCRC32(Message m){
+		if(m == null) return 0;
+		CRC32 crc = new CRC32();
+		crc.update(m.getInstance());
+		crc.update(m.getSender());
+		crc.update(m.getReceiver().ordinal());
+		crc.update(m.getType().ordinal());
+		crc.update(m.getBallot());
+		crc.update(m.getVoteCount());
+		return crc.getValue();
+	}
+	
 	/**
 	 * This is the recommended way to serialize and send a Message trough NIO
 	 * 

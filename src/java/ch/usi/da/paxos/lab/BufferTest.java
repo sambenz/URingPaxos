@@ -32,26 +32,31 @@ public class BufferTest {
 	int msize;
 
 	public void test(){
-		ByteBuffer buffer = ByteBuffer.allocate(200);
+		ByteBuffer buffer = ByteBuffer.allocate(500);
 
 		Value v    = new Value("ID","Value".getBytes());
 		Message m  = new Message(1, 2, PaxosRole.Acceptor, MessageType.Phase1, 0, v);
 		Message m2 = new Message(2, 3, PaxosRole.Learner, MessageType.Value, 0, v);
 		
-		//System.err.println(Message.fromWire(Message.toWire(m)));
+		//System.err.println(Message.getCRC32(m));
+		//System.err.println(Message.getCRC32(Message.fromWire(Message.toWire(m))));
 		
-		if(buffer.remaining() >= Message.length(m)+8){
+		if(buffer.remaining() >= Message.length(m)+16){
 			buffer.putInt(NetworkManager.MAGIC_NUMBER);
 			buffer.putInt(Message.length(m));
 			Message.toBuffer(buffer, m);
+			buffer.putLong(Message.getCRC32(m));
 		}
+
+		buffer.put(11,(byte) 0xff);
 
 		buffer.putShort((short) 34);
 		
-		if(buffer.remaining() >= Message.length(m)+8){
+		if(buffer.remaining() >= Message.length(m)+16){
 			buffer.putInt(NetworkManager.MAGIC_NUMBER);
 			buffer.putInt(Message.length(m2));
 			Message.toBuffer(buffer, m2);
+			buffer.putLong(Message.getCRC32(m2));
 		}
 		
 		buffer.flip();
@@ -77,11 +82,15 @@ public class BufferTest {
 	}
 
 	public void readBuffer(ByteBuffer buffer){
+		outerloop:
 		while(buffer.hasRemaining()){
 			if(preamble){
 				if(buffer.limit()-buffer.position() >= 8){
 					while(buffer.getInt() != NetworkManager.MAGIC_NUMBER){
 						buffer.position(buffer.position()-3);
+						if(buffer.limit()-buffer.position() < 4){
+							break outerloop;
+						}
 					}
 					msize = buffer.getInt();
 					preamble = false;
@@ -92,10 +101,18 @@ public class BufferTest {
 			if(!preamble){
 				//System.err.println(buffer.limit()-buffer.position());
 				if(buffer.limit()-buffer.position() >= msize){
+					Message m = null;
 					try {
-						System.out.println(Message.fromBuffer(buffer));
+						m = Message.fromBuffer(buffer);
+						System.out.print(m);
 					} catch (Exception e) {
-						System.out.println("null");
+						System.out.print("null");
+					}
+					long crc = buffer.getLong();
+					if(crc == Message.getCRC32(m)){
+						System.out.println(" CRC OK!");
+					}else{
+						System.out.println(" CRC FAIL!");						
 					}
 					preamble = true;
 				}else{

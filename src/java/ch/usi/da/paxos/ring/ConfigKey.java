@@ -72,6 +72,11 @@ abstract class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */
+	public static final String tcp_crc = "tcp_crc";
+
+	/**
+	 * see RingManager for default
+	 */
 	public static final String stable_storage = "stable_storage";
 
 	/**
