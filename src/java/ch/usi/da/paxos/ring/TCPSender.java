@@ -70,8 +70,8 @@ public class TCPSender implements Runnable {
 				m = send_queue.poll(1000,TimeUnit.SECONDS);
 				if(m != null){
 					int lenght = Message.length(m);
-					if(buffer.remaining() >= lenght+4){
-						//TODO: should also include magic number to sync after fail!
+					if(buffer.remaining() >= lenght+8){
+						buffer.putInt(NetworkManager.MAGIC_NUMBER);
 						buffer.putInt(lenght);
 						Message.toBuffer(buffer, m);
 						buffer.flip();

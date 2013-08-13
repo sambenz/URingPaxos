@@ -28,6 +28,7 @@ import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
+import ch.usi.da.paxos.ring.NetworkManager;
 
 /**
  * Name: SCTPListener<br>
@@ -61,6 +62,16 @@ public class TCPSenderTest implements Runnable {
 				Long t = System.nanoTime();
 				Message m = new Message(0,0,PaxosRole.Leader,MessageType.Value,0,new Value(t.toString(),new byte[8912]));
 				byte[] b = Message.toWire(m);
+				
+//				out.write(intToByte(0x00)); // insert something useless (simulates an error)
+//				out.write(intToByte(0x39));
+//				out.write(intToByte(0xf0));
+//				out.write(intToByte(0xab));
+//				out.write(intToByte(0x4c));
+//				out.write(intToByte(0x61));
+//				out.write(intToByte(0x88));
+				
+				out.write(intToByte(NetworkManager.MAGIC_NUMBER)); // "umrp" magic header
 				out.write(intToByte(b.length));
 				out.write(b);
 				out.flush();

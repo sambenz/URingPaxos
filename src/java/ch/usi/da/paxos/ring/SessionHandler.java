@@ -70,7 +70,10 @@ public class SessionHandler {
 				}else if (count > 0) {
 					while(readBuffer.hasRemaining()){
 						if(preamble){
-							if(readBuffer.limit()-readBuffer.position() >= 4){
+							if(readBuffer.limit()-readBuffer.position() >= 8){
+								while(readBuffer.getInt() != NetworkManager.MAGIC_NUMBER){
+									readBuffer.position(readBuffer.position()-3);
+								}
 								msize = readBuffer.getInt();
 								preamble = false;
 							}else{
@@ -79,10 +82,14 @@ public class SessionHandler {
 						}
 						if(!preamble){
 							if(readBuffer.limit()-readBuffer.position() >= msize){
-								Message msg = Message.fromBuffer(readBuffer);
-								manager.recv_count++;
-								manager.recv_bytes = manager.recv_bytes + Message.length(msg);
-								manager.receive(msg);
+								try{
+									Message msg = Message.fromBuffer(readBuffer);
+									manager.recv_count++;
+									manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+									manager.receive(msg);
+								}catch(Exception e){
+									logger.error("Error in SessionHandler during de-serializing!",e);
+								}
 								preamble = true;
 							}else{
 								break;

@@ -23,9 +23,11 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import ch.usi.da.paxos.message.Message;
+import ch.usi.da.paxos.ring.NetworkManager;
 
 /**
  * Name: TcpConnectionHandler<br>
@@ -62,7 +64,7 @@ public class TcpConnectionHandler implements Runnable {
 			InputStream in = socket.getInputStream();
 			byte[] buffer = new byte[65540];
 			int count;
-			ByteBuffer l = ByteBuffer.allocate(4); // prefix-length buffer
+			ByteBuffer l = ByteBuffer.allocate(8); // prefix-length buffer
 			ByteBuffer m = null; // message buffer
 			while((count = in.read(buffer)) >= 0){
 				for(int i=0;i<count;i++){
@@ -70,7 +72,14 @@ public class TcpConnectionHandler implements Runnable {
 					if(l.hasRemaining()){
 						l.put(b);
 						if(!l.hasRemaining()){
-							m = ByteBuffer.allocate(byteToInt(l.array()));
+							int magic = byteToInt(Arrays.copyOfRange(l.array(),0,4));
+							if(magic  == NetworkManager.MAGIC_NUMBER){
+								m = ByteBuffer.allocate(byteToInt(Arrays.copyOfRange(l.array(),4,8)));
+							}else{
+								l.flip(); // re-sync to next magic nr.
+								l.getInt();
+								l.compact();
+							}
 						}
 					}else if(m != null){
 						m.put(b);

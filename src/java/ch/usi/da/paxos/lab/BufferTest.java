@@ -24,6 +24,7 @@ import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
+import ch.usi.da.paxos.ring.NetworkManager;
 
 public class BufferTest {
 
@@ -39,18 +40,30 @@ public class BufferTest {
 		
 		//System.err.println(Message.fromWire(Message.toWire(m)));
 		
-		if(buffer.remaining() >= Message.length(m)+4){
+		if(buffer.remaining() >= Message.length(m)+8){
+			buffer.putInt(NetworkManager.MAGIC_NUMBER);
 			buffer.putInt(Message.length(m));
 			Message.toBuffer(buffer, m);
 		}
+
+		buffer.putShort((short) 34);
 		
+		if(buffer.remaining() >= Message.length(m)+8){
+			buffer.putInt(NetworkManager.MAGIC_NUMBER);
+			buffer.putInt(Message.length(m2));
+			Message.toBuffer(buffer, m2);
+		}
 		
-		byte[] b2 = Message.toWire(m2);
+		buffer.flip();
+		readBuffer(buffer);		
+		
+		/*byte[] b2 = Message.toWire(m2);
 		buffer.put(b2,0,10);
 		//buffer.put(b2,10,b2.length-10);
 		buffer.flip();
 
 		readBuffer(buffer);
+		
 		System.out.println("3: " + buffer.position() + "," + buffer.limit() + "," + buffer.capacity());
 		
 		buffer.put(b2,10,b2.length-10);
@@ -60,13 +73,16 @@ public class BufferTest {
 
 		readBuffer(buffer);		
 		System.out.println("5: " + buffer.position() + "," + buffer.limit() + "," + buffer.capacity());
-		
+		*/
 	}
 
 	public void readBuffer(ByteBuffer buffer){
 		while(buffer.hasRemaining()){
 			if(preamble){
-				if(buffer.limit()-buffer.position() >= 4){
+				if(buffer.limit()-buffer.position() >= 8){
+					while(buffer.getInt() != NetworkManager.MAGIC_NUMBER){
+						buffer.position(buffer.position()-3);
+					}
 					msize = buffer.getInt();
 					preamble = false;
 				}else{
@@ -74,9 +90,13 @@ public class BufferTest {
 				}
 			}
 			if(!preamble){
-				System.err.println(buffer.limit()-buffer.position());
+				//System.err.println(buffer.limit()-buffer.position());
 				if(buffer.limit()-buffer.position() >= msize){
-					System.out.println(Message.fromBuffer(buffer));
+					try {
+						System.out.println(Message.fromBuffer(buffer));
+					} catch (Exception e) {
+						System.out.println("null");
+					}
 					preamble = true;
 				}else{
 					break;

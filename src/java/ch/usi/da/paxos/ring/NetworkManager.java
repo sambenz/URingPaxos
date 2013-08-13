@@ -45,6 +45,8 @@ import ch.usi.da.paxos.message.Value;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class NetworkManager {
+
+	public final static int MAGIC_NUMBER = 0x756d7270; // ASCII for "umrp"
 	
 	private final static Logger logger = Logger.getLogger(NetworkManager.class);
 

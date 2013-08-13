@@ -148,8 +148,7 @@ public class Message implements Serializable {
 	 * @return message byte array
 	 */
 	public static byte[] toWire(Message m){
-		ByteBuffer buffer = ByteBuffer.allocate(length(m)+4);
-		buffer.putInt(length(m));
+		ByteBuffer buffer = ByteBuffer.allocate(length(m));
 		toBuffer(buffer,m);
 		return buffer.array();
 		
@@ -181,10 +180,13 @@ public class Message implements Serializable {
 	 * @param b
 	 * @return Message object
 	 */
-	public static Message fromWire(byte[] b){
+	public static Message fromWire(byte[] b) {
 		ByteBuffer buffer = ByteBuffer.wrap(b);
-		buffer.getInt();
-		return fromBuffer(buffer);
+		try {
+			return fromBuffer(buffer);
+		} catch (Exception e) {
+			return null;
+		}
 		
 		/*ByteArrayInputStream bis = new ByteArrayInputStream(b);
 		ObjectInput in = null;
@@ -262,7 +264,7 @@ public class Message implements Serializable {
 	 * @param buffer
 	 * @return Message object
 	 */
-	public static Message fromBuffer(ByteBuffer buffer){
+	public static Message fromBuffer(ByteBuffer buffer) throws Exception {
 		int instance = buffer.getInt();
 		int sender = buffer.getInt();
 		PaxosRole role = PaxosRole.values()[buffer.getShort()];
