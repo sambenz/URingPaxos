@@ -36,6 +36,10 @@ Like "ringpaxos.sh"; but "thriftnode.sh"
 
 
 
+ch.usi.da.paxos.api
+ch.usi.da.paxos.examples
+	Where you want to start as developer
+	
 ch.usi.da.paxos
 	Simple Paxos Impl. (IP Multicast)
 	

@@ -51,6 +51,7 @@ public class CyclicArray implements StableStorage {
 			this.init(); // native calloc
 			logger.info("CyclicArray JNI native array enabled!");
 		}catch(UnsatisfiedLinkError e){
+			//TODO: what about a fallback to Unsafe.x?
 			logger.error("CyclicArray init error:",e);
 		}
 	}
