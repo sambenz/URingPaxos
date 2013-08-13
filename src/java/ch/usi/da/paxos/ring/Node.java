@@ -145,9 +145,10 @@ public class Node implements PaxosNode {
 			}			
 		}
 		if(start_multi_learner){ // start only one super learner
-			//TODO: the multilearner should implement the Learner interface and be stored into this.learner!
 			logger.debug("starting a MultiRingLearner");
-			Thread t = new Thread(new MultiLearnerRole(rings));
+			MultiLearnerRole mr = new MultiLearnerRole(rings);
+			learner = mr;
+			Thread t = new Thread(mr);
 			t.setName("MultiRingLearner");
 			t.start();
 		}

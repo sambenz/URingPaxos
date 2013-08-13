@@ -78,7 +78,11 @@ public class TTYNode {
 								logger.error("Proposer did not support TestMode");
 							}
 						} else {
-							paxos.getProposer(ring.getRingID()).propose(s.getBytes());
+							if(paxos.getProposer(ring.getRingID()) != null){
+								paxos.getProposer(ring.getRingID()).propose(s.getBytes());
+							}else{
+								logger.info("Node isn't a proposer for ring " + ring.getRingID());
+							}
 						}
 					}
 				}
