@@ -149,6 +149,12 @@ public class AcceptorRole extends Role {
 				}
 				if(value != null){ // 2b
 					m.incrementVoteCount(); // always increment vote count (even value is not equal!) otherwise you risk undecided instances when |coord| > 1 & one process fails
+					Value send_value = null;
+					if(m.getBallot() > 9000){
+						send_value = value; // safe mode (don't remove value byte[])
+					}else{
+						send_value = new Value(value.getID(),new byte[0]); // fast mode
+					}
 					if(ring.getNodeID() == ring.getLastAcceptor()){
 						if(m.getVoteCount() >= ring.getQuorum()){
 							Decision d = new Decision(instance,ballot,value);
@@ -158,7 +164,7 @@ public class AcceptorRole extends Role {
 							}
 							learned.remove(value.getID());
 							promised.remove(instance);
-							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,value);
+							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,send_value);
 							if(ring.getNetwork().getLeader() != null){
 								ring.getNetwork().getLeader().deliver(ring,n);
 							}
@@ -168,34 +174,17 @@ public class AcceptorRole extends Role {
 							if(ring.getNetwork().getProposer() != null){
 								ring.getNetwork().getProposer().deliver(ring,n);
 							}
-							// D,v -> until predecessor(P0)
-							if((ring.getNodeID() >= m.getSender() && m.getSender() != ring.getCoordinatorID()) || ring.getRingSuccessor(ring.getNodeID()) == ring.getCoordinatorID()){
-								// remove not needed values
-								Message o = new Message(n.getInstance(),n.getSender(),n.getReceiver(),n.getType(),n.getBallot(),new Value(n.getValue().getID(),new byte[0]));
-								ring.getNetwork().send(o);
-							}else{
+							// network -> predecessor(last_accept)
+							if(ring.getNodeID() != ring.getRingPredecessor(ring.getLastAcceptor())){
 								ring.getNetwork().send(n);
 							}
 						}else{
-							logger.error("Not decided at end of ring!");
+							logger.error("Not decided at end of the ring!");
 						}
 					}else{
-						if(!learned.containsKey(value.getID())){
-							learned.put(value.getID(),value);
-						}
-						// D,v -> until predecessor(P0)
-						Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),ballot,value);
+						Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),ballot,send_value);
 						n.setVoteCount(m.getVoteCount());
-						if((ring.isNodeCoordinator() && ring.getNodeID() == m.getSender())){
-							ring.getNetwork().send(n);
-						}else if(ring.getNodeID() == ring.getRingPredecessor(m.getSender()) || ring.getNodeID() == m.getSender()){ //remove values from phase2 after "this"; they saw Value!
-							// remove not needed values
-							Message o = new Message(n.getInstance(),n.getSender(),n.getReceiver(),n.getType(),n.getBallot(),new Value(n.getValue().getID(),new byte[0]));
-							o.setVoteCount(n.getVoteCount());
-							ring.getNetwork().send(o);
-						}else{
-							ring.getNetwork().send(n);
-						}
+						ring.getNetwork().send(n);
 					}
 				}
 			}

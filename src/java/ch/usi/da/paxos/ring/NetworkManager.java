@@ -33,7 +33,6 @@ import org.apache.log4j.Logger;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.Value;
 
 /**
  * Name: NetworkManager<br>
@@ -157,32 +156,17 @@ public class NetworkManager {
 		
 		// network forwarding
 		if(m.getType() == MessageType.Value){
-			if(leader == null){ // network -> until C
+			if(ring.getRingSuccessor(ring.getNodeID()) != m.getSender()){ // D,v -> until predecessor(P0)
 				send(m);
 			}
 		}else if(m.getType() == MessageType.Phase2){
 			if(acceptor == null && ring.getNodeID() != ring.getLastAcceptor()){ // network -> until last_accept
-				// D,v -> until predecessor(P0)
-				if(ring.getNodeID() == ring.getRingPredecessor(m.getSender()) || ring.getNodeID() == m.getSender()){
-					// remove not needed values
-					Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(), m.getType(),m.getBallot(),new Value(m.getValue().getID(),new byte[0]));
-					n.setVoteCount(m.getVoteCount());
-					send(n);
-				}else{
-					send(m);
-				}
+				send(m);
 			}	
 		}else if(m.getType() == MessageType.Decision){
 			// network -> predecessor(last_accept)
 			if(ring.getNodeID() != ring.getRingPredecessor(ring.getLastAcceptor())){
-				// D,v -> until predecessor(P0)
-				if((ring.getNodeID() >= m.getSender() && m.getSender() != ring.getCoordinatorID()) || ring.getRingSuccessor(ring.getNodeID()) == ring.getCoordinatorID()){
-					// remove not needed values
-					Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(), m.getType(),m.getBallot(),new Value(m.getValue().getID(),new byte[0]));
-					send(n);
-				}else{
-					send(m);
-				}
+				send(m);
 			}
 		}else if(m.getType() == MessageType.Phase1 || m.getType() == MessageType.Phase1Range){
 			if(m.getReceiver() == PaxosRole.Leader){

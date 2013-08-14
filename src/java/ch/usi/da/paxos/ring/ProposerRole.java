@@ -117,6 +117,7 @@ public class ProposerRole extends Role implements Proposer {
 	public void send(Message m){
 		send_count++;
 		proposals.put(m.getValue().getID(),new Proposal(m.getValue()));
+		ring.getNetwork().send(m); // send to all !
 		if(ring.getNetwork().getLearner() != null){
 			ring.getNetwork().getLearner().deliver(ring,m);
 		}
@@ -125,8 +126,6 @@ public class ProposerRole extends Role implements Proposer {
 		}
 		if(ring.getNetwork().getLeader() != null){
 			ring.getNetwork().getLeader().deliver(ring,m);
-		}else{
-			ring.getNetwork().send(m);
 		}
 	}
 

@@ -187,7 +187,7 @@ public class CoordinatorRole extends Role {
 			if(p != null){
 				int instance = p.getInstance();
 				PaxosRole rcv = PaxosRole.Acceptor;
-				Message n = new Message(instance,m.getSender(),rcv,MessageType.Phase2,p.getBallot(),m.getValue());
+				Message n = new Message(instance,m.getSender(),rcv,MessageType.Phase2,p.getBallot(),new Value(m.getValue().getID(),new byte[0]));
 				if(ring.getNetwork().getAcceptor() != null){
 					ring.getNetwork().getAcceptor().deliver(ring,n);
 				}else{ // else should never happen, since there is no coordinator without acceptor!
