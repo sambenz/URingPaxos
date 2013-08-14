@@ -417,7 +417,7 @@ public class RingManager implements Watcher {
 					for(String s : l){
 						ring.add(Integer.valueOf(s));
 					}
-					Collections.sort(ring); //TODO optional: sort ring P,A,L
+					Collections.sort(ring);
 					notifyRingChanged();
 				}else if(event.getPath().startsWith(path + "/" + acceptor_path)){
 					List<String> l = zoo.getChildren(path + "/" + acceptor_path, true);
