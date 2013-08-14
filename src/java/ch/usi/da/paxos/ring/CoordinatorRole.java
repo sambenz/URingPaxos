@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -181,7 +182,7 @@ public class CoordinatorRole extends Role {
 			value_count++;
 			Promise p = null;
 			try {
-				p = promises.take(); // wait for a promise
+				p = promises.poll(1,TimeUnit.SECONDS); // wait for a promise
 			} catch (InterruptedException e) {
 			}
 			if(p != null){
