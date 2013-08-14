@@ -37,5 +37,7 @@ public interface StableStorage {
 	
 	public boolean contains(Integer instance);
 	
+	public boolean trim(Integer instance);
+	
 	public void close();
 }

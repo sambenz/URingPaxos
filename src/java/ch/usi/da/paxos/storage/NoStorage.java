@@ -54,6 +54,11 @@ public class NoStorage implements StableStorage {
 	}
 
 	@Override
+	public boolean trim(Integer instance) {
+		return true;
+	}
+
+	@Override
 	public void close(){
 		
 	}

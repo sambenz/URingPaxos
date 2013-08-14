@@ -82,6 +82,12 @@ public class MemcachedStorage implements StableStorage {
 	}
 
 	@Override
+	public boolean trim(Integer instance) {
+		// not interesting since cyclic storage
+		return true;
+	}
+
+	@Override
 	public void close(){
 		cache.shutdown();
 	}

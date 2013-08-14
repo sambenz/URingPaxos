@@ -158,6 +158,12 @@ public class BerkeleyStorage implements StableStorage {
 	}
 	
 	@Override
+	public boolean trim(Integer instance) {
+		//TODO: remove data up to this instance
+		return false;
+	}
+
+	@Override
 	public synchronized void close() {
 		try {
 			db.close();
