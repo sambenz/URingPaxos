@@ -31,41 +31,59 @@ public enum MessageType {
 	/**
 	 * 1a
 	 */
-	Prepare,
+	Prepare(0),
 	/**
 	 * 1a nack
 	 */
-	Nack,
+	Nack(1),
 	/**
 	 * 1b
 	 */
-	Promise,
+	Promise(2),
 	/**
 	 * 2a
 	 */
-	Accept,
+	Accept(3),
 	/**
 	 * 2b
 	 */
-	Accepted,
+	Accepted(4),
 	/**
 	 * send a value to a leader
 	 */
-	Value,
+	Value(5),
 	/**
 	 * new type for RingPaxos (combines 1a/1b)
 	 */
-	Phase1,
+	Phase1(6),
 	/**
 	 * new type for RingPaxos (multi ballot reservation)
 	 */
-	Phase1Range,
+	Phase1Range(7),
 	/**
 	 * new type for RingPaxos (combines 2a/2b)
 	 */
-	Phase2,
+	Phase2(8),
 	/**
 	 * new type for RingPaxos (this msg type will sent to ALL roles)
 	 */
-	Decision
+	Decision(9);
+	
+	private final int id;
+	
+	private MessageType(int id) {
+		this.id = id;
+		// TODO Auto-generated constructor stub
+	}
+	
+	public int getId() {
+		return id;
+	}
+	
+	public static MessageType fromId(int id) {
+		for (MessageType t: values()){
+			if (t.id == id) { return t; }
+		}
+		throw new RuntimeException("MessageType " + id + " does not exist!");
+	}
 }

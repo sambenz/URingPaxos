@@ -95,8 +95,8 @@ public class NetworkManager {
 		this.ring = ring;
 		if(stats.isDebugEnabled()){
 			for(MessageType t : MessageType.values()){
-				messages_distribution[t.ordinal()] = 0;
-				messages_size[t.ordinal()] = 0;
+				messages_distribution[t.getId()] = 0;
+				messages_size[t.getId()] = 0;
 			}
 		}
 	}
@@ -150,8 +150,8 @@ public class NetworkManager {
 			logger.debug("receive network message (ring:" + ring.getRingID() + ") : " + m);
 		}*/
 		if(stats.isDebugEnabled()){
-			messages_distribution[m.getType().ordinal()]++;
-			messages_size[m.getType().ordinal()] = messages_size[m.getType().ordinal()] + Message.length(m);
+			messages_distribution[m.getType().getId()]++;
+			messages_size[m.getType().getId()] = messages_size[m.getType().getId()] + Message.length(m);
 		}
 		
 		// network forwarding

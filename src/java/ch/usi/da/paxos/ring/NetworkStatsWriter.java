@@ -86,8 +86,8 @@ public class NetworkStatsWriter implements Runnable {
 				
 				if(logger.isDebugEnabled()){
 					for(MessageType m : MessageType.values()){
-						if(network.messages_distribution[m.ordinal()] > 0){
-							logger.debug("NetworkManager message " + m + ": " + network.messages_distribution[m.ordinal()] + " (" + network.messages_size[m.ordinal()] + " bytes)");
+						if(network.messages_distribution[m.getId()] > 0){
+							logger.debug("NetworkManager message " + m + ": " + network.messages_distribution[m.getId()] + " (" + network.messages_size[m.getId()] + " bytes)");
 						}
 					}
 				}

@@ -31,17 +31,35 @@ public enum PaxosRole {
 	/**
 	 * The proposer
 	 */
-	Proposer,
+	Proposer(0),
 	/**
 	 * The acceptors
 	 */
-	Acceptor,
+	Acceptor(1),
 	/**
 	 * The learners
 	 */
-	Learner,
+	Learner(2),
 	/**
 	 * The leader
 	 */
-	Leader,
+	Leader(3);
+	
+	private final int id;
+	private PaxosRole(int id) {
+		this.id = id;
+	}
+	
+	public int getId(){
+		return id;
+	}
+	
+	public static PaxosRole fromId(int id){
+		for (PaxosRole r: values()){
+			if (r.id == id) {
+				return r;
+			}
+		}
+		throw new RuntimeException("PaxosRole " + id + "does not exist!");
+	}
 }

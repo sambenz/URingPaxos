@@ -237,8 +237,8 @@ public class Message implements Serializable {
 		CRC32 crc = new CRC32();
 		crc.update(m.getInstance());
 		crc.update(m.getSender());
-		crc.update(m.getReceiver().ordinal());
-		crc.update(m.getType().ordinal());
+		crc.update(m.getReceiver().getId());
+		crc.update(m.getType().getId());
 		crc.update(m.getBallot());
 		crc.update(m.getVoteCount());
 		return crc.getValue();
@@ -263,8 +263,8 @@ public class Message implements Serializable {
 		//   byte[]value
 		b.putInt(m.getInstance());
 		b.putInt(m.getSender());
-		b.putShort((short)m.getReceiver().ordinal());
-		b.putShort((short)m.getType().ordinal());
+		b.putShort((short)m.getReceiver().getId());
+		b.putShort((short)m.getType().getId());
 		b.putInt(m.getBallot());
 		b.putInt(m.getVoteCount());
 		if(m.getValue() != null){
@@ -286,8 +286,8 @@ public class Message implements Serializable {
 	public static Message fromBuffer(ByteBuffer buffer) throws Exception {
 		int instance = buffer.getInt();
 		int sender = buffer.getInt();
-		PaxosRole role = PaxosRole.values()[buffer.getShort()];
-		MessageType type = MessageType.values()[buffer.getShort()];
+		PaxosRole role = PaxosRole.fromId(buffer.getShort());
+		MessageType type = MessageType.fromId(buffer.getShort());
 		int ballot = buffer.getInt();
 		int vote_count = buffer.getInt();
 		int id_length = buffer.getInt();
