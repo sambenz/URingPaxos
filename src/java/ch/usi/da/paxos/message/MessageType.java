@@ -67,7 +67,16 @@ public enum MessageType {
 	/**
 	 * new type for RingPaxos (this msg type will sent to ALL roles)
 	 */
-	Decision(9);
+	Decision(9),
+	/**
+	 * new type for RingPaxos (learners to coord.)
+	 */	
+	Safe(10),
+	/**
+	 * new type for RingPaxos (coord. to accptors)
+	 */
+	Trim(11);
+
 	
 	private final int id;
 	

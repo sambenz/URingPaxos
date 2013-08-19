@@ -200,6 +200,14 @@ public class AcceptorRole extends Role {
 				learned.remove(value.getID());
 				promised.remove(instance);
 			}
+		}else if(m.getType() == MessageType.Trim){
+			if(storage.trim(m.getInstance())){
+				logger.debug("Acceptor trimmed log to instance " + m.getInstance());
+				m.setVoteCount(m.getVoteCount()+1);
+				ring.getNetwork().send(m);
+			}else{
+				logger.error("Acceptor log trimming to instance " + m.getInstance() + " failed!");
+			}
 		}
 		
 		if(instance>highest_seen_instance){

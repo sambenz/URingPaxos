@@ -62,6 +62,8 @@ public class LearnerRole extends Role implements Learner {
 	
 	private int delivered_instance = 0;
 	
+	private int safe_instance = 0;
+	
 	private boolean recovery = false;
 		
 	public long deliver_count = 0;
@@ -155,6 +157,7 @@ public class LearnerRole extends Role implements Learner {
 					if(delivery.peek().getInstance()-1 == delivered_instance){
 						Decision de = delivery.poll();
 						delivered_instance = de.getInstance();
+						safe_instance = delivered_instance; //TODO: remove, testing only !!!
 						deliver_count++;
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
 						values.add(de);
@@ -163,6 +166,17 @@ public class LearnerRole extends Role implements Learner {
 					}
 				}
 			}
+		}else if(m.getType() == MessageType.Safe){
+			Value v = null;
+			if(m.getValue().getValue().length == 0){
+				v = new Value(m.getValue().getID(),String.valueOf(safe_instance).getBytes());
+			}else{
+				String s = new String(m.getValue().getValue());
+				v = new Value(m.getValue().getID(),(s + ";" + String.valueOf(safe_instance)).getBytes());
+			}
+			Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),m.getBallot(),v);
+			n.setVoteCount(m.getVoteCount()+1);
+			ring.getNetwork().send(n);
 		}else{
 			if(learned.get(m.getValue().getID()) == null){
 				learned.put(m.getValue().getID(),m.getValue());
@@ -170,8 +184,14 @@ public class LearnerRole extends Role implements Learner {
 		}		
 	}
 	
+	@Override
 	public BlockingQueue<Decision> getDecisions(){
 		return values;
+	}
+	
+	@Override
+	public void setSafeInstance(Integer instance){
+		safe_instance = instance.intValue();
 	}
 	
 	private int findPos(int instance) {

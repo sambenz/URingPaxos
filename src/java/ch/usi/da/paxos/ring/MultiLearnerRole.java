@@ -153,4 +153,10 @@ public class MultiLearnerRole extends Role implements Learner {
 		return values;
 	}
 
+	@Override
+	public void setSafeInstance(Integer instance) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

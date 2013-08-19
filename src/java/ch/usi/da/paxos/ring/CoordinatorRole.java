@@ -195,6 +195,30 @@ public class CoordinatorRole extends Role {
 					ring.getNetwork().send(n);
 				}
 			}
+			// send safe message to trim acceptor log after n instances
+			if(value_count % 5 == 0){ //TODO: 5 in config
+				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
+				if(ring.getNetwork().getLearner() != null){
+					ring.getNetwork().getLearner().deliver(ring,n);
+				}else{
+					ring.getNetwork().send(n);
+				}	
+			}
+		}else if(m.getType() == MessageType.Safe){
+			String s = new String(m.getValue().getValue());
+			logger.debug("Coordinator received safe response from learners: " + s);
+			Message n = new Message(getTrimInstance(s),m.getSender(),PaxosRole.Acceptor,MessageType.Trim,0,null);
+			if(ring.getNetwork().getAcceptor() != null){
+				ring.getNetwork().getAcceptor().deliver(ring,n);
+			}else{
+				ring.getNetwork().send(n);
+			}
+		}else if(m.getType() == MessageType.Trim){
+			if(m.getVoteCount() >= ring.getQuorum()){
+				logger.info("Coordinator succesfully trimmed acceptor log to instance " + m.getInstance());
+			}else{
+				logger.error("Coordinator acceptor log trimming to instance " + m.getInstance() + " failed!");
+			}
 		}else if(m.getType() == MessageType.Phase1 && m.getSender() == ring.getNodeID()){
 			if(m.getValue() != null){ // instance already decided -> resend 2b
 				phase1_in_transit.remove(m.getInstance());
@@ -241,6 +265,16 @@ public class CoordinatorRole extends Role {
 		}
 	}
 	
+	private int getTrimInstance(String s) {
+		/*
+		 * TODO: decide safe to trim instance:
+		 * make list 40,10,50
+		 * sort 10,40,50
+		 * min of top |TQ| TQ=2 -> 40,50 -> min = 40
+		 */
+		return 5;
+	}
+
 	public TransferQueue<Promise> getPromiseQueue(){
 		return promises;
 	}
