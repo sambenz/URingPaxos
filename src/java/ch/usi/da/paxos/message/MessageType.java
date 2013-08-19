@@ -73,7 +73,6 @@ public enum MessageType {
 	
 	private MessageType(int id) {
 		this.id = id;
-		// TODO Auto-generated constructor stub
 	}
 	
 	public int getId() {
