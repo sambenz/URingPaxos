@@ -103,5 +103,15 @@ abstract class ConfigKey {
 	 * see RingManager for default
 	 */	
 	public static final String multi_ring_delta_t = "multi_ring_delta_t";
-	
+
+	/**
+	 * see RingManager for default
+	 */	
+	public static final String trim_quorum = "trim_quorum";
+
+	/**
+	 * see RingManager for default
+	 */	
+	public static final String trim_modulo = "trim_modulo";
+
 }

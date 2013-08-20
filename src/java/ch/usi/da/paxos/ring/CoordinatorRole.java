@@ -70,9 +70,9 @@ public class CoordinatorRole extends Role {
 	
 	private final int enable_fastmode_threashold = 100;
 	
-	private int trim_modulo = 10; //TODO: store in config (0: disable)
+	private int trim_modulo = 0; // (0: disable)
 	
-	private int trim_quorum = 2; //TODO: store in config
+	private int trim_quorum = 2;
 	
 	private int last_trimmed_instance = 0;
 	
@@ -94,6 +94,14 @@ public class CoordinatorRole extends Role {
 		if(ring.getConfiguration().containsKey(ConfigKey.p1_resend_time)){
 			resend_time = Integer.parseInt(ring.getConfiguration().get(ConfigKey.p1_resend_time));
 			logger.info("Coordinator p1_resend_time: " + resend_time);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.trim_modulo)){
+			trim_modulo = Integer.parseInt(ring.getConfiguration().get(ConfigKey.trim_modulo));
+			logger.info("Coordinator trim_modulo: " + trim_modulo);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.trim_quorum)){
+			trim_quorum = Integer.parseInt(ring.getConfiguration().get(ConfigKey.trim_quorum));
+			logger.info("Coordinator trim_quorum: " + trim_quorum);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.multi_ring_delta_t)){
 			multi_ring_delta_t = Integer.parseInt(ring.getConfiguration().get(ConfigKey.multi_ring_delta_t));

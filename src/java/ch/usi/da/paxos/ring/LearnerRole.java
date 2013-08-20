@@ -66,7 +66,7 @@ public class LearnerRole extends Role implements Learner {
 	
 	private int highest_online_instance = 0;
 	
-	private boolean auto_trim = false; // (safe_instance = delivered_instance)
+	private boolean auto_trim = false; // for testing purpose (safe_instance = delivered_instance)
 	
 	private boolean recovery = false;
 	
