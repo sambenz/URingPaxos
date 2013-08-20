@@ -236,6 +236,9 @@ public class NetworkManager {
 				learner.deliver(ring,m);
 			}
 		}else if(m.getType() == MessageType.Trim){
+			if(learner != null){
+				learner.deliver(ring,m);
+			}
 			if(leader != null){
 				leader.deliver(ring,m);
 			}else if(acceptor != null){

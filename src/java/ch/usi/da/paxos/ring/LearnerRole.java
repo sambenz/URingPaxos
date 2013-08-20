@@ -64,8 +64,14 @@ public class LearnerRole extends Role implements Learner {
 	
 	private int safe_instance = 0;
 	
+	private int highest_online_instance = 0;
+	
+	private boolean auto_trim = false; // (safe_instance = delivered_instance)
+	
 	private boolean recovery = false;
-		
+	
+	private boolean recovered = false;
+			
 	public long deliver_count = 0;
 	
 	public long deliver_bytes = 0;
@@ -103,8 +109,14 @@ public class LearnerRole extends Role implements Learner {
 		}
 		while(recovery){
 			try{
+				// init recovering by getting highest available instance
+				if(!recovered && !delivery.isEmpty()){
+					Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Safe,0,new Value("","0".getBytes()));
+					m.setVoteCount(1);
+					ring.getNetwork().send(m);
+				}
 				// re-request missing decisions
-				if(!delivery.isEmpty() && delivery.peek().getInstance() > delivered_instance){
+				else if(!delivery.isEmpty() && delivery.peek().getInstance() > delivered_instance){
 					Decision head = delivery.peek();
 					for(int i=delivered_instance+1;i<head.getInstance();i++){
 						Message m = new Message(i,ring.getRingSuccessor(ring.getNodeID()),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
@@ -137,6 +149,7 @@ public class LearnerRole extends Role implements Learner {
 				if(!recovery){
 					deliver_count++;
 					deliver_bytes = deliver_bytes + d.getValue().getValue().length;
+					if(auto_trim) { safe_instance = d.getInstance(); }
 					values.add(d);
 				}else{
 					if(d.getInstance() == next_instance){
@@ -155,9 +168,10 @@ public class LearnerRole extends Role implements Learner {
 				// deliver sorted instances
 				while(!delivery.isEmpty() && delivery.peek().getInstance()-1 <= delivered_instance){
 					if(delivery.peek().getInstance()-1 == delivered_instance){
+						recovered = true;
 						Decision de = delivery.poll();
 						delivered_instance = de.getInstance();
-						safe_instance = delivered_instance; //TODO: remove, testing only !!!
+						if(auto_trim) { safe_instance = delivered_instance; }
 						deliver_count++;
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
 						values.add(de);
@@ -177,6 +191,13 @@ public class LearnerRole extends Role implements Learner {
 			Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),m.getBallot(),v);
 			n.setVoteCount(m.getVoteCount()+1);
 			ring.getNetwork().send(n);
+		}else if(m.getType() == MessageType.Trim){
+			highest_online_instance = m.getInstance();
+			if(!recovered){ // recover only what is available
+				delivered_instance = highest_online_instance == 0 ? highest_online_instance : highest_online_instance-1;
+				recovered = true;
+			}
+			logger.debug("Learner notified last highest_online_instance: " + highest_online_instance);
 		}else{
 			if(learned.get(m.getValue().getID()) == null){
 				learned.put(m.getValue().getID(),m.getValue());

@@ -18,6 +18,9 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,6 +69,12 @@ public class CoordinatorRole extends Role {
 	private int successful_promise_count = 0; // Used to switch fastmode
 	
 	private final int enable_fastmode_threashold = 100;
+	
+	private int trim_modulo = 10; //TODO: store in config (0: disable)
+	
+	private int trim_quorum = 2; //TODO: store in config
+	
+	private int last_trimmed_instance = 0;
 	
 	public int multi_ring_lambda = 9000; 
 
@@ -196,7 +205,7 @@ public class CoordinatorRole extends Role {
 				}
 			}
 			// send safe message to trim acceptor log after n instances
-			if(value_count % 5 == 0){ //TODO: 5 in config
+			if(trim_modulo > 0 && value_count % trim_modulo == 0){
 				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
 				if(ring.getNetwork().getLearner() != null){
 					ring.getNetwork().getLearner().deliver(ring,n);
@@ -216,6 +225,7 @@ public class CoordinatorRole extends Role {
 		}else if(m.getType() == MessageType.Trim){
 			if(m.getVoteCount() >= ring.getQuorum()){
 				logger.info("Coordinator succesfully trimmed acceptor log to instance " + m.getInstance());
+				last_trimmed_instance = m.getInstance();
 			}else{
 				logger.error("Coordinator acceptor log trimming to instance " + m.getInstance() + " failed!");
 			}
@@ -266,13 +276,14 @@ public class CoordinatorRole extends Role {
 	}
 	
 	private int getTrimInstance(String s) {
-		/*
-		 * TODO: decide safe to trim instance:
-		 * make list 40,10,50
-		 * sort 10,40,50
-		 * min of top |TQ| TQ=2 -> 40,50 -> min = 40
-		 */
-		return 5;
+		List<Integer> instances = new ArrayList<Integer>();
+		for(String is : s.split(";")){
+			int i = Integer.valueOf(is);
+			if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
+			instances.add(i);
+		}
+		Collections.sort(instances);
+		return instances.subList(instances.size()-trim_quorum,instances.size()).get(0);
 	}
 
 	public TransferQueue<Promise> getPromiseQueue(){
