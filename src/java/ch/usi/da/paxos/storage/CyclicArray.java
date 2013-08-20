@@ -58,7 +58,7 @@ public class CyclicArray implements StableStorage {
 
 	@Override
 	public void put(Integer instance, Decision decision) {
-		//TODO: not optimal with this kind of serialization; but still fast ...
+		// not optimal with this kind of serialization; but still fast ...
 		Message m = new Message(instance, 0, PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getValue());
 		nput(instance.intValue(),Message.toWire(m));
 	}
