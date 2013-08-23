@@ -208,8 +208,8 @@ public class BerkeleyStorage implements StableStorage {
 		File file = new File("/tmp/ringpaxos-db/0");
 		file.mkdirs();
 		BerkeleyStorage db = new BerkeleyStorage(file,false,true);
-		Decision d = new Decision(1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(1,43,new Value("id","value".getBytes()));
+		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,1,43,new Value("id","value".getBytes()));
 		db.contains(1);
 		db.put(1,d);
 		db.put(1,d2);
