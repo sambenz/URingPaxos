@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.PaxosRole;
@@ -53,10 +54,14 @@ public class ProposerRole extends Role implements Proposer {
 	
 	private final RingManager ring;
 	
+	private final RandomDataGenerator random = new RandomDataGenerator();;
+
 	private int concurrent_values = 20;
 	
-	private int value_size = 8912;
+	private ValueType value_type = ValueType.FIX;
 	
+	private int value_size = 8912;
+		
 	private int value_count = 900000;
 	
 	private final Map<String,Proposal> proposals = new ConcurrentHashMap<String,Proposal>();
@@ -80,7 +85,22 @@ public class ProposerRole extends Role implements Proposer {
 			logger.info("Proposer concurrent_values: " + concurrent_values);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_size)){
-			value_size = Integer.parseInt(ring.getConfiguration().get(ConfigKey.value_size));
+			String v = ring.getConfiguration().get(ConfigKey.value_size);
+			if(v.toLowerCase().startsWith("uni")){
+				value_type = ValueType.UNIFORM;
+			}else if(v.toLowerCase().startsWith("nor")){
+				value_type = ValueType.NORMAL;
+			}else if(v.toLowerCase().startsWith("exp")){
+				value_type = ValueType.EXPONENTIAL;
+			}else if(v.toLowerCase().startsWith("zip")){
+				value_type = ValueType.ZIPF;
+			}else{
+				value_type = ValueType.FIX;
+				value_size = Integer.parseInt(v);
+				logger.info("Proposer value_size: " + value_size);
+			}
+			logger.info("Proposer value_type: " + value_type);
+		}else{
 			logger.info("Proposer value_size: " + value_size);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_count)){
@@ -150,7 +170,7 @@ public class ProposerRole extends Role implements Proposer {
 						long lat = time - send_time;
 						latency.add(lat);
 						if(send_count < value_count){
-							Value v2 = new Value(System.nanoTime() + "" + ring.getNodeID(),new byte[value_size]);
+							Value v2 = new Value(System.nanoTime() + "" + ring.getNodeID(),new byte[getValueSize()]);
 							send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v2));
 						}else{
 							printHistogram();
@@ -190,7 +210,26 @@ public class ProposerRole extends Role implements Proposer {
 	}
 	
 	public int getValueSize(){
-		return value_size;
+		int v = value_size;
+		switch(value_type){
+		case NORMAL: 
+			v = (int)random.nextGaussian(16000,14000); //TODO: tune this parameter to something meaningful
+			break;
+		case EXPONENTIAL:
+			v = (int)random.nextExponential(16000); 
+			break;
+		case ZIPF:
+			v = random.nextZipf(60000,0.5); // Extremely slow?
+			break;
+		default:
+			v = value_size;
+			break;
+		}
+		if(v > 0 && v <= 60000){
+			return v;
+		}else{
+			return value_size;
+		}
 	}
 
 	public int getValueCount(){
