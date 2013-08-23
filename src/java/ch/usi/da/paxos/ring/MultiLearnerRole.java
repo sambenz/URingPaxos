@@ -138,7 +138,11 @@ public class MultiLearnerRole extends Role implements Learner {
 			}
 		}
 	}
-	
+
+	public void setSafeInstance(Integer instance, Integer ringID) {
+		learner[ringID].setSafeInstance(instance);
+	}
+
 	private int getRingSuccessor(int id){
 		int pos = ring.indexOf(new Integer(id));
 		if(pos+1 >= ring.size()){
@@ -151,6 +155,13 @@ public class MultiLearnerRole extends Role implements Learner {
 	@Override
 	public BlockingQueue<Decision> getDecisions() {
 		return values;
+	}
+
+	@Override
+	public void setSafeInstance(Integer instance) {
+		for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
+			setSafeInstance(instance,e.getKey());
+		}
 	}
 
 }

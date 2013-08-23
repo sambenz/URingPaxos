@@ -178,6 +178,14 @@ public class NetworkManager {
 					send(m);
 				}
 			}
+		}else if(m.getType() == MessageType.Safe){
+			if(learner == null && ring.getNodeID() != ring.getCoordinatorID()){ // network -> until coordinator
+				send(m);
+			}	
+		}else if(m.getType() == MessageType.Trim){
+			if(acceptor == null && ring.getNodeID() != ring.getCoordinatorID()){ // network -> until coordinator
+				send(m);
+			}				
 		}
 
 		// local delivery
@@ -220,6 +228,21 @@ public class NetworkManager {
 				if(acceptor != null){
 					acceptor.deliver(ring,m);
 				}
+			}
+		}else if(m.getType() == MessageType.Safe){
+			if(leader != null){
+				leader.deliver(ring,m);
+			}else if(learner != null){
+				learner.deliver(ring,m);
+			}
+		}else if(m.getType() == MessageType.Trim){
+			if(learner != null){
+				learner.deliver(ring,m);
+			}
+			if(leader != null){
+				leader.deliver(ring,m);
+			}else if(acceptor != null){
+				acceptor.deliver(ring,m);
 			}
 		}
 	}

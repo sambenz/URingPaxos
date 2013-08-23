@@ -18,6 +18,9 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +70,12 @@ public class CoordinatorRole extends Role {
 	
 	private final int enable_fastmode_threashold = 100;
 	
+	private int trim_modulo = 0; // (0: disable)
+	
+	private int trim_quorum = 2;
+	
+	private int last_trimmed_instance = 0;
+	
 	public int multi_ring_lambda = 9000; 
 
 	public int multi_ring_delta_t = 100;
@@ -85,6 +94,14 @@ public class CoordinatorRole extends Role {
 		if(ring.getConfiguration().containsKey(ConfigKey.p1_resend_time)){
 			resend_time = Integer.parseInt(ring.getConfiguration().get(ConfigKey.p1_resend_time));
 			logger.info("Coordinator p1_resend_time: " + resend_time);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.trim_modulo)){
+			trim_modulo = Integer.parseInt(ring.getConfiguration().get(ConfigKey.trim_modulo));
+			logger.info("Coordinator trim_modulo: " + trim_modulo);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.trim_quorum)){
+			trim_quorum = Integer.parseInt(ring.getConfiguration().get(ConfigKey.trim_quorum));
+			logger.info("Coordinator trim_quorum: " + trim_quorum);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.multi_ring_delta_t)){
 			multi_ring_delta_t = Integer.parseInt(ring.getConfiguration().get(ConfigKey.multi_ring_delta_t));
@@ -195,6 +212,31 @@ public class CoordinatorRole extends Role {
 					ring.getNetwork().send(n);
 				}
 			}
+			// send safe message to trim acceptor log after n instances
+			if(trim_modulo > 0 && value_count % trim_modulo == 0){
+				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
+				if(ring.getNetwork().getLearner() != null){
+					ring.getNetwork().getLearner().deliver(ring,n);
+				}else{
+					ring.getNetwork().send(n);
+				}	
+			}
+		}else if(m.getType() == MessageType.Safe){
+			String s = new String(m.getValue().getValue());
+			logger.debug("Coordinator received safe response from learners: " + s);
+			Message n = new Message(getTrimInstance(s),m.getSender(),PaxosRole.Acceptor,MessageType.Trim,0,null);
+			if(ring.getNetwork().getAcceptor() != null){
+				ring.getNetwork().getAcceptor().deliver(ring,n);
+			}else{
+				ring.getNetwork().send(n);
+			}
+		}else if(m.getType() == MessageType.Trim){
+			if(m.getVoteCount() >= ring.getQuorum()){
+				logger.info("Coordinator succesfully trimmed acceptor log to instance " + m.getInstance());
+				last_trimmed_instance = m.getInstance();
+			}else{
+				logger.error("Coordinator acceptor log trimming to instance " + m.getInstance() + " failed!");
+			}
 		}else if(m.getType() == MessageType.Phase1 && m.getSender() == ring.getNodeID()){
 			if(m.getValue() != null){ // instance already decided -> resend 2b
 				phase1_in_transit.remove(m.getInstance());
@@ -241,6 +283,17 @@ public class CoordinatorRole extends Role {
 		}
 	}
 	
+	private int getTrimInstance(String s) {
+		List<Integer> instances = new ArrayList<Integer>();
+		for(String is : s.split(";")){
+			int i = Integer.valueOf(is);
+			if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
+			instances.add(i);
+		}
+		Collections.sort(instances);
+		return instances.subList(instances.size()-trim_quorum,instances.size()).get(0);
+	}
+
 	public TransferQueue<Promise> getPromiseQueue(){
 		return promises;
 	}

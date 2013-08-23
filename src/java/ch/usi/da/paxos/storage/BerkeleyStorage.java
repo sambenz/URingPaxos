@@ -158,6 +158,25 @@ public class BerkeleyStorage implements StableStorage {
 	}
 	
 	@Override
+	public synchronized boolean trim(Integer instance) {
+		if(instance == 0) { return true; } // fast track
+		Cursor cursor = db.openCursor(null, null);
+		try{
+			while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				Integer i = keyBinding.entryToObject(key);
+				if(i < instance && cursor.delete() != OperationStatus.SUCCESS){
+					logger.error("Error deleting instance " + i + " from DB!");
+					return false;
+				}
+			}
+		}finally{
+			cursor.close();
+		}
+		logger.debug("DB deltete up to instance " + instance);
+		return true;
+	}
+
+	@Override
 	public synchronized void close() {
 		try {
 			db.close();
@@ -174,6 +193,7 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized void listAll() {
 		Cursor cursor = db.openCursor(null, null);
 	    while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+	    	
             Integer instance = keyBinding.entryToObject(key);
             Decision decision = dataBinding.entryToObject(data);
             System.out.println("instance " +  instance + " -> " + decision + "");
@@ -192,11 +212,22 @@ public class BerkeleyStorage implements StableStorage {
 		Decision d2 = new Decision(1,43,new Value("id","value".getBytes()));
 		db.contains(1);
 		db.put(1,d);
-		db.put(1,d2);		
+		db.put(1,d2);
 		db.contains(1);
 		System.out.println(db.get(1));
-		//db.contains(2);
-		//System.out.println(db.get(2));
+		
+		db.put(2,d);
+		db.put(3,d);
+		db.put(4,d);
+		db.put(5,d);
+		db.put(6,d);
+		db.put(7,d);
+		db.put(8,d);
+		db.put(9,d);
+		db.put(10,d);
+		System.out.println(db.trim(7));
+		
+		db.listAll();
 		db.close();
 		/*
 		BerkeleyStorage db = new BerkeleyStorage(new File("/home/benz/download/db/24306"),true);

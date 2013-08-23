@@ -57,6 +57,11 @@ public class SyncBerkeleyStorage implements StableStorage {
 	}
 
 	@Override
+	public boolean trim(Integer instance) {
+		return storage.trim(instance);
+	}
+
+	@Override
 	public void close() {
 		storage.close();
 	}

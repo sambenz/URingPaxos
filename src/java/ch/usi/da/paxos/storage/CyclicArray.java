@@ -82,6 +82,12 @@ public class CyclicArray implements StableStorage {
 	public native boolean contains(Integer instance);
 
 	@Override
+	public boolean trim(Integer instance) {
+		// not interesting since cyclic storage
+		return true;
+	}
+
+	@Override
 	public void close(){
 		
 	}
@@ -106,4 +112,5 @@ public class CyclicArray implements StableStorage {
 		System.out.println(db.contains(1));	
 		System.out.println(db.contains(15001));
 	}
+
 }
