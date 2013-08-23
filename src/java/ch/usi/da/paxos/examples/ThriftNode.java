@@ -58,11 +58,6 @@ public class ThriftNode {
 			// process rings
 			List<RingDescription> rings = Util.parseRingsArgument(args[0]);
 
-			if (rings.size() != 1) {
-				System.err.println("Thrift proposer/learner only works with a SINGLE RING");
-				System.exit(1);
-			}
-
 			// start paxos node
 			final Node node = new Node(zoo_host, rings);
 			try {
