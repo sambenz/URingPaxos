@@ -29,7 +29,8 @@ package ch.usi.da.smr.message;
  */
 public enum CommandType {
 	GET,
+	GETRANGE,
 	PUT,
 	DELETE,
-	RESPONSE
+	RESPONSE;
 }

@@ -27,8 +27,8 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
 import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.thrift.gen.Decision;
 import ch.usi.da.smr.thrift.gen.PaxosLearnerService;
-import ch.usi.da.smr.thrift.gen.Value;
 
 /**
  * Name: ABListener<br>
@@ -60,9 +60,9 @@ public class ABListener implements Runnable {
 	public void run() {
 		while(transport.isOpen()){
 			try {
-				Value value = learner.deliver(1000);
-				if(value.isSetCmd()){
-					Message m = Message.fromByteArray(value.getCmd());
+				Decision d = learner.deliver(1000);
+				if(d != null && d.getValue() != null){
+					Message m = Message.fromDecision(d);
 					if(m != null && receiver != null){
 						receiver.receive(m);
 					}

@@ -21,6 +21,7 @@ package ch.usi.da.smr.statistics;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 
+import ch.usi.da.smr.thrift.gen.Decision;
 import ch.usi.da.smr.thrift.gen.Value;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
@@ -49,8 +50,8 @@ public class StatisticClient implements Runnable {
 	public void run() {
 		while(learner.getLearner().getInputProtocol().getTransport().isOpen()){
 			try {
-				Value value = learner.getLearner().deliver(1000);
-				if(value.isSetCmd()){
+				Decision d = learner.getLearner().deliver(1000);
+				if(d.isSetInstance()){
 					// do nothing (only an example)
 				}
 			} catch (TTransportException e){

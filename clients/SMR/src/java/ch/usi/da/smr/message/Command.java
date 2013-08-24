@@ -95,6 +95,8 @@ public class Command {
 			cmd.setType(CmdType.PUT); break;
 		case GET:
 			cmd.setType(CmdType.GET); break;
+		case GETRANGE:
+			cmd.setType(CmdType.GETRANGE); break;			
 		case RESPONSE:
 			cmd.setType(CmdType.RESPONSE); break;
 		}
@@ -124,6 +126,8 @@ public class Command {
 			type = CommandType.PUT; break;
 		case RESPONSE:
 			type = CommandType.RESPONSE; break;
+		case GETRANGE:
+			type = CommandType.GETRANGE; break;
 		}
 		return new Command(c.getId(),type,c.getKey(),c.getValue());
 	}

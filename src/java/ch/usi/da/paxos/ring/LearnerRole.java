@@ -211,7 +211,7 @@ public class LearnerRole extends Role implements Learner {
 	}
 	
 	@Override
-	public void setSafeInstance(Integer instance){
+	public void setSafeInstance(Integer ring,Integer instance){
 		safe_instance = instance.intValue();
 	}
 	

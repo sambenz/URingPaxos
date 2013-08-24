@@ -126,7 +126,7 @@ public class Replica implements Receiver {
 	 */
 	public static void main(String[] args) {
 		String host = "localhost";
-		int port = 9091;
+		int port = 9094;
 		if(args.length > 0){
 			String[] s = args[0].split(":");
 			host = s[0];

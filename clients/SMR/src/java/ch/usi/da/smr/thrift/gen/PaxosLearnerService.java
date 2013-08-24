@@ -34,9 +34,11 @@ public class PaxosLearnerService {
 
   public interface Iface {
 
-    public Value deliver(int timeout) throws org.apache.thrift.TException;
+    public Decision deliver(int timeout) throws org.apache.thrift.TException;
 
-    public Value nb_deliver() throws org.apache.thrift.TException;
+    public Decision nb_deliver() throws org.apache.thrift.TException;
+
+    public void safe(int ring, int instance) throws org.apache.thrift.TException;
 
   }
 
@@ -45,6 +47,8 @@ public class PaxosLearnerService {
     public void deliver(int timeout, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.deliver_call> resultHandler) throws org.apache.thrift.TException;
 
     public void nb_deliver(org.apache.thrift.async.AsyncMethodCallback<AsyncClient.nb_deliver_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void safe(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.safe_call> resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -68,7 +72,7 @@ public class PaxosLearnerService {
       super(iprot, oprot);
     }
 
-    public Value deliver(int timeout) throws org.apache.thrift.TException
+    public Decision deliver(int timeout) throws org.apache.thrift.TException
     {
       send_deliver(timeout);
       return recv_deliver();
@@ -81,7 +85,7 @@ public class PaxosLearnerService {
       sendBase("deliver", args);
     }
 
-    public Value recv_deliver() throws org.apache.thrift.TException
+    public Decision recv_deliver() throws org.apache.thrift.TException
     {
       deliver_result result = new deliver_result();
       receiveBase(result, "deliver");
@@ -91,7 +95,7 @@ public class PaxosLearnerService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "deliver failed: unknown result");
     }
 
-    public Value nb_deliver() throws org.apache.thrift.TException
+    public Decision nb_deliver() throws org.apache.thrift.TException
     {
       send_nb_deliver();
       return recv_nb_deliver();
@@ -103,7 +107,7 @@ public class PaxosLearnerService {
       sendBase("nb_deliver", args);
     }
 
-    public Value recv_nb_deliver() throws org.apache.thrift.TException
+    public Decision recv_nb_deliver() throws org.apache.thrift.TException
     {
       nb_deliver_result result = new nb_deliver_result();
       receiveBase(result, "nb_deliver");
@@ -111,6 +115,27 @@ public class PaxosLearnerService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "nb_deliver failed: unknown result");
+    }
+
+    public void safe(int ring, int instance) throws org.apache.thrift.TException
+    {
+      send_safe(ring, instance);
+      recv_safe();
+    }
+
+    public void send_safe(int ring, int instance) throws org.apache.thrift.TException
+    {
+      safe_args args = new safe_args();
+      args.setRing(ring);
+      args.setInstance(instance);
+      sendBase("safe", args);
+    }
+
+    public void recv_safe() throws org.apache.thrift.TException
+    {
+      safe_result result = new safe_result();
+      receiveBase(result, "safe");
+      return;
     }
 
   }
@@ -153,7 +178,7 @@ public class PaxosLearnerService {
         prot.writeMessageEnd();
       }
 
-      public Value getResult() throws org.apache.thrift.TException {
+      public Decision getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -182,13 +207,48 @@ public class PaxosLearnerService {
         prot.writeMessageEnd();
       }
 
-      public Value getResult() throws org.apache.thrift.TException {
+      public Decision getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
         return (new Client(prot)).recv_nb_deliver();
+      }
+    }
+
+    public void safe(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      safe_call method_call = new safe_call(ring, instance, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class safe_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private int ring;
+      private int instance;
+      public safe_call(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.ring = ring;
+        this.instance = instance;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("safe", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        safe_args args = new safe_args();
+        args.setRing(ring);
+        args.setInstance(instance);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_safe();
       }
     }
 
@@ -207,6 +267,7 @@ public class PaxosLearnerService {
     private static <I extends Iface> Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> getProcessMap(Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> processMap) {
       processMap.put("deliver", new deliver());
       processMap.put("nb_deliver", new nb_deliver());
+      processMap.put("safe", new safe());
       return processMap;
     }
 
@@ -246,6 +307,26 @@ public class PaxosLearnerService {
       public nb_deliver_result getResult(I iface, nb_deliver_args args) throws org.apache.thrift.TException {
         nb_deliver_result result = new nb_deliver_result();
         result.success = iface.nb_deliver();
+        return result;
+      }
+    }
+
+    public static class safe<I extends Iface> extends org.apache.thrift.ProcessFunction<I, safe_args> {
+      public safe() {
+        super("safe");
+      }
+
+      public safe_args getEmptyArgsInstance() {
+        return new safe_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public safe_result getResult(I iface, safe_args args) throws org.apache.thrift.TException {
+        safe_result result = new safe_result();
+        iface.safe(args.ring, args.instance);
         return result;
       }
     }
@@ -615,7 +696,7 @@ public class PaxosLearnerService {
       schemes.put(TupleScheme.class, new deliver_resultTupleSchemeFactory());
     }
 
-    public Value success; // required
+    public Decision success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -680,7 +761,7 @@ public class PaxosLearnerService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Value.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Decision.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deliver_result.class, metaDataMap);
     }
@@ -689,7 +770,7 @@ public class PaxosLearnerService {
     }
 
     public deliver_result(
-      Value success)
+      Decision success)
     {
       this();
       this.success = success;
@@ -700,7 +781,7 @@ public class PaxosLearnerService {
      */
     public deliver_result(deliver_result other) {
       if (other.isSetSuccess()) {
-        this.success = new Value(other.success);
+        this.success = new Decision(other.success);
       }
     }
 
@@ -713,11 +794,11 @@ public class PaxosLearnerService {
       this.success = null;
     }
 
-    public Value getSuccess() {
+    public Decision getSuccess() {
       return this.success;
     }
 
-    public deliver_result setSuccess(Value success) {
+    public deliver_result setSuccess(Decision success) {
       this.success = success;
       return this;
     }
@@ -743,7 +824,7 @@ public class PaxosLearnerService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((Value)value);
+          setSuccess((Decision)value);
         }
         break;
 
@@ -895,7 +976,7 @@ public class PaxosLearnerService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new Value();
+                struct.success = new Decision();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -954,7 +1035,7 @@ public class PaxosLearnerService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = new Value();
+          struct.success = new Decision();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
@@ -1220,7 +1301,7 @@ public class PaxosLearnerService {
       schemes.put(TupleScheme.class, new nb_deliver_resultTupleSchemeFactory());
     }
 
-    public Value success; // required
+    public Decision success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -1285,7 +1366,7 @@ public class PaxosLearnerService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Value.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Decision.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(nb_deliver_result.class, metaDataMap);
     }
@@ -1294,7 +1375,7 @@ public class PaxosLearnerService {
     }
 
     public nb_deliver_result(
-      Value success)
+      Decision success)
     {
       this();
       this.success = success;
@@ -1305,7 +1386,7 @@ public class PaxosLearnerService {
      */
     public nb_deliver_result(nb_deliver_result other) {
       if (other.isSetSuccess()) {
-        this.success = new Value(other.success);
+        this.success = new Decision(other.success);
       }
     }
 
@@ -1318,11 +1399,11 @@ public class PaxosLearnerService {
       this.success = null;
     }
 
-    public Value getSuccess() {
+    public Decision getSuccess() {
       return this.success;
     }
 
-    public nb_deliver_result setSuccess(Value success) {
+    public nb_deliver_result setSuccess(Decision success) {
       this.success = success;
       return this;
     }
@@ -1348,7 +1429,7 @@ public class PaxosLearnerService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((Value)value);
+          setSuccess((Decision)value);
         }
         break;
 
@@ -1500,7 +1581,7 @@ public class PaxosLearnerService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new Value();
+                struct.success = new Decision();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -1559,10 +1640,702 @@ public class PaxosLearnerService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = new Value();
+          struct.success = new Decision();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
+      }
+    }
+
+  }
+
+  public static class safe_args implements org.apache.thrift.TBase<safe_args, safe_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("safe_args");
+
+    private static final org.apache.thrift.protocol.TField RING_FIELD_DESC = new org.apache.thrift.protocol.TField("ring", org.apache.thrift.protocol.TType.I32, (short)1);
+    private static final org.apache.thrift.protocol.TField INSTANCE_FIELD_DESC = new org.apache.thrift.protocol.TField("instance", org.apache.thrift.protocol.TType.I32, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new safe_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new safe_argsTupleSchemeFactory());
+    }
+
+    public int ring; // required
+    public int instance; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      RING((short)1, "ring"),
+      INSTANCE((short)2, "instance");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // RING
+            return RING;
+          case 2: // INSTANCE
+            return INSTANCE;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    private static final int __RING_ISSET_ID = 0;
+    private static final int __INSTANCE_ISSET_ID = 1;
+    private byte __isset_bitfield = 0;
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.RING, new org.apache.thrift.meta_data.FieldMetaData("ring", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+      tmpMap.put(_Fields.INSTANCE, new org.apache.thrift.meta_data.FieldMetaData("instance", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(safe_args.class, metaDataMap);
+    }
+
+    public safe_args() {
+    }
+
+    public safe_args(
+      int ring,
+      int instance)
+    {
+      this();
+      this.ring = ring;
+      setRingIsSet(true);
+      this.instance = instance;
+      setInstanceIsSet(true);
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public safe_args(safe_args other) {
+      __isset_bitfield = other.__isset_bitfield;
+      this.ring = other.ring;
+      this.instance = other.instance;
+    }
+
+    public safe_args deepCopy() {
+      return new safe_args(this);
+    }
+
+    @Override
+    public void clear() {
+      setRingIsSet(false);
+      this.ring = 0;
+      setInstanceIsSet(false);
+      this.instance = 0;
+    }
+
+    public int getRing() {
+      return this.ring;
+    }
+
+    public safe_args setRing(int ring) {
+      this.ring = ring;
+      setRingIsSet(true);
+      return this;
+    }
+
+    public void unsetRing() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __RING_ISSET_ID);
+    }
+
+    /** Returns true if field ring is set (has been assigned a value) and false otherwise */
+    public boolean isSetRing() {
+      return EncodingUtils.testBit(__isset_bitfield, __RING_ISSET_ID);
+    }
+
+    public void setRingIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __RING_ISSET_ID, value);
+    }
+
+    public int getInstance() {
+      return this.instance;
+    }
+
+    public safe_args setInstance(int instance) {
+      this.instance = instance;
+      setInstanceIsSet(true);
+      return this;
+    }
+
+    public void unsetInstance() {
+      __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __INSTANCE_ISSET_ID);
+    }
+
+    /** Returns true if field instance is set (has been assigned a value) and false otherwise */
+    public boolean isSetInstance() {
+      return EncodingUtils.testBit(__isset_bitfield, __INSTANCE_ISSET_ID);
+    }
+
+    public void setInstanceIsSet(boolean value) {
+      __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __INSTANCE_ISSET_ID, value);
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case RING:
+        if (value == null) {
+          unsetRing();
+        } else {
+          setRing((Integer)value);
+        }
+        break;
+
+      case INSTANCE:
+        if (value == null) {
+          unsetInstance();
+        } else {
+          setInstance((Integer)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case RING:
+        return Integer.valueOf(getRing());
+
+      case INSTANCE:
+        return Integer.valueOf(getInstance());
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case RING:
+        return isSetRing();
+      case INSTANCE:
+        return isSetInstance();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof safe_args)
+        return this.equals((safe_args)that);
+      return false;
+    }
+
+    public boolean equals(safe_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_ring = true;
+      boolean that_present_ring = true;
+      if (this_present_ring || that_present_ring) {
+        if (!(this_present_ring && that_present_ring))
+          return false;
+        if (this.ring != that.ring)
+          return false;
+      }
+
+      boolean this_present_instance = true;
+      boolean that_present_instance = true;
+      if (this_present_instance || that_present_instance) {
+        if (!(this_present_instance && that_present_instance))
+          return false;
+        if (this.instance != that.instance)
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(safe_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      safe_args typedOther = (safe_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRing()).compareTo(typedOther.isSetRing());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRing()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ring, typedOther.ring);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetInstance()).compareTo(typedOther.isSetInstance());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetInstance()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.instance, typedOther.instance);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("safe_args(");
+      boolean first = true;
+
+      sb.append("ring:");
+      sb.append(this.ring);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("instance:");
+      sb.append(this.instance);
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+        __isset_bitfield = 0;
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class safe_argsStandardSchemeFactory implements SchemeFactory {
+      public safe_argsStandardScheme getScheme() {
+        return new safe_argsStandardScheme();
+      }
+    }
+
+    private static class safe_argsStandardScheme extends StandardScheme<safe_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, safe_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // RING
+              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+                struct.ring = iprot.readI32();
+                struct.setRingIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // INSTANCE
+              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+                struct.instance = iprot.readI32();
+                struct.setInstanceIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, safe_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldBegin(RING_FIELD_DESC);
+        oprot.writeI32(struct.ring);
+        oprot.writeFieldEnd();
+        oprot.writeFieldBegin(INSTANCE_FIELD_DESC);
+        oprot.writeI32(struct.instance);
+        oprot.writeFieldEnd();
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class safe_argsTupleSchemeFactory implements SchemeFactory {
+      public safe_argsTupleScheme getScheme() {
+        return new safe_argsTupleScheme();
+      }
+    }
+
+    private static class safe_argsTupleScheme extends TupleScheme<safe_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, safe_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRing()) {
+          optionals.set(0);
+        }
+        if (struct.isSetInstance()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetRing()) {
+          oprot.writeI32(struct.ring);
+        }
+        if (struct.isSetInstance()) {
+          oprot.writeI32(struct.instance);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, safe_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.ring = iprot.readI32();
+          struct.setRingIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.instance = iprot.readI32();
+          struct.setInstanceIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class safe_result implements org.apache.thrift.TBase<safe_result, safe_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("safe_result");
+
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new safe_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new safe_resultTupleSchemeFactory());
+    }
+
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+;
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(safe_result.class, metaDataMap);
+    }
+
+    public safe_result() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public safe_result(safe_result other) {
+    }
+
+    public safe_result deepCopy() {
+      return new safe_result(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof safe_result)
+        return this.equals((safe_result)that);
+      return false;
+    }
+
+    public boolean equals(safe_result that) {
+      if (that == null)
+        return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(safe_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      safe_result typedOther = (safe_result)other;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("safe_result(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class safe_resultStandardSchemeFactory implements SchemeFactory {
+      public safe_resultStandardScheme getScheme() {
+        return new safe_resultStandardScheme();
+      }
+    }
+
+    private static class safe_resultStandardScheme extends StandardScheme<safe_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, safe_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, safe_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class safe_resultTupleSchemeFactory implements SchemeFactory {
+      public safe_resultTupleScheme getScheme() {
+        return new safe_resultTupleScheme();
+      }
+    }
+
+    private static class safe_resultTupleScheme extends TupleScheme<safe_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, safe_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, safe_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
       }
     }
 

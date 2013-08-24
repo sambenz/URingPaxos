@@ -27,6 +27,7 @@ import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TBinaryProtocol;
 
 import ch.usi.da.smr.thrift.gen.Cmd;
+import ch.usi.da.smr.thrift.gen.Decision;
 
 /**
  * Name: Message<br>
@@ -44,6 +45,10 @@ public class Message {
 	private final String sender;
 	
 	private final List<Command> commands;
+	
+	private int instance = 0;
+	
+	private int ring = 0;
 	
 	public Message(int id,String sender,List<Command> commands){
 		this.id = id;
@@ -63,6 +68,22 @@ public class Message {
 		return commands;
 	}
 		
+	public void setInstance(int instance){
+		this.instance = instance;
+	}
+	
+	public int getInstnce(){
+		return instance;
+	}
+	
+	public void setRing(int ring){
+		this.ring = ring;
+	}
+	
+	public int getRing(){
+		return ring;
+	}
+	
 	public String toString(){
 		return ("Message id:" + id + " sender:" + sender + " " + commands);
 	}
@@ -95,6 +116,13 @@ public class Message {
 		} catch (TException e) {
 			return new byte[0];
 		}
+	}
+	
+	public static Message fromDecision(Decision decision){
+		Message m = fromByteArray(decision.getValue().getCmd());
+		m.setInstance(decision.getInstance());
+		m.setRing(decision.getRing());
+		return m;
 	}
 	
 	public static Message fromByteArray(byte[] b){

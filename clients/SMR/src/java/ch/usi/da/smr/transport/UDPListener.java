@@ -47,7 +47,7 @@ public class UDPListener implements Runnable {
 
 	@Override
 	public void run() {
-		while(socket.isBound()){
+		while(!socket.isClosed()){
 			try {
 				byte[] buffer = new byte[65535];
 				DatagramPacket packet = new DatagramPacket(buffer,buffer.length);

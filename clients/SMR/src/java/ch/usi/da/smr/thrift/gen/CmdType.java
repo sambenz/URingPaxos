@@ -13,9 +13,10 @@ import org.apache.thrift.TEnum;
 
 public enum CmdType implements org.apache.thrift.TEnum {
   GET(0),
-  PUT(1),
-  DELETE(2),
-  RESPONSE(3);
+  GETRANGE(1),
+  PUT(2),
+  DELETE(3),
+  RESPONSE(4);
 
   private final int value;
 
@@ -39,10 +40,12 @@ public enum CmdType implements org.apache.thrift.TEnum {
       case 0:
         return GET;
       case 1:
-        return PUT;
+        return GETRANGE;
       case 2:
-        return DELETE;
+        return PUT;
       case 3:
+        return DELETE;
+      case 4:
         return RESPONSE;
       default:
         return null;
