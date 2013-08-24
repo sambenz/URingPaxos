@@ -39,33 +39,49 @@ import ch.usi.da.paxos.thrift.gen.Value;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
+	private final Learner learner;
+	
 	private final BlockingQueue<Decision> values;
 	
 	public PaxosLearnerServiceImpl(Learner learner) {
+		this.learner = learner;
 		values = learner.getDecisions();
 	}
 
 	@Override
-	public Value deliver(int timeout) throws TException {
-		Value value = null;
+	public ch.usi.da.paxos.thrift.gen.Decision deliver(int timeout) throws TException {
+		ch.usi.da.paxos.thrift.gen.Decision decision = null;
 		try {
 			Decision d = values.poll(timeout,TimeUnit.MILLISECONDS);
 			if(d != null){
-				value = new Value(ByteBuffer.wrap(d.getValue().getValue()));
+				decision = new ch.usi.da.paxos.thrift.gen.Decision();
+				decision.setInstance(d.getInstance());
+				decision.setRing(d.getRing());
+				Value value = new Value(ByteBuffer.wrap(d.getValue().getValue()));
+				decision.setValue(value);
 			}
 		} catch (InterruptedException e) {
 		}
-		return value == null ? new Value() : value;
+		return decision == null ? new ch.usi.da.paxos.thrift.gen.Decision() : decision;
 	}
 
 	@Override
-	public Value nb_deliver() throws TException {
-		Value value = null;
+	public ch.usi.da.paxos.thrift.gen.Decision nb_deliver() throws TException {
+		ch.usi.da.paxos.thrift.gen.Decision decision = null;
 		Decision d = values.poll();
 		if(d != null){
-			value = new Value(ByteBuffer.wrap(d.getValue().getValue()));
+			decision = new ch.usi.da.paxos.thrift.gen.Decision();
+			decision.setInstance(d.getInstance());
+			decision.setRing(d.getRing());
+			Value value = new Value(ByteBuffer.wrap(d.getValue().getValue()));
+			decision.setValue(value);
 		}
-		return value == null ? new Value() : value;
+		return decision == null ? new ch.usi.da.paxos.thrift.gen.Decision() : decision;
+	}
+
+	@Override
+	public void safe(int ring,int instance) throws TException {
+		learner.setSafeInstance(ring,instance);
 	}
 
 }

@@ -59,7 +59,7 @@ public class CyclicArray implements StableStorage {
 	@Override
 	public void put(Integer instance, Decision decision) {
 		// not optimal with this kind of serialization; but still fast ...
-		Message m = new Message(instance, 0, PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getValue());
+		Message m = new Message(instance, decision.getRing(), PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getValue());
 		nput(instance.intValue(),Message.toWire(m));
 	}
 
@@ -69,7 +69,7 @@ public class CyclicArray implements StableStorage {
 		if(b.length > 0){
 			Message m = Message.fromWire(b);
 			if(m.getInstance() == instance){
-				Decision d = new Decision(m.getInstance(),m.getBallot(),m.getValue());
+				Decision d = new Decision(m.getSender(),m.getInstance(),m.getBallot(),m.getValue());
 				return d;
 			}else{
 				return null;
@@ -97,8 +97,8 @@ public class CyclicArray implements StableStorage {
 	 */
 	public static void main(String[] args){
 		CyclicArray db = new CyclicArray();
-		Decision d = new Decision(1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(15001,43,new Value("id","value".getBytes()));
+		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,15001,43,new Value("id","value".getBytes()));
 
 		db.put(d.getInstance(),d);
 		db.put(d2.getInstance(),d);

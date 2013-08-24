@@ -48,8 +48,6 @@ public class MultiLearnerRole extends Role implements Learner {
 
 	private final static Logger logger = Logger.getLogger(MultiLearnerRole.class);
 	
-	private final static Logger valuelogger = Logger.getLogger(Value.class);
-	
 	private final Map<Integer,RingDescription> ringmap = new HashMap<Integer,RingDescription>();
 	
 	private final List<Integer> ring = new ArrayList<Integer>();
@@ -114,7 +112,7 @@ public class MultiLearnerRole extends Role implements Learner {
 				if(skip_count[deliverRing] > 0){
 					count++;
 					skip_count[deliverRing]--;
-					valuelogger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
+					logger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().getID().equals(Value.skipID) && d.getValue().getValue().length == 4){
@@ -125,7 +123,6 @@ public class MultiLearnerRole extends Role implements Learner {
 						count++;
 						// learning an actual proposed value
 						values.add(d);
-						valuelogger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " " + d);
 					}
 				}
 				if(count >= M){
@@ -137,10 +134,6 @@ public class MultiLearnerRole extends Role implements Learner {
 				break;				
 			}
 		}
-	}
-
-	public void setSafeInstance(Integer instance, Integer ringID) {
-		learner[ringID].setSafeInstance(instance);
 	}
 
 	private int getRingSuccessor(int id){
@@ -157,11 +150,8 @@ public class MultiLearnerRole extends Role implements Learner {
 		return values;
 	}
 
-	@Override
-	public void setSafeInstance(Integer instance) {
-		for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
-			setSafeInstance(instance,e.getKey());
-		}
+	public void setSafeInstance(Integer ring, Integer instance) {
+		learner[ring].setSafeInstance(ring,instance);
 	}
 
 }

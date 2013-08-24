@@ -97,8 +97,8 @@ public class MemcachedStorage implements StableStorage {
 	 */
 	public static void main(String[] args){
 		MemcachedStorage db = new MemcachedStorage();
-		Decision d = new Decision(1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(1,43,new Value("id","value".getBytes()));
+		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,1,43,new Value("id","value".getBytes()));
 		System.out.println(db.contains(1));
 		db.put(1,d);
 		db.put(15001,d2);		

@@ -157,7 +157,7 @@ public class AcceptorRole extends Role {
 					}
 					if(ring.getNodeID() == ring.getLastAcceptor()){
 						if(m.getVoteCount() >= ring.getQuorum()){
-							Decision d = new Decision(instance,ballot,value);
+							Decision d = new Decision(fromRing.getRingID(),instance,ballot,value);
 							storage.put(instance,d);
 							if(instance>highest_accepted_instance){
 								highest_accepted_instance=instance;
@@ -192,7 +192,7 @@ public class AcceptorRole extends Role {
 			learned.put(m.getValue().getID(),m.getValue());
 		}else if(m.getType() == MessageType.Decision){
 			if(value != null && learned.containsKey(value.getID())){
-				Decision d = new Decision(instance,m.getBallot(),learned.get(value.getID()));
+				Decision d = new Decision(fromRing.getRingID(),instance,m.getBallot(),learned.get(value.getID()));
 				storage.put(instance,d);
 				if(instance>highest_accepted_instance){
 					highest_accepted_instance=instance;

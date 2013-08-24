@@ -140,10 +140,10 @@ public class LearnerRole extends Role implements Learner {
 			Decision d = null;
 			if(learned.get(m.getValue().getID()) != null){
 				// value was previously learned with an other message
-				d = new Decision(m.getInstance(),m.getBallot(),learned.get(m.getValue().getID()));
+				d = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),learned.get(m.getValue().getID()));
 				learned.remove(m.getValue().getID());
 			}else{
-				d = new Decision(m.getInstance(),m.getBallot(),m.getValue());
+				d = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),m.getValue());
 			}
 			if(d != null){
 				if(!recovery){
@@ -211,7 +211,7 @@ public class LearnerRole extends Role implements Learner {
 	}
 	
 	@Override
-	public void setSafeInstance(Integer instance){
+	public void setSafeInstance(Integer ring,Integer instance){
 		safe_instance = instance.intValue();
 	}
 	

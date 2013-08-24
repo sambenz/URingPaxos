@@ -34,5 +34,5 @@ import ch.usi.da.paxos.storage.Decision;
 public interface Learner {
 	public BlockingQueue<Decision> getDecisions();
 	
-	public void setSafeInstance(Integer instance);
+	public void setSafeInstance(Integer ring,Integer instance);
 }

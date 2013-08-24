@@ -161,7 +161,7 @@ public class ProposerRole extends Role implements Proposer {
 				if(m.getValue().equals(v)){ // compared by ID
 					if(futures.containsKey(ID)){
 						FutureDecision f = futures.get(ID);
-						f.setDecision(new Decision(m.getInstance(),m.getBallot(),v));
+						f.setDecision(new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),v));
 						futures.remove(ID);
 					}
 					if(test){

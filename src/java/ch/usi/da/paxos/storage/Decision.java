@@ -35,6 +35,8 @@ public class Decision implements Serializable {
 	
 	private static final long serialVersionUID = -2916694736282875646L;
 
+	private final Integer ring;
+	
 	private final Integer instance;
 	
 	private Integer ballot;
@@ -42,11 +44,13 @@ public class Decision implements Serializable {
 	private final Value value;
 	
 	/**
+	 * @param ring
 	 * @param instance
 	 * @param ballot
 	 * @param value
 	 */
-	public Decision(Integer instance,Integer ballot,Value value){
+	public Decision(Integer ring,Integer instance,Integer ballot,Value value){
+		this.ring = ring;
 		this.ballot = ballot;
 		this.instance = instance;
 		this.value = value;
@@ -67,6 +71,13 @@ public class Decision implements Serializable {
 	}
 
 	/**
+	 * @return the ring
+	 */
+	public Integer getRing() {
+		return ring;
+	}
+
+	/**
 	 * @return the instance
 	 */
 	public Integer getInstance() {
@@ -81,13 +92,13 @@ public class Decision implements Serializable {
 	}
 	
 	public String toString(){
-		return("decided to: " + this.getValue() + " (ballot " + this.getBallot() + " in instance " + this.getInstance() + ")");
+		return("decided to: " + this.getValue() + " (ring:" + this.getRing() + " instance:" + this.getInstance() + " ballet:" + this.getBallot() + ")");
 	}
 	
 	public boolean equals(Object obj) {
 		if(obj instanceof Decision){
 			Decision d = (Decision) obj;
-            if(this.getInstance().equals(d.getInstance()) && this.getValue().equals(d.getValue())){
+            if(this.getRing().equals(d.getRing()) && this.getInstance().equals(d.getInstance()) && this.getValue().equals(d.getValue())){
                     return true;
             }
 		}

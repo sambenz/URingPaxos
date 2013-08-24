@@ -61,7 +61,7 @@ public class Majority {
 	public synchronized void addMessage(Message m){
 		messages.add(m);
 		if(m.getValue() != null){
-			Decision d = new Decision(m.getInstance(),m.getBallot(),m.getValue());
+			Decision d = new Decision(0,m.getInstance(),m.getBallot(),m.getValue());
 			if(!values.containsKey(d)){
 				values.put(d,new AtomicInteger(1));
 				max_ballot = m.getBallot();

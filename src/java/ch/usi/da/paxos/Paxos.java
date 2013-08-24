@@ -114,7 +114,7 @@ public class Paxos {
 						value = request.getValue();
 					}
 					if(value != null){ // 2b
-						acceptor.getHistory().put(instance,new Decision(instance,ballot,value));
+						acceptor.getHistory().put(instance,new Decision(0,instance,ballot,value));
 						Message m1 = new Message(instance,acceptor.getID(),PaxosRole.Proposer,MessageType.Accepted,ballot,value);
 						send(out,m1);
 						Message m2 = new Message(instance,acceptor.getID(),PaxosRole.Learner,MessageType.Accepted,ballot,value);
