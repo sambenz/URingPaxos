@@ -126,7 +126,8 @@ public class ProposerRole extends Role implements Proposer {
 	public FutureDecision propose(byte[] b){
 		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),b);
 		FutureDecision future = new FutureDecision();
-		futures.put(v.getID(),future);		
+		futures.put(v.getID(),future);
+		//TODO: implement batching here !!!!
 		send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v));
 		return future;
 	}

@@ -34,11 +34,11 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.thrift.transport.TTransportException;
+import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
-import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.Response;
 import ch.usi.da.smr.transport.UDPListener;
@@ -54,8 +54,10 @@ import ch.usi.da.smr.transport.UDPListener;
  */
 public class Client implements Receiver {
 
-	private final ABSender ab;
+	private final PartitionManager partitions;
 	
+	private final int clientID;
+			
 	private final UDPListener udp;
 	
 	private Map<Integer,Response> responses = new HashMap<Integer,Response>();
@@ -64,30 +66,25 @@ public class Client implements Receiver {
 	
 	private final int port;
 	
-	public Client(String abhost,int abport) throws SocketException, TTransportException {
+	public Client(PartitionManager partitions,int clientID) throws IOException {
+		this.partitions = partitions;
+		this.clientID = clientID;
 		ip = getHostAddress(false);
 		port = 3000 + new Random().nextInt(1000);
 		udp = new UDPListener(port);
-		ab = new ABSender(abhost,abport);
 		Thread t = new Thread(udp);
 		t.start();
 	}
 	
-	public void start() throws TTransportException{
+	public void start() throws TTransportException {
 		udp.registerReceiver(this);
-		Runtime.getRuntime().addShutdownHook(new Thread(){
-            @Override
-            public void run(){
-            	udp.close();
-				ab.close();
-            }
-        });
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	    String s;
 	    try {
 	    	int id = 0;
 	    	List<Command> cmds = new ArrayList<Command>();
 		    while((s = in.readLine()) != null && s.length() != 0){
+		    	// read input
 		    	String[] line = s.split("\\s+");
 		    	if(line.length > 2){
 		    		try{
@@ -101,13 +98,23 @@ public class Client implements Receiver {
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
-		    	}else if(s.startsWith(".") && cmds.size() > 0){
+		    	}else{
+		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key value");
+		    	}
+		    	// send one command
+		    	if(cmds.size() > 0){
 		    		Response r = new Response();
 		    		responses.put(id,r);
 		    		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
-			    	int ret = ab.abroadcast(m);
-			    	if(ret > 0){
-			    		Message response = r.getResponse(5000);
+			    	int ret = 0;
+			    	if(cmds.get(0).getType() == CommandType.GETRANGE){
+			    		ret = partitions.getABSender(null,clientID).abroadcast(m);
+			    	}else{
+			    		Partition p = partitions.getPartition(Integer.valueOf(cmds.get(0).getKey()));
+			    		ret = partitions.getABSender(p,clientID).abroadcast(m);
+			    	}
+			    	if(ret > 0){ // is abroadcasted
+			    		Message response = r.getResponse(5000); // wait response
 			    		if(response != null){
 			    			for(Command c : response.getCommands()){
 				    			if(c.getType() == CommandType.RESPONSE){
@@ -123,11 +130,8 @@ public class Client implements Receiver {
 			    		responses.remove(id);
 			    	}
 			    	cmds.clear();
-			    	id++;
-		    	}else{
-		    		System.out.println("Add command: <PUT|GET|DELETE> key value\nSend with \".\"");
-		    	}
-		    	
+			    	id++;	    		
+		    	}		    	
 		    }
 		    in.close();
 	    }catch(IOException e){
@@ -135,10 +139,13 @@ public class Client implements Receiver {
 	    } catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		udp.close();
-		ab.close();
+	    stop();
 	}
 
+	public void stop(){
+		udp.close();
+	}
+	
 	@Override
 	public void receive(Message m) {
 		if(responses.containsKey(m.getID())){
@@ -152,19 +159,34 @@ public class Client implements Receiver {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		String host = "localhost";
-		int port = 9081;
-		if(args.length > 0){
-			String[] s = args[0].split(":");
-			host = s[0];
-			port = Integer.parseInt(s[1]);
+		String zoo_host = "127.0.0.1:2181";
+		if (args.length > 1) {
+			zoo_host = args[1];
 		}
-    	Client client;
-		try {
-			client = new Client(host,port);
-	    	client.start();	
-		} catch (SocketException | TTransportException e) {
-			e.printStackTrace();
+		if (args.length < 1) {
+			System.err.println("Plese use \"Client\" \"client ID\"");
+		} else {
+			final int clientID = Integer.parseInt(args[0]);
+			try {
+				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
+				final PartitionManager partitions = new PartitionManager(zoo);
+				partitions.init();
+				final Client client = new Client(partitions,clientID);
+				Runtime.getRuntime().addShutdownHook(new Thread(){
+					@Override
+					public void run(){
+						client.stop();
+						try {
+							zoo.close();
+						} catch (InterruptedException e) {
+						}
+					}
+				});
+				client.start();
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 	}
 

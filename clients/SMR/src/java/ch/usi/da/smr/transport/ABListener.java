@@ -49,7 +49,7 @@ public class ABListener implements Runnable {
 	
 	private Receiver receiver = null;
 	
-	public ABListener(String host, int port) throws TTransportException{
+	public ABListener(String host, int port) throws TTransportException {
     	transport = new TFramedTransport(new TSocket(host,port));
         protocol = new TBinaryProtocol(transport);
         learner = new PaxosLearnerService.Client(protocol);

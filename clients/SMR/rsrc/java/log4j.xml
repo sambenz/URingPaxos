@@ -21,8 +21,13 @@
 		</layout>
 	</appender>
 
-	<root>
+	<category name="org.apache.zookeeper" additivity="false">
 		<priority value="error" />
+		<appender-ref ref="STDOUT" />
+	</category>
+	
+	<root>
+		<priority value="info" />
 		<appender-ref ref="STDOUT" />
 		<!-- <appender-ref ref="FILE" /> -->
 	</root>
