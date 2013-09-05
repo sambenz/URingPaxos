@@ -150,7 +150,7 @@ public class AcceptorRole extends Role {
 				if(value != null){ // 2b
 					m.incrementVoteCount(); // always increment vote count (even value is not equal!) otherwise you risk undecided instances when |coord| > 1 & one process fails
 					Value send_value = null;
-					if(m.getBallot() > 9000){
+					if(m.getBallot() > 9000 || (m.getValue() != null && m.getValue().isSkip())){
 						send_value = value; // safe mode (don't remove value byte[])
 					}else{
 						send_value = new Value(value.getID(),new byte[0]); // fast mode

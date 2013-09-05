@@ -115,10 +115,14 @@ public class MultiLearnerRole extends Role implements Learner {
 					logger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
-					if(d.getValue() != null && d.getValue().getID().equals(Value.skipID) && d.getValue().getValue().length == 4){
+					if(d.getValue() != null && d.getValue().getID().equals(Value.skipID)){
 						// skip message
-						int skip = NetworkManager.byteToInt(d.getValue().getValue());
-						skip_count[deliverRing] = skip_count[deliverRing] + skip;
+						if(d.getValue().getValue().length == 4){
+							int skip = NetworkManager.byteToInt(d.getValue().getValue());
+							skip_count[deliverRing] = skip_count[deliverRing] + skip;
+						}else{
+							logger.error("MultiRingLrearner received incomplete SKIP message! -> " + d);
+						}
 					}else{
 						count++;
 						// learning an actual proposed value
