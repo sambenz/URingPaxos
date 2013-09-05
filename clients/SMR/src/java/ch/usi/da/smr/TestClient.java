@@ -143,19 +143,19 @@ public class TestClient implements Runnable, Receiver {
 	 */
 	public static void main(String[] args) {
 		try {
-			
+			String zoo_host = "127.0.0.1:2181";
 			// start replicas
-			Replica r1 = new Replica("localhost",9091,new File("/tmp/replica-db/1"));
+			Replica r1 = null; //TODO: new Replica(zoo_host,1,new File("/tmp/replica-db/1"));
 			r1.start();
-			Replica r2 = new Replica("localhost",9092,new File("/tmp/replica-db/2"));
+			Replica r2 = null; //TODO: new Replica(zoo_host,2,new File("/tmp/replica-db/2"));
 			r2.start();
-			Replica r3 = new Replica("localhost",9093,new File("/tmp/replica-db/3"));
+			Replica r3 = null; //TODO: new Replica(zoo_host,3,new File("/tmp/replica-db/3"));
 			r3.start();
 
 			// start clients
 			CountDownLatch barrier = new CountDownLatch(2);
-			Thread t1 = new Thread(new TestClient("localhost",9081,barrier));
-			Thread t2 = new Thread(new TestClient("localhost",9081,barrier));
+			Thread t1 = new Thread(new TestClient(zoo_host,2,barrier));
+			Thread t2 = new Thread(new TestClient(zoo_host,3,barrier));
 			t1.start();
 			t2.start();
 			barrier.await();
@@ -181,9 +181,7 @@ public class TestClient implements Runnable, Receiver {
 			db3.close();
 
 			System.exit(0);
-		} catch (SocketException | TTransportException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

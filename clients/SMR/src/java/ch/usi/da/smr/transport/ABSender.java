@@ -49,7 +49,7 @@ public class ABSender {
 	
     private final PaxosProposerService.Client proposer;
 
-	public ABSender(String host, int port) throws TTransportException{
+	public ABSender(String host, int port) throws TTransportException {
     	transport = new TFramedTransport(new TSocket(host,port));
         protocol = new TBinaryProtocol(transport);
         proposer = new PaxosProposerService.Client(protocol);

@@ -120,8 +120,10 @@ public class Message {
 	
 	public static Message fromDecision(Decision decision){
 		Message m = fromByteArray(decision.getValue().getCmd());
-		m.setInstance(decision.getInstance());
-		m.setRing(decision.getRing());
+		if(m != null){
+			m.setInstance(decision.getInstance());
+			m.setRing(decision.getRing());
+		}
 		return m;
 	}
 	
