@@ -58,6 +58,9 @@ public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
 				decision.setInstance(d.getInstance());
 				decision.setRing(d.getRing());
 				Value value = new Value(ByteBuffer.wrap(d.getValue().getValue()));
+				if(d.getValue().isSkip()){
+					value.setSkip(true);
+				}
 				decision.setValue(value);
 			}
 		} catch (InterruptedException e) {

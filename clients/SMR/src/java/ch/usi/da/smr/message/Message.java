@@ -50,6 +50,8 @@ public class Message {
 	
 	private int ring = 0;
 	
+	private boolean skip = false;
+	
 	public Message(int id,String sender,List<Command> commands){
 		this.id = id;
 		this.sender = sender;
@@ -82,6 +84,14 @@ public class Message {
 	
 	public int getRing(){
 		return ring;
+	}
+
+	public void setSkip(boolean skip){
+		this.skip = skip;
+	}
+	
+	public boolean isSkip(){
+		return skip;
 	}
 	
 	public String toString(){
@@ -119,7 +129,13 @@ public class Message {
 	}
 	
 	public static Message fromDecision(Decision decision){
-		Message m = fromByteArray(decision.getValue().getCmd());
+		Message m = null;
+		if(decision.isSetValue() && decision.getValue().isSkip()){
+			m = new Message(0,"",null);
+			m.setSkip(true);
+		}else{
+			m = fromByteArray(decision.getValue().getCmd());
+		}
 		if(m != null){
 			m.setInstance(decision.getInstance());
 			m.setRing(decision.getRing());

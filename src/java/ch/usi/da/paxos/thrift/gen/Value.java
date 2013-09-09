@@ -34,6 +34,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Value");
 
   private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRING, (short)1);
+  private static final org.apache.thrift.protocol.TField SKIP_FIELD_DESC = new org.apache.thrift.protocol.TField("skip", org.apache.thrift.protocol.TType.BOOL, (short)2);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -42,10 +43,12 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
   }
 
   public ByteBuffer cmd; // required
+  public boolean skip; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    CMD((short)1, "cmd");
+    CMD((short)1, "cmd"),
+    SKIP((short)2, "skip");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -62,6 +65,8 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       switch(fieldId) {
         case 1: // CMD
           return CMD;
+        case 2: // SKIP
+          return SKIP;
         default:
           return null;
       }
@@ -102,11 +107,16 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
   }
 
   // isset id assignments
+  private static final int __SKIP_ISSET_ID = 0;
+  private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.SKIP};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.CMD, new org.apache.thrift.meta_data.FieldMetaData("cmd", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
+    tmpMap.put(_Fields.SKIP, new org.apache.thrift.meta_data.FieldMetaData("skip", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Value.class, metaDataMap);
   }
@@ -125,10 +135,12 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
    * Performs a deep copy on <i>other</i>.
    */
   public Value(Value other) {
+    __isset_bitfield = other.__isset_bitfield;
     if (other.isSetCmd()) {
       this.cmd = org.apache.thrift.TBaseHelper.copyBinary(other.cmd);
 ;
     }
+    this.skip = other.skip;
   }
 
   public Value deepCopy() {
@@ -138,6 +150,8 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
   @Override
   public void clear() {
     this.cmd = null;
+    setSkipIsSet(false);
+    this.skip = false;
   }
 
   public byte[] getCmd() {
@@ -174,6 +188,29 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     }
   }
 
+  public boolean isSkip() {
+    return this.skip;
+  }
+
+  public Value setSkip(boolean skip) {
+    this.skip = skip;
+    setSkipIsSet(true);
+    return this;
+  }
+
+  public void unsetSkip() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __SKIP_ISSET_ID);
+  }
+
+  /** Returns true if field skip is set (has been assigned a value) and false otherwise */
+  public boolean isSetSkip() {
+    return EncodingUtils.testBit(__isset_bitfield, __SKIP_ISSET_ID);
+  }
+
+  public void setSkipIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SKIP_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case CMD:
@@ -184,6 +221,14 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       }
       break;
 
+    case SKIP:
+      if (value == null) {
+        unsetSkip();
+      } else {
+        setSkip((Boolean)value);
+      }
+      break;
+
     }
   }
 
@@ -191,6 +236,9 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     switch (field) {
     case CMD:
       return getCmd();
+
+    case SKIP:
+      return Boolean.valueOf(isSkip());
 
     }
     throw new IllegalStateException();
@@ -205,6 +253,8 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     switch (field) {
     case CMD:
       return isSetCmd();
+    case SKIP:
+      return isSetSkip();
     }
     throw new IllegalStateException();
   }
@@ -231,6 +281,15 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
         return false;
     }
 
+    boolean this_present_skip = true && this.isSetSkip();
+    boolean that_present_skip = true && that.isSetSkip();
+    if (this_present_skip || that_present_skip) {
+      if (!(this_present_skip && that_present_skip))
+        return false;
+      if (this.skip != that.skip)
+        return false;
+    }
+
     return true;
   }
 
@@ -253,6 +312,16 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     }
     if (isSetCmd()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmd, typedOther.cmd);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetSkip()).compareTo(typedOther.isSetSkip());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetSkip()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.skip, typedOther.skip);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -284,6 +353,12 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       org.apache.thrift.TBaseHelper.toString(this.cmd, sb);
     }
     first = false;
+    if (isSetSkip()) {
+      if (!first) sb.append(", ");
+      sb.append("skip:");
+      sb.append(this.skip);
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -303,6 +378,8 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
+      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -335,6 +412,14 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 2: // SKIP
+            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
+              struct.skip = iprot.readBool();
+              struct.setSkipIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -353,6 +438,11 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       if (struct.cmd != null) {
         oprot.writeFieldBegin(CMD_FIELD_DESC);
         oprot.writeBinary(struct.cmd);
+        oprot.writeFieldEnd();
+      }
+      if (struct.isSetSkip()) {
+        oprot.writeFieldBegin(SKIP_FIELD_DESC);
+        oprot.writeBool(struct.skip);
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -376,19 +466,29 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       if (struct.isSetCmd()) {
         optionals.set(0);
       }
-      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetSkip()) {
+        optionals.set(1);
+      }
+      oprot.writeBitSet(optionals, 2);
       if (struct.isSetCmd()) {
         oprot.writeBinary(struct.cmd);
+      }
+      if (struct.isSetSkip()) {
+        oprot.writeBool(struct.skip);
       }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, Value struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(1);
+      BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         struct.cmd = iprot.readBinary();
         struct.setCmdIsSet(true);
+      }
+      if (incoming.get(1)) {
+        struct.skip = iprot.readBool();
+        struct.setSkipIsSet(true);
       }
     }
   }
