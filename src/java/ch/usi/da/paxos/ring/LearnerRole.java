@@ -96,6 +96,12 @@ public class LearnerRole extends Role implements Learner {
 			}
 			logger.info("Learner recovery: " + (recovery ? "enabled" : "disabled"));
 		}
+		if(ring.getConfiguration().containsKey(ConfigKey.auto_trim)){
+			if(ring.getConfiguration().get(ConfigKey.auto_trim).equals("1")){
+				auto_trim = true;
+			}
+			logger.info("Learner auto_trim: " + (auto_trim ? "enabled" : "disabled"));
+		}
 	}
 
 	@Override
@@ -119,9 +125,13 @@ public class LearnerRole extends Role implements Learner {
 				else if(!delivery.isEmpty() && delivery.peek().getInstance() > delivered_instance){
 					Decision head = delivery.peek();
 					for(int i=delivered_instance+1;i<head.getInstance();i++){
-						Message m = new Message(i,ring.getRingSuccessor(ring.getNodeID()),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
-						ring.getNetwork().send(m);
-						logger.debug("Learner re-request missing instance " + i);
+						if(highest_online_instance == 0 || i <= highest_online_instance){
+							Message m = new Message(i,ring.getRingSuccessor(ring.getNodeID()),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
+							ring.getNetwork().send(m);
+							logger.debug("Learner re-request missing instance " + i);
+						}else{
+							recovered = false;
+						}
 					}
 				}
 				Thread.sleep(1000);
@@ -212,7 +222,11 @@ public class LearnerRole extends Role implements Learner {
 	
 	@Override
 	public void setSafeInstance(Integer ring,Integer instance){
-		safe_instance = instance.intValue();
+		if(instance <= delivered_instance){
+			safe_instance = instance.intValue();
+		}else{
+			logger.error("Learner setSafeInstance() for not delivered instance number?!");
+		}
 	}
 	
 	private int findPos(int instance) {
