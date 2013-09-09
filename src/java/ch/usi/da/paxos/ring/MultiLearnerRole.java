@@ -63,6 +63,8 @@ public class MultiLearnerRole extends Role implements Learner {
 	private int deliverRing;
 
 	private final int[] skip_count = new int[maxRing];
+	
+	private boolean deliver_skip_messages = false;
 
 	/**
 	 * @param rings a list of rings
@@ -83,6 +85,12 @@ public class MultiLearnerRole extends Role implements Learner {
 		if(firstRing.getConfiguration().containsKey(ConfigKey.multi_ring_m)){
 			M = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.multi_ring_m));
 			logger.debug("MultiRingLearner M=" + M);
+		}
+		if(firstRing.getConfiguration().containsKey(ConfigKey.deliver_skip_messages)){
+			if(firstRing.getConfiguration().get(ConfigKey.deliver_skip_messages).contains("1")){
+				deliver_skip_messages = true;
+			}
+			logger.debug("MultiRingLearner deliver_skip_messages: " + (deliver_skip_messages ? "enabled" : "disabled"));
 		}
 	}
 
@@ -122,6 +130,9 @@ public class MultiLearnerRole extends Role implements Learner {
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
 						}else{
 							logger.error("MultiRingLrearner received incomplete SKIP message! -> " + d);
+						}
+						if(deliver_skip_messages){
+							values.add(d);
 						}
 					}else{
 						count++;

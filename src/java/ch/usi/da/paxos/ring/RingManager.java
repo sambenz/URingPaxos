@@ -192,6 +192,7 @@ public class RingManager implements Watcher {
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zoo.create(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
@@ -206,6 +207,7 @@ public class RingManager implements Watcher {
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"9000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
