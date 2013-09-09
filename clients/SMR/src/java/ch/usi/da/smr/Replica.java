@@ -20,19 +20,25 @@ package ch.usi.da.smr;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
-import ch.usi.da.smr.storage.BerkeleyStorage;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
@@ -40,6 +46,8 @@ import ch.usi.da.smr.transport.UDPSender;
 /**
  * Name: Replica<br>
  * Description: <br>
+ * 
+ * TODO: RECOVERY IS WORK IN PROGRESS (and maybe wrong) !!!!
  * 
  * Creation date: Mar 12, 2013<br>
  * $Id$
@@ -54,30 +62,29 @@ public class Replica implements Receiver {
 	
 	private final Partition partition;
 	
-	private final int replicaID;
+	private final int nodeID;
 	
 	private final UDPSender udp;
 	
 	private final ABListener ab;
 	
-	private final BerkeleyStorage db;
+	private final Map<String,byte[]> db;
 	
-	public Replica(PartitionManager partitions, Partition partition, int replicaID) throws IOException, TTransportException {
+	private final int max_response_msg = 10000;
+	
+	private final String snapshot_prefix = "/tmp";
+	
+	private int[] exec_instance = new int[20];
+	
+	private long exec_cmd = 0;
+	
+	public Replica(PartitionManager partitions, Partition partition, int nodeID) throws IOException, TTransportException {
 		this.partitions = partitions;
 		this.partition = partition;
-		this.replicaID = replicaID;
+		this.nodeID = nodeID;
 		udp = new UDPSender();
-		ab = partitions.getABListener(partition,replicaID);
-		db = new  BerkeleyStorage();
-	}
-
-	public Replica(PartitionManager partitions, Partition partition, int replicaID, File dbfile) throws IOException, TTransportException {
-		this.partitions = partitions;
-		this.partition = partition;
-		this.replicaID = replicaID;
-		udp = new UDPSender();
-		ab = partitions.getABListener(partition,replicaID);
-		db = new  BerkeleyStorage(dbfile,false);
+		ab = partitions.getABListener(partition,nodeID);
+		db = new  HashMap<String,byte[]>();
 	}
 
 	public void start(){
@@ -88,57 +95,161 @@ public class Replica implements Receiver {
 	}
 
 	public void close(){
-		db.close();
 		ab.close();
-		partitions.deregister(partition,replicaID);
+		partitions.deregister(partition,nodeID);
+	}
+	
+	public boolean checkpoint(){
+		int ring = partition.getRing();
+		if(storeState(exec_instance[ring])){
+			try {
+				ab.getLearner().safe(ring,exec_instance[ring]);
+				logger.info("Replica checkpointed up to instance " + exec_instance[ring] + " of ring " + ring);
+				return true;
+			} catch (TException e) {
+				logger.error(e);
+			}
+		}
+		return false;
+	}
+	
+	private boolean storeState(int instance){
+		try {
+			synchronized(db){
+				logger.info("Replica start storing state ... ");
+		        ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(snapshot_prefix + "/map-" + instance + ".ser"));
+		        stream.writeObject(db);
+		        stream.close();
+		        logger.info("... state stored up to instance " + instance);
+			}
+	        return true;
+		} catch (IOException e) {
+			logger.error(e);
+		}
+		return false;
+	}
+	
+	private int installState(){
+		int instance = 0;
+		try {
+			// get local snapshot
+			File dir = new File(snapshot_prefix);
+			for(File f : dir.listFiles()){
+				if(f.getName().startsWith("map-")){
+					int i = Integer.parseInt(f.getName().replaceAll("\\D",""));
+					if(i > instance){
+						instance = i;
+					}
+				}
+			}
+			//TODO: get remote snapshot
+			//must ask get-state quorum (GSQ) servers and then get the highest snapshot nr.
+			synchronized(db){
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(snapshot_prefix + "/map-" + instance + ".ser"));
+				@SuppressWarnings("unchecked")
+				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
+				ois.close();
+				db.clear();
+				db.putAll(m);
+				logger.info("Replica installed snapshot instance " + instance);
+			}
+			return instance;
+		} catch (IOException | ClassNotFoundException e) {
+			logger.error(e);
+		}
+		return instance;
 	}
 	
 	@Override
 	public void receive(Message m) {
 		List<Command> cmds = new ArrayList<Command>();
-		//TODO: store to mem
-		//      once flushed to disk -> send safe
-		//      setState(int instance);
-		//      int getState()
-		//      if getState()+1 != deliver_queue instance -> getState()
-		for(Command c : m.getCommands()){
-	    	switch(c.getType()){
-	    	case PUT:
-	    		if(db.put(c.getKey(),c.getValue())){
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"OK".getBytes());
-	    			cmds.add(cmd);
-	    		}else{
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"FAIL".getBytes());
-	    			cmds.add(cmd);
-	    		}
-	    		break;
-			case DELETE:
-	    		if(db.delete(c.getKey())){
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"OK".getBytes());
-	    			cmds.add(cmd);
-	    		}else{
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"FAIL".getBytes());
-	    			cmds.add(cmd);
-	    		}
-				break;
-			case GET:
-				byte[] data = db.get(c.getKey());
-				if(data != null){
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),data);
-	    			cmds.add(cmd);
-				}else{
-	    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"<no entry>".getBytes());
-	    			cmds.add(cmd);
-				}
-				break;
-			case GETRANGE:
-				//TODO: implement GETRANGE
-				System.err.println("GETRANGE for partition " + partition + " not implemented!");
-				break;
-			default:
-				System.err.println("Receive RESPONSE as Command!"); break;
-	    	}
+		
+		// skip already executed commands
+		if(m.getInstnce() <= exec_instance[m.getRing()]){
+			return;
+		}else if(m.isSkip()){ // skip skip-instances
+			exec_instance[m.getRing()] = m.getInstnce();
+			return;
 		}
+		
+		// recovery
+		if(m.getRing() == partition.getRing() && m.getInstnce()-1 != exec_instance[partition.getRing()]){ //exec_instance[partition.getRing()] == 0){
+			logger.info("Replica start recovery: " + exec_instance[partition.getRing()] + " to " + (m.getInstnce()-1));
+			while(m.getInstnce()-1 > exec_instance[partition.getRing()]){
+				exec_instance[partition.getRing()] = installState();
+			}
+		}
+		
+		// snapshot
+		exec_cmd++;
+		if(exec_cmd % 5 == 0){ //TODO: testing only!
+			logger.warn("force testing snapshot (" + exec_cmd + ")");
+			checkpoint();
+		}
+		
+		synchronized(db){
+			byte[] data;
+			for(Command c : m.getCommands()){
+		    	switch(c.getType()){
+		    	case PUT:
+		    		db.put(c.getKey(),c.getValue());
+		    		if(db.containsKey(c.getKey())){
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"OK".getBytes());
+		    			cmds.add(cmd);
+		    		}else{
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"FAIL".getBytes());
+		    			cmds.add(cmd);
+		    		}
+		    		break;
+				case DELETE:
+		    		if(db.remove(c.getKey()) != null){
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"OK".getBytes());
+		    			cmds.add(cmd);
+		    		}else{
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"FAIL".getBytes());
+		    			cmds.add(cmd);
+		    		}
+					break;
+				case GET:
+					data = db.get(c.getKey());
+					if(data != null){
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),data);
+		    			cmds.add(cmd);
+					}else{
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"<no entry>".getBytes());
+		    			cmds.add(cmd);
+					}
+					break;
+				case GETRANGE:
+					int from = Integer.valueOf(c.getKey());
+					if(from < partition.getLow()){
+						from = partition.getLow();
+					}
+					int to = Integer.valueOf(new String(c.getValue()));
+					if(to > partition.getHigh()){
+						to = partition.getHigh();
+					}
+					int msg = 0;
+					while(from <= to){
+						String key = Integer.toString(from);
+						data = db.get(key);
+						if(data != null){
+			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,data);
+			    			cmds.add(cmd);
+						}else{
+			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,"<no entry>".getBytes());
+			    			cmds.add(cmd);
+						}					
+						from++;
+						if(msg++ > max_response_msg){ break; }
+					}
+					break;
+				default:
+					System.err.println("Receive RESPONSE as Command!"); break;
+		    	}
+			}
+		}
+		exec_instance[m.getRing()] = m.getInstnce();
 		Message msg = new Message(m.getID(),m.getSender(),cmds);
 		udp.send(msg);
 	}
@@ -152,18 +263,18 @@ public class Replica implements Receiver {
 			zoo_host = args[1];
 		}
 		if (args.length < 1) {
-			System.err.println("Plese use \"Replica\" \"replicaID,ringID,Token\"");
+			System.err.println("Plese use \"Replica\" \"ringID,nodeID,Token\"");
 		} else {
 			String[] arg = args[0].split(",");
-			final int replicaID = Integer.parseInt(arg[0]);
-			final int ringID = Integer.parseInt(arg[1]);
+			final int nodeID = Integer.parseInt(arg[1]);
+			final int ringID = Integer.parseInt(arg[0]);
 			final int token = Integer.parseInt(arg[2]);
 			try {
 				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
 				final PartitionManager partitions = new PartitionManager(zoo);
 				final Partition partition = new Partition(ringID,0,token);
 				partitions.init();
-				final Replica replica = new Replica(partitions,partitions.register(partition,replicaID),replicaID);
+				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID),nodeID);
 				Runtime.getRuntime().addShutdownHook(new Thread(){
 					@Override
 					public void run(){
