@@ -39,6 +39,7 @@ import org.apache.zookeeper.ZooKeeper;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.Response;
 import ch.usi.da.smr.transport.UDPListener;
@@ -109,10 +110,15 @@ public class Client implements Receiver {
 		    		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
 			    	int ret = 0;
 			    	if(cmds.get(0).getType() == CommandType.GETRANGE){
-			    		ret = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing())).abroadcast(m);
+			    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
+			    		if(sender == null){ cmds.clear(); break; };
+			    		ret = sender.abroadcast(m);
 			    	}else{
 			    		Partition p = partitions.getPartition(Integer.valueOf(cmds.get(0).getKey()));
-			    		ret = partitions.getABSender(p,connectMap.get(p.getRing())).abroadcast(m);
+			    		if(p == null){ System.err.println("No partition found for key " + cmds.get(0).getKey()); cmds.clear(); continue; };
+			    		ABSender sender = partitions.getABSender(p,connectMap.get(p.getRing()));
+			    		if(sender == null){ cmds.clear(); continue; };
+			    		ret = sender.abroadcast(m);
 			    	}
 			    	if(ret > 0){ // is abroadcasted
 			    		Message response = r.getResponse(10000); // wait response
