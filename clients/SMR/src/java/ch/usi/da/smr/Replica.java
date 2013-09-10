@@ -88,6 +88,10 @@ public class Replica implements Receiver {
 	}
 
 	public void start(){
+		// install old state
+		logger.info("Replica start install state: " + exec_instance[partition.getRing()]);
+		exec_instance[partition.getRing()] = installState();
+		// start listening
 		ab.registerReceiver(this);
 		logger.info("Replica start serving partition: " + partition);
 		Thread t = new Thread(ab);
@@ -117,9 +121,12 @@ public class Replica implements Receiver {
 		try {
 			synchronized(db){
 				logger.info("Replica start storing state ... ");
-		        ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(snapshot_prefix + "/map-" + instance + ".ser"));
-		        stream.writeObject(db);
-		        stream.close();
+				FileOutputStream fs = new FileOutputStream(snapshot_prefix + "/map-" + instance + ".ser");
+		        ObjectOutputStream os = new ObjectOutputStream(fs);
+		        os.writeObject(db);
+		        os.flush();
+		        fs.getChannel().force(true); // fsync
+		        os.close();
 		        logger.info("... state stored up to instance " + instance);
 			}
 	        return true;
@@ -164,6 +171,8 @@ public class Replica implements Receiver {
 	public void receive(Message m) {
 		List<Command> cmds = new ArrayList<Command>();
 		
+		//if(exec_instance[partition.getRing()] == 0){} -> already done in start(); 
+		
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance[m.getRing()]){
 			return;
@@ -172,8 +181,8 @@ public class Replica implements Receiver {
 			return;
 		}
 		
-		// recovery
-		if(m.getRing() == partition.getRing() && m.getInstnce()-1 != exec_instance[partition.getRing()]){ //exec_instance[partition.getRing()] == 0){
+		// recover if a not ascending instance arrives 
+		if(m.getRing() == partition.getRing() && m.getInstnce()-1 != exec_instance[partition.getRing()]){
 			logger.info("Replica start recovery: " + exec_instance[partition.getRing()] + " to " + (m.getInstnce()-1));
 			while(m.getInstnce()-1 > exec_instance[partition.getRing()]){
 				exec_instance[partition.getRing()] = installState();
