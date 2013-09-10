@@ -127,7 +127,6 @@ public class ProposerRole extends Role implements Proposer {
 		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),b);
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
-		//TODO: implement batching here !!!!
 		send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v));
 		return future;
 	}
@@ -214,7 +213,7 @@ public class ProposerRole extends Role implements Proposer {
 		int v = value_size;
 		switch(value_type){
 		case NORMAL: 
-			v = (int)random.nextGaussian(16000,14000); //TODO: tune this parameter to something meaningful
+			v = (int)random.nextGaussian(16000,14000); // tune this parameter to something meaningful
 			break;
 		case EXPONENTIAL:
 			v = (int)random.nextExponential(16000); 

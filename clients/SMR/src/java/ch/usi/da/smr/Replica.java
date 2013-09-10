@@ -47,8 +47,6 @@ import ch.usi.da.smr.transport.UDPSender;
  * Name: Replica<br>
  * Description: <br>
  * 
- * TODO: RECOVERY IS WORK IN PROGRESS (and maybe wrong) !!!!
- * 
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 

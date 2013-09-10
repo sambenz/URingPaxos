@@ -79,6 +79,7 @@ public class TestClient implements Runnable, Receiver {
 		int id;
 		String sender = ip.getHostAddress() + ":" + port;
 		List<Command> cmds = new ArrayList<Command>();
+		//TODO: implement batching here; problem must be grouped by partition!
 		cmds.add(new Command(i,CommandType.PUT,"x",("" + port).getBytes()));
 		cmds.add(new Command(i,CommandType.PUT,"y",("" + port).getBytes()));
 		cmds.add(new Command(i,CommandType.PUT,"z",("" + port).getBytes()));
@@ -144,12 +145,15 @@ public class TestClient implements Runnable, Receiver {
 	public static void main(String[] args) {
 		try {
 			String zoo_host = "127.0.0.1:2181";
+			
+			//TODO: workload generator with different GETRANGE percentage
+			
 			// start replicas
-			Replica r1 = null; //TODO: new Replica(zoo_host,1,new File("/tmp/replica-db/1"));
+			Replica r1 = null; // new Replica(zoo_host,1,new File("/tmp/replica-db/1"));
 			r1.start();
-			Replica r2 = null; //TODO: new Replica(zoo_host,2,new File("/tmp/replica-db/2"));
+			Replica r2 = null; // new Replica(zoo_host,2,new File("/tmp/replica-db/2"));
 			r2.start();
-			Replica r3 = null; //TODO: new Replica(zoo_host,3,new File("/tmp/replica-db/3"));
+			Replica r3 = null; // new Replica(zoo_host,3,new File("/tmp/replica-db/3"));
 			r3.start();
 
 			// start clients

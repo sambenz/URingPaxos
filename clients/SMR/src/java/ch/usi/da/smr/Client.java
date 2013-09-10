@@ -84,7 +84,6 @@ public class Client implements Receiver {
 	    try {
 	    	int id = 0;
 	    	List<Command> cmds = new ArrayList<Command>();
-	    	//TODO: workload generator with different GETRANGE percentage
 		    while((s = in.readLine()) != null && s.length() != 0){
 		    	// read input
 		    	String[] line = s.split("\\s+");

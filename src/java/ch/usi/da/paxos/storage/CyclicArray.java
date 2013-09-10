@@ -89,28 +89,30 @@ public class CyclicArray implements StableStorage {
 
 	@Override
 	public void close(){
-		
+	
 	}
 	
 	/**
 	 * Debug method
 	 */
 	public static void main(String[] args){
+		//FIXME: TODO: use it only once !!!!!
 		CyclicArray db = new CyclicArray();
+		CyclicArray db2 = new CyclicArray();
+
 		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
 		Decision d2 = new Decision(0,15001,43,new Value("id","value".getBytes()));
 
 		db.put(d.getInstance(),d);
-		db.put(d2.getInstance(),d);
+		db2.put(d2.getInstance(),d2);
+		
 		d = null;
 		d2 = null;		
 		System.gc();
 
-		System.out.println(db.get(1));
 		System.out.println(db.get(15001));
-		
-		System.out.println(db.contains(1));	
-		System.out.println(db.contains(15001));
+		System.out.println(db2.get(15001));
+
 	}
 
 }
