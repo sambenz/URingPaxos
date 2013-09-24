@@ -39,5 +39,7 @@ public interface StableStorage {
 	
 	public boolean trim(Integer instance);
 	
+	public Integer getLastTrimInstance();
+	
 	public void close();
 }

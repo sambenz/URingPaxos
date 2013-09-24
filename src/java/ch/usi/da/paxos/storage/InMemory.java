@@ -35,6 +35,8 @@ import ch.usi.da.paxos.api.StableStorage;
  */
 public class InMemory implements StableStorage {
 
+	private int last_trimmed_instance = 0;
+	
 	private final Map<Integer, Decision> decided = new LinkedHashMap<Integer,Decision>(10000,0.75F,false){
 		private static final long serialVersionUID = -3704400228030327063L;
 			protected boolean removeEldestEntry(Map.Entry<Integer, Decision> eldest) {  
@@ -58,8 +60,13 @@ public class InMemory implements StableStorage {
 
 	@Override
 	public boolean trim(Integer instance) {
-		// not interesting since cyclic storage
+		last_trimmed_instance = instance;
 		return true;
+	}
+
+	@Override
+	public Integer getLastTrimInstance() {
+		return last_trimmed_instance;
 	}
 
 	@Override

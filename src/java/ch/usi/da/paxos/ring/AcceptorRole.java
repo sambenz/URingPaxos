@@ -56,6 +56,8 @@ public class AcceptorRole extends Role {
 	
 	private int highest_accepted_instance = 0;
 	
+	private int last_trimmed_instance = 0;
+	
 	/**
 	 * @param ring
 	 */
@@ -69,6 +71,7 @@ public class AcceptorRole extends Role {
 			Class<?> store = Class.forName(storage_class);
 			storage = (StableStorage) store.newInstance();
 			logger.info("Acceptor stable storage engine: " + store);
+			last_trimmed_instance = storage.getLastTrimInstance();
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
 			storage = new NoStorage();
 			logger.error("Could not initilaize stable storage engine!", e);
@@ -105,7 +108,7 @@ public class AcceptorRole extends Role {
 		
 		// process messages
 		if(m.getType() == MessageType.Phase1){
-			if(m.getBallot() > ballot){ // 1b
+			if(instance > last_trimmed_instance && m.getBallot() > ballot){ // 1b
 				ballot = m.getBallot();
 				m.incrementVoteCount();
 				promised.put(instance,ballot);
@@ -121,7 +124,7 @@ public class AcceptorRole extends Role {
 			}
 		}else if(m.getType() == MessageType.Phase1Range){
 			value = m.getValue();
-			if(instance > highest_seen_instance){ // reject if start instance is leq highest promised or decided instance
+			if(instance > last_trimmed_instance && instance > highest_seen_instance){ // reject if start instance is leq highest promised or decided instance
 				ballot = m.getBallot();
 				m.incrementVoteCount();
 				int p1_range = NetworkManager.byteToInt(value.getValue());
@@ -142,7 +145,7 @@ public class AcceptorRole extends Role {
 				}
 			}			
 		}else if(m.getType() == MessageType.Phase2){
-			if(m.getBallot() >= ballot){ // >= see P1a
+			if(instance > last_trimmed_instance && m.getBallot() >= ballot){ // >= see P1a 
 				ballot = m.getBallot();
 				if(value == null){ // you can increase the ballot, but never change the value
 					value = m.getValue();
@@ -201,12 +204,13 @@ public class AcceptorRole extends Role {
 				promised.remove(instance);
 			}
 		}else if(m.getType() == MessageType.Trim){
-			if(storage.trim(m.getInstance())){
-				logger.debug("Acceptor trimmed log to instance " + m.getInstance());
+			if(storage.trim(instance)){
+				logger.debug("Acceptor trimmed log to instance " + instance);
+				last_trimmed_instance = instance;
 				m.setVoteCount(m.getVoteCount()+1);
 				ring.getNetwork().send(m);
 			}else{
-				logger.error("Acceptor log trimming to instance " + m.getInstance() + " failed!");
+				logger.error("Acceptor log trimming to instance " + instance + " failed!");
 			}
 		}
 		

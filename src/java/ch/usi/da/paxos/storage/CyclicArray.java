@@ -39,6 +39,8 @@ public class CyclicArray implements StableStorage {
 
 	private final static Logger logger = Logger.getLogger(CyclicArray.class);
 	
+	private int last_trimmed_instance = 0;
+	
 	private native int init();
 	
 	private native void nput(int i,byte[] b);
@@ -83,8 +85,13 @@ public class CyclicArray implements StableStorage {
 
 	@Override
 	public boolean trim(Integer instance) {
-		// not interesting since cyclic storage
+		last_trimmed_instance = instance;
 		return true;
+	}
+
+	@Override
+	public Integer getLastTrimInstance() {
+		return last_trimmed_instance;
 	}
 
 	@Override
