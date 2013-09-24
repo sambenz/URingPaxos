@@ -18,9 +18,6 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,6 +126,14 @@ public class CoordinatorRole extends Role {
 		t.setName("InstanceSkipper");
 		t.start();
 		
+		// send safe message to learner to recover last_trim_instance
+		Message recover = new Message(0,ring.getNodeID(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
+		if(ring.getNetwork().getLearner() != null){
+			ring.getNetwork().getLearner().deliver(ring,recover);
+		}else{
+			ring.getNetwork().send(recover);
+		}	
+
 		// phase 1 reserver loop
 		while(ring.isNodeCoordinator()){
 			try {
@@ -234,6 +239,9 @@ public class CoordinatorRole extends Role {
 			if(m.getVoteCount() >= ring.getQuorum()){
 				logger.info("Coordinator succesfully trimmed acceptor log to instance " + m.getInstance());
 				last_trimmed_instance = m.getInstance();
+				if(m.getInstance()>instance.get()){ // speed up ballot reservation (like NACK)
+					instance.set(m.getInstance());
+				}
 			}else{
 				logger.error("Coordinator acceptor log trimming to instance " + m.getInstance() + " failed!");
 			}
@@ -284,14 +292,17 @@ public class CoordinatorRole extends Role {
 	}
 	
 	private int getTrimInstance(String s) {
-		List<Integer> instances = new ArrayList<Integer>();
+		int min = Integer.MAX_VALUE;
+		int q = 0;
 		for(String is : s.split(";")){
 			int i = Integer.valueOf(is);
+			q++;
 			if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
-			instances.add(i);
+			if(i<min){
+				min = i;
+			}
 		}
-		Collections.sort(instances);
-		return instances.subList(instances.size()-trim_quorum,instances.size()).get(0);
+		return q >= trim_quorum ? min : last_trimmed_instance;
 	}
 
 	public TransferQueue<Promise> getPromiseQueue(){
