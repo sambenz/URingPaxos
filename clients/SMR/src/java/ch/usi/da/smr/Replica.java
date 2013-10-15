@@ -18,6 +18,7 @@ package ch.usi.da.smr;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,10 +27,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -42,6 +46,10 @@ import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Name: Replica<br>
@@ -70,9 +78,13 @@ public class Replica implements Receiver {
 	
 	private final int max_response_msg = 10000;
 	
-	private final String snapshot_prefix = "/tmp";
+	private final String snapshot_file = "/tmp/snapshot.ser";
+
+	private final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
 	
-	private int[] exec_instance = new int[20];
+	private final int max_ring = 20;
+	
+	private Map<Integer,Integer> exec_instance = new HashMap<Integer,Integer>();
 	
 	private long exec_cmd = 0;
 	
@@ -83,12 +95,18 @@ public class Replica implements Receiver {
 		udp = new UDPSender();
 		ab = partitions.getABListener(partition,nodeID);
 		db = new  HashMap<String,byte[]>();
+		
+		// remote snapshot transfer server
+        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        server.createContext("/state", new SendFile(state_file));        
+        server.createContext("/snapshot", new SendFile(snapshot_file));
+        server.setExecutor(null); // creates a default executor
+        server.start();
 	}
 
 	public void start(){
 		// install old state
-		logger.info("Replica start install state: " + exec_instance[partition.getRing()]);
-		exec_instance[partition.getRing()] = installState();
+		exec_instance = installState();
 		// start listening
 		ab.registerReceiver(this);
 		logger.info("Replica start serving partition: " + partition);
@@ -102,11 +120,12 @@ public class Replica implements Receiver {
 	}
 	
 	public boolean checkpoint(){
-		int ring = partition.getRing();
-		if(storeState(exec_instance[ring])){
+		if(storeState(exec_instance)){
 			try {
-				ab.getLearner().safe(ring,exec_instance[ring]);
-				logger.info("Replica checkpointed up to instance " + exec_instance[ring] + " of ring " + ring);
+				for(Entry<Integer, Integer> e : exec_instance.entrySet()){
+					ab.getLearner().safe(e.getKey(),e.getValue());
+				}
+				logger.info("Replica checkpointed up to instance " + exec_instance);
 				return true;
 			} catch (TException e) {
 				logger.error(e);
@@ -115,17 +134,24 @@ public class Replica implements Receiver {
 		return false;
 	}
 	
-	private boolean storeState(int instance){
+	private boolean storeState(Map<Integer,Integer> instances){
 		try {
 			synchronized(db){
 				logger.info("Replica start storing state ... ");
-				FileOutputStream fs = new FileOutputStream(snapshot_prefix + "/map-" + instance + ".ser");
+				for(Entry<Integer,Integer> e : instances.entrySet()){
+					db.put("r:" + e.getKey(),e.getValue().toString().getBytes());
+				}
+				FileOutputStream fs = new FileOutputStream(snapshot_file);
 		        ObjectOutputStream os = new ObjectOutputStream(fs);
 		        os.writeObject(db);
 		        os.flush();
-		        fs.getChannel().force(true); // fsync
+		        fs.getChannel().force(false); // fsync
 		        os.close();
-		        logger.info("... state stored up to instance " + instance);
+				fs = new FileOutputStream(state_file);
+				fs.write(exec_instance.toString().getBytes());
+				fs.getChannel().force(false);
+		        os.close();
+		        logger.info("... state stored up to instance: " + instances);
 			}
 	        return true;
 		} catch (IOException e) {
@@ -134,35 +160,34 @@ public class Replica implements Receiver {
 		return false;
 	}
 	
-	private int installState(){
-		int instance = 0;
+	private Map<Integer,Integer> installState(){
+		Map<Integer,Integer> instances = new HashMap<Integer,Integer>();
 		try {
-			// get local snapshot
-			File dir = new File(snapshot_prefix);
-			for(File f : dir.listFiles()){
-				if(f.getName().startsWith("map-")){
-					int i = Integer.parseInt(f.getName().replaceAll("\\D",""));
-					if(i > instance){
-						instance = i;
-					}
-				}
-			}
 			//TODO: get remote snapshot
-			//must ask get-state quorum (GSQ) servers and then get the highest snapshot nr.
+			//TODO: must ask get-state quorum (GSQ) servers and then get the highest snapshot nr.
 			synchronized(db){
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(snapshot_prefix + "/map-" + instance + ".ser"));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(snapshot_file));
 				@SuppressWarnings("unchecked")
 				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
 				ois.close();
 				db.clear();
 				db.putAll(m);
-				logger.info("Replica installed snapshot instance " + instance);
+				byte[] b = null;
+				for(int i = 1;i<max_ring+1;i++){
+					if((b = db.get("r:" + i)) != null){
+						instances.put(i,Integer.valueOf(new String(b)));
+					}
+				}
 			}
-			return instance;
 		} catch (IOException | ClassNotFoundException e) {
+			instances.put(partitions.getGlobalRing(),0);
+			for(Partition p : partitions.getPartitions()){
+				instances.put(p.getRing(),0);
+			}
 			logger.error(e);
 		}
-		return instance;
+		logger.info("Replica installed snapshot instance: " + instances);
+		return instances;
 	}
 	
 	@Override
@@ -172,18 +197,18 @@ public class Replica implements Receiver {
 		//if(exec_instance[partition.getRing()] == 0){} -> already done in start(); 
 		
 		// skip already executed commands
-		if(m.getInstnce() <= exec_instance[m.getRing()]){
+		if(m.getInstnce() <= exec_instance.get(m.getRing())){
 			return;
 		}else if(m.isSkip()){ // skip skip-instances
-			exec_instance[m.getRing()] = m.getInstnce();
+			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
 		
 		// recover if a not ascending instance arrives 
-		if(m.getRing() == partition.getRing() && m.getInstnce()-1 != exec_instance[partition.getRing()]){
-			logger.info("Replica start recovery: " + exec_instance[partition.getRing()] + " to " + (m.getInstnce()-1));
-			while(m.getInstnce()-1 > exec_instance[partition.getRing()]){
-				exec_instance[partition.getRing()] = installState();
+		if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
+			logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));
+			while(m.getInstnce()-1 > exec_instance.get(m.getRing())){
+				exec_instance = installState();
 			}
 		}
 		
@@ -256,7 +281,7 @@ public class Replica implements Receiver {
 		    	}
 			}
 		}
-		exec_instance[m.getRing()] = m.getInstnce();
+		exec_instance.put(m.getRing(),m.getInstnce());
 		Message msg = new Message(m.getID(),m.getSender(),cmds);
 		udp.send(msg);
 	}
@@ -302,5 +327,29 @@ public class Replica implements Receiver {
 			}
 		}
 	}
+
+    static class SendFile implements HttpHandler {
+    	
+    	private final File file;
+    	
+    	public SendFile(String file){
+    		this.file = new File(file);
+    	}
+    	
+        public void handle(HttpExchange t) throws IOException {
+            FileInputStream fis = new FileInputStream(file);
+            BufferedInputStream bis = new BufferedInputStream(fis);
+
+        	byte[] b = new byte[(int)file.length()];
+            bis.read(b, 0, b.length); //FIXME: keeps file in mem!
+            bis.close();
+            fis.close();
+
+            t.sendResponseHeaders(200, b.length);
+            OutputStream os = t.getResponseBody();
+            os.write(b);
+            os.close();
+        }
+    }
 
 }
