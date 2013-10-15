@@ -295,11 +295,16 @@ public class CoordinatorRole extends Role {
 		int min = Integer.MAX_VALUE;
 		int q = 0;
 		for(String is : s.split(";")){
-			int i = Integer.valueOf(is);
-			q++;
-			if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
-			if(i<min){
-				min = i;
+			try {
+				int i = Integer.valueOf(is);
+				q++;
+				if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
+				if(i<min){
+					min = i;
+				}
+			} catch (NumberFormatException e) {
+				logger.error("Error in getTrimInstance()!",e);
+				return last_trimmed_instance;
 			}
 		}
 		return q >= trim_quorum ? min : last_trimmed_instance;
