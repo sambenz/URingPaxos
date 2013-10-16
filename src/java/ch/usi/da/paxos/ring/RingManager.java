@@ -29,8 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -99,6 +101,8 @@ public class RingManager implements Watcher {
 		
 	private int quorum = 2; // default value
 	
+	public long boot_time;
+	
 	/**
 	 * @param ringID
 	 * @param nodeID
@@ -153,10 +157,47 @@ public class RingManager implements Watcher {
 			if(s.length() > 0){
 				p = p + "/" + s;
 				if(zoo.exists(p,false) == null){
-					zoo.create(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+				   try {
+				      zoo.create(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+				   }
+				   catch (KeeperException.NodeExistsException e) {
+				      logger.debug("Zookeeper node " + p + " already exists. Proceeding to next sublevel.");
+				   }
 				}
 			}
 		}
+		
+		// create boottime
+		String boot_timePath = prefix + "/boot_time.bin";
+		if (zoo.exists(boot_timePath, false) == null) {
+		   byte[] local_boot = new Long(System.currentTimeMillis() - 300000L).toString().getBytes(); // current time - 5 min. to avoid problems
+         try {
+            zoo.create(boot_timePath,local_boot,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+         }
+         catch (KeeperException.NodeExistsException e) {
+            logger.debug("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+         }		   
+		}
+		else {
+		   logger.debug("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+		}
+		
+		// this semaphore is used to turn the non-blocking call to sync into a blocking one
+		Semaphore sem = new Semaphore(0);		
+		AsyncCallback.VoidCallback syncCallBack = new AsyncCallback.VoidCallback() {
+         public void processResult(int rc, String path, Object ctx) {
+            Semaphore sem = (Semaphore) ctx;
+            sem.release();
+         }
+      };		
+		zoo.sync(boot_timePath, syncCallBack, sem);
+		// wait for sync to return (there is no blocking call to sync...)
+		sem.acquire();
+		
+		byte[] boot_time_zk = zoo.getData(boot_timePath, false, null);
+		boot_time = Long.parseLong(new String(boot_time_zk));		
+				
+		logger.debug("boot_time sucessfully set to " + boot_time);
 
 		// register and watch ring ID
 		if(zoo.exists(prefix + "/" + rid_path,false) == null){

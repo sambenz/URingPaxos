@@ -79,10 +79,13 @@ public class CoordinatorRole extends Role {
 	
 	public int value_count = 0;
 	
+	public long  boot_time;
+	
 	/**
 	 * @param ring
 	 */
 	public CoordinatorRole(RingManager ring) {
+	   this.boot_time = ring.boot_time;
 		this.ring = ring;
 		if(ring.getConfiguration().containsKey(ConfigKey.p1_preexecution_number)){
 			reserved = Integer.parseInt(ring.getConfiguration().get(ConfigKey.p1_preexecution_number));
