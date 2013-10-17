@@ -43,13 +43,19 @@ public class InstanceSkipper implements Runnable {
 	
 	private final RingManager ring;
 	
-	private long last_time = System.nanoTime();
+	private final long boot_time;
 	
-	private long last_value_count = 0;
+	private long skipSent = 0;
 		
 	public InstanceSkipper(RingManager ring,CoordinatorRole coordinator) {
 		this.coordinator = coordinator;
 		this.ring = ring;
+		if(ring.getConfiguration().containsKey(ConfigKey.multi_ring_start_time)){
+			this.boot_time = Long.parseLong(ring.getConfiguration().get(ConfigKey.multi_ring_start_time));
+		}else{
+			this.boot_time = 0;
+		}
+		logger.info("InstanceSkipper use boot time: " + boot_time);
 	}
 	
 	@Override
@@ -57,13 +63,15 @@ public class InstanceSkipper implements Runnable {
 		if(coordinator.multi_ring_lambda>0){
 		while(true){
 				try {
-					long time = System.nanoTime();
-					long value_count = coordinator.value_count - last_value_count;
-					float t = (float)(time-last_time)/(1000*1000*1000);
-					int skip = (int)(coordinator.multi_ring_lambda-((float)value_count/t));
+					long time = System.currentTimeMillis();
+					long valueSent = coordinator.value_count;
+					float executionTime = ((float)(time-boot_time)) / 1000.0f;
+					long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
+					int skip = (int) (expectedValues - valueSent - skipSent);
+					skipSent += skip;
 					if(skip > 0) {
 						if(logger.isDebugEnabled()){
-							logger.debug(String.format("skip %d values (%.1f/s)",skip,value_count/t));
+							logger.debug(String.format("skip %d values", skip));
 						}
 						Promise p = null;
 						try {
@@ -85,9 +93,6 @@ public class InstanceSkipper implements Runnable {
 							}
 						}
 					}
-					
-					last_value_count = last_value_count + value_count;
-					last_time = time;
 					Thread.sleep(coordinator.multi_ring_delta_t);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();

@@ -107,6 +107,11 @@ abstract class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */	
+	public static final String multi_ring_start_time = "multi_ring_start_time";
+
+	/**
+	 * see RingManager for default
+	 */	
 	public static final String deliver_skip_messages = "deliver_skip_messages";
 
 	/**
