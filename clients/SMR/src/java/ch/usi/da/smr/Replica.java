@@ -24,11 +24,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,7 +151,9 @@ public class Replica implements Receiver {
 		        fs.getChannel().force(false); // fsync
 		        os.close();
 				fs = new FileOutputStream(state_file);
-				fs.write(exec_instance.toString().getBytes());
+				for(Entry<Integer, Integer> e : exec_instance.entrySet()){
+					fs.write((e.getKey() + "=" + e.getValue() + "\n").getBytes());
+				}
 				fs.getChannel().force(false);
 		        os.close();
 		        logger.info("... state stored up to instance: " + instances);
@@ -163,13 +168,37 @@ public class Replica implements Receiver {
 	private Map<Integer,Integer> installState(){
 		Map<Integer,Integer> instances = new HashMap<Integer,Integer>();
 		try {
-			//TODO: get remote snapshot
-			//TODO: must ask get-state quorum (GSQ) servers and then get the highest snapshot nr.
+			URL url = null;
+			// local
+			InputStreamReader isr = new InputStreamReader(new FileInputStream(state_file));
+			BufferedReader bin = new BufferedReader(isr);
+			String line;
+			Map<Integer, Integer> state = new HashMap<Integer, Integer>();		
+			while ((line = bin.readLine()) != null){
+				String[] s = line.split("=");
+				state.put(Integer.parseInt(s[0]),Integer.parseInt(s[1]));
+			}
+			bin.close();
+//			// remote
+//			for(GSQ-1? partition replicas){ //TODO: must ask get-state quorum (GSQ) servers
+//				Map<Integer, Integer> nstate = URL get remote ...
+//				if(nstate > state ...){
+//					url = ...
+//				}
+//			}
 			synchronized(db){
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(snapshot_file));
+				InputStream in;
+				if(url != null){
+					HttpURLConnection con = (HttpURLConnection)url.openConnection();
+					in = con.getInputStream();
+				}else{
+					in = new FileInputStream(snapshot_file);					
+				}
+				ObjectInputStream ois = new ObjectInputStream(in);
 				@SuppressWarnings("unchecked")
 				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
 				ois.close();
+				in.close();
 				db.clear();
 				db.putAll(m);
 				byte[] b = null;
@@ -189,7 +218,7 @@ public class Replica implements Receiver {
 		logger.info("Replica installed snapshot instance: " + instances);
 		return instances;
 	}
-	
+
 	@Override
 	public void receive(Message m) {
 		List<Command> cmds = new ArrayList<Command>();
