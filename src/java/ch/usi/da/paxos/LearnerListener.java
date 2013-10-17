@@ -74,7 +74,7 @@ public class LearnerListener implements Runnable {
 			channel.register(selector, SelectionKey.OP_READ);
 			while (selector.isOpen()){
 				selector.select(2000);
-				Integer request = learner.getRequests().poll();
+				Long request = learner.getRequests().poll();
 				if(request != null){
 					Message m = new Message(request,learner.getID(),PaxosRole.Acceptor,MessageType.Accept,new Integer(9999),new Value(System.currentTimeMillis()+ "" + learner.getID(),new byte[0]));
 					byte[] b = Message.toWire(m);

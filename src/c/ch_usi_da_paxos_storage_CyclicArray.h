@@ -18,23 +18,23 @@ JNIEXPORT jint JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_init
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    nput
- * Signature: (I[B)V
+ * Signature: (J[B)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nput
-  (JNIEnv *, jobject, jint, jbyteArray);
+  (JNIEnv *, jobject, jlong, jbyteArray);
 
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    nget
- * Signature: (I)[B
+ * Signature: (J)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nget
-  (JNIEnv *, jobject, jint);
+  (JNIEnv *, jobject, jlong);
 
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    contains
- * Signature: (Ljava/lang/Integer;)Z
+ * Signature: (Ljava/lang/Long;)Z
  */
 JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_contains
   (JNIEnv *, jobject, jobject);

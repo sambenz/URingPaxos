@@ -31,7 +31,7 @@ public class Promise {
 	
 	private final long date = System.currentTimeMillis();
 	
-	private final Integer instance;
+	private final Long instance;
 	
 	private final Integer ballot;
 
@@ -41,7 +41,7 @@ public class Promise {
 	 * @param instance
 	 * @param ballot
 	 */
-	public Promise(Integer instance,Integer ballot){
+	public Promise(Long instance,Integer ballot){
 		this.instance = instance;
 		this.ballot = ballot;
 	}
@@ -51,7 +51,7 @@ public class Promise {
 	 * 
 	 * @return the instance number
 	 */
-	public Integer getInstance(){
+	public Long getInstance(){
 		return instance;
 	}
 	

@@ -34,7 +34,7 @@ public class PaxosProposerService {
 
   public interface Iface {
 
-    public int propose(Value value) throws org.apache.thrift.TException;
+    public long propose(Value value) throws org.apache.thrift.TException;
 
     public void nb_propose(Value value) throws org.apache.thrift.TException;
 
@@ -68,7 +68,7 @@ public class PaxosProposerService {
       super(iprot, oprot);
     }
 
-    public int propose(Value value) throws org.apache.thrift.TException
+    public long propose(Value value) throws org.apache.thrift.TException
     {
       send_propose(value);
       return recv_propose();
@@ -81,7 +81,7 @@ public class PaxosProposerService {
       sendBase("propose", args);
     }
 
-    public int recv_propose() throws org.apache.thrift.TException
+    public long recv_propose() throws org.apache.thrift.TException
     {
       propose_result result = new propose_result();
       receiveBase(result, "propose");
@@ -151,7 +151,7 @@ public class PaxosProposerService {
         prot.writeMessageEnd();
       }
 
-      public int getResult() throws org.apache.thrift.TException {
+      public long getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -616,7 +616,7 @@ public class PaxosProposerService {
   public static class propose_result implements org.apache.thrift.TBase<propose_result, propose_result._Fields>, java.io.Serializable, Cloneable   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("propose_result");
 
-    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.I32, (short)0);
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.I64, (short)0);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -624,7 +624,7 @@ public class PaxosProposerService {
       schemes.put(TupleScheme.class, new propose_resultTupleSchemeFactory());
     }
 
-    public int success; // required
+    public long success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -691,7 +691,7 @@ public class PaxosProposerService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(propose_result.class, metaDataMap);
     }
@@ -700,7 +700,7 @@ public class PaxosProposerService {
     }
 
     public propose_result(
-      int success)
+      long success)
     {
       this();
       this.success = success;
@@ -725,11 +725,11 @@ public class PaxosProposerService {
       this.success = 0;
     }
 
-    public int getSuccess() {
+    public long getSuccess() {
       return this.success;
     }
 
-    public propose_result setSuccess(int success) {
+    public propose_result setSuccess(long success) {
       this.success = success;
       setSuccessIsSet(true);
       return this;
@@ -754,7 +754,7 @@ public class PaxosProposerService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((Integer)value);
+          setSuccess((Long)value);
         }
         break;
 
@@ -764,7 +764,7 @@ public class PaxosProposerService {
     public Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
-        return Integer.valueOf(getSuccess());
+        return Long.valueOf(getSuccess());
 
       }
       throw new IllegalStateException();
@@ -900,8 +900,8 @@ public class PaxosProposerService {
           }
           switch (schemeField.id) {
             case 0: // SUCCESS
-              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-                struct.success = iprot.readI32();
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.success = iprot.readI64();
                 struct.setSuccessIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -924,7 +924,7 @@ public class PaxosProposerService {
         oprot.writeStructBegin(STRUCT_DESC);
         if (struct.isSetSuccess()) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-          oprot.writeI32(struct.success);
+          oprot.writeI64(struct.success);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -950,7 +950,7 @@ public class PaxosProposerService {
         }
         oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
-          oprot.writeI32(struct.success);
+          oprot.writeI64(struct.success);
         }
       }
 
@@ -959,7 +959,7 @@ public class PaxosProposerService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = iprot.readI32();
+          struct.success = iprot.readI64();
           struct.setSuccessIsSet(true);
         }
       }

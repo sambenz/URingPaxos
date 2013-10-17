@@ -31,15 +31,15 @@ import ch.usi.da.paxos.storage.Decision;
  */
 public interface StableStorage {
 
-	public void put(Integer instance, Decision decision);
+	public void put(Long instance, Decision decision);
 	
-	public Decision get(Integer instance);
+	public Decision get(Long instance);
 	
-	public boolean contains(Integer instance);
+	public boolean contains(Long instance);
 	
-	public boolean trim(Integer instance);
+	public boolean trim(Long instance);
 	
-	public Integer getLastTrimInstance();
+	public Long getLastTrimInstance();
 	
 	public void close();
 }

@@ -46,7 +46,7 @@ public class Message {
 	
 	private final List<Command> commands;
 	
-	private int instance = 0;
+	private long instance = 0;
 	
 	private int ring = 0;
 	
@@ -70,11 +70,11 @@ public class Message {
 		return commands;
 	}
 		
-	public void setInstance(int instance){
+	public void setInstance(long instance){
 		this.instance = instance;
 	}
 	
-	public int getInstnce(){
+	public long getInstnce(){
 		return instance;
 	}
 	

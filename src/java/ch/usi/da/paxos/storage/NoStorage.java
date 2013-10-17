@@ -33,22 +33,22 @@ public class NoStorage implements StableStorage {
 
 	//private final static Logger logger = Logger.getLogger(NoStorage.class);
 
-	private int last_trimmed_instance = 0;
+	private long last_trimmed_instance = 0;
 	
 	@Override
-	public void put(Integer instance, Decision decision) {
+	public void put(Long instance, Decision decision) {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("add " + decision + " to stable storage");
 		}*/
 	}
 
 	@Override
-	public Decision get(Integer instance) {
+	public Decision get(Long instance) {
 		return null;
 	}
 
 	@Override
-	public boolean contains(Integer instance) {
+	public boolean contains(Long instance) {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("check if " + instance + " exists in stable storage");
 		}*/
@@ -56,13 +56,13 @@ public class NoStorage implements StableStorage {
 	}
 
 	@Override
-	public boolean trim(Integer instance) {
+	public boolean trim(Long instance) {
 		last_trimmed_instance = instance;
 		return true;
 	}
 
 	@Override
-	public Integer getLastTrimInstance() {
+	public Long getLastTrimInstance() {
 		return last_trimmed_instance;
 	}
 

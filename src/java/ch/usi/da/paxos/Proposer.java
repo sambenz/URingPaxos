@@ -26,7 +26,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.zookeeper.CreateMode;
@@ -66,7 +65,7 @@ public class Proposer implements Watcher {
 	
 	private final String path = "/paxos";
 	
-	private AtomicInteger globalInstance = new AtomicInteger();
+	private AtomicLong globalInstance = new AtomicLong();
 
 	private final ExecutorService executer = Executors.newFixedThreadPool(threadCount);
 	
@@ -200,7 +199,7 @@ public class Proposer implements Watcher {
 	 * 
 	 * @return the instance
 	 */
-	public AtomicInteger getInstance(){
+	public AtomicLong getInstance(){
 		return globalInstance;
 	}
 

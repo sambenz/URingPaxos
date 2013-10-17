@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.storage.Decision;
@@ -52,13 +52,13 @@ public class Learner {
 	
 	private final DatagramChannel channel;
 	
-	private final Map<Integer,Majority> instanceList = new ConcurrentHashMap<Integer,Majority>(1000);
+	private final Map<Long,Majority> instanceList = new ConcurrentHashMap<Long,Majority>(1000);
 
-	private final AtomicInteger instance = new AtomicInteger(1);
+	private final AtomicLong instance = new AtomicLong(1);
 	
 	private final BlockingQueue<Decision> decisions = new LinkedBlockingQueue<Decision>();
 
-	private final BlockingQueue<Integer> requests = new LinkedBlockingQueue<Integer>();
+	private final BlockingQueue<Long> requests = new LinkedBlockingQueue<Long>();
 	
 	private ExecutorService executer = Executors.newFixedThreadPool(threadCount);
 	
@@ -112,7 +112,7 @@ public class Learner {
 	 * 
 	 * @return the instance list
 	 */
-	public AtomicInteger getInstance(){
+	public AtomicLong getInstance(){
 		return instance;
 	}
 	
@@ -130,7 +130,7 @@ public class Learner {
 	 * 
 	 * @return the requests list
 	 */
-	public BlockingQueue<Integer> getRequests(){
+	public BlockingQueue<Long> getRequests(){
 		return requests;
 	}
 	
@@ -139,7 +139,7 @@ public class Learner {
 	 * 
 	 * @return the local instance list
 	 */
-	public Map<Integer,Majority> getInstanceList(){
+	public Map<Long,Majority> getInstanceList(){
 		return instanceList;
 	}
 	

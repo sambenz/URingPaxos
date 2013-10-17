@@ -47,7 +47,7 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 	}
 
 	@Override
-	public int propose(Value value) throws TException {
+	public long propose(Value value) throws TException {
 		byte[] b = new byte[value.cmd.remaining()];
 		value.cmd.get(b);
 		FutureDecision f = proposer.propose(b);

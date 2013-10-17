@@ -60,7 +60,7 @@ public class MemcachedStorage implements StableStorage {
 	}
 	
 	@Override
-	public void put(Integer instance, Decision decision) {
+	public void put(Long instance, Decision decision) {
 		cache.set(prefix + "-" + instance%max,0,decision); // non-blocking
 		/*OperationFuture<Boolean> r = cache.set(prefix + "-" + instance%max,0,decision);
 		try {
@@ -72,24 +72,24 @@ public class MemcachedStorage implements StableStorage {
 	}
 
 	@Override
-	public Decision get(Integer instance) {
+	public Decision get(Long instance) {
 		return (Decision) cache.get(prefix + "-" + instance);
 	}
 
 	@Override
-	public boolean contains(Integer instance) {
+	public boolean contains(Long instance) {
 		return get(instance) != null ? true : false;
 	}
 
 	@Override
-	public boolean trim(Integer instance) {
+	public boolean trim(Long instance) {
 		cache.set("last_trim",0, instance);
 		return true;
 	}
 
 	@Override
-	public Integer getLastTrimInstance() {
-		return (Integer) cache.get("last_trim");
+	public Long getLastTrimInstance() {
+		return (Long) cache.get("last_trim");
 	}
 
 	@Override
@@ -102,13 +102,13 @@ public class MemcachedStorage implements StableStorage {
 	 */
 	public static void main(String[] args){
 		MemcachedStorage db = new MemcachedStorage();
-		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,1,43,new Value("id","value".getBytes()));
-		System.out.println(db.contains(1));
-		db.put(1,d);
-		db.put(15001,d2);		
-		System.out.println(db.contains(1));
-		System.out.println(db.get(1));
+		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
+		System.out.println(db.contains(1L));
+		db.put(1L,d);
+		db.put(15001L,d2);		
+		System.out.println(db.contains(1L));
+		System.out.println(db.get(1L));
 		db.close();
 	}
 }

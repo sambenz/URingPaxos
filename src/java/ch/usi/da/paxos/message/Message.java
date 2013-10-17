@@ -38,7 +38,7 @@ public class Message implements Serializable {
 
 	private static final long serialVersionUID = -4938636847085992695L;
 	
-	private final int instance;
+	private final long instance;
 	
 	private final int sender;
 	
@@ -62,7 +62,7 @@ public class Message implements Serializable {
 	 * @param ballot the ballot number
 	 * @param value the value (can be null)
 	 */
-	public Message(int instance,int sender,PaxosRole receiver,MessageType type,int ballot,Value value){
+	public Message(long instance,int sender,PaxosRole receiver,MessageType type,int ballot,Value value){
 		this.instance = instance;
 		this.sender = sender;
 		this.receiver = receiver;
@@ -74,7 +74,7 @@ public class Message implements Serializable {
 	/**
 	 * @return the instance
 	 */
-	public int getInstance() {
+	public long getInstance() {
 		return instance;
 	}
 
@@ -219,7 +219,7 @@ public class Message implements Serializable {
 	 * @return length of the message on the wire (without length prefix)
 	 */
 	public static int length(Message m){
-		int length = 24;
+		int length = 28;
 		if(m.getValue() != null){
 			length = length + m.getValue().getByteID().length + 4 + m.getValue().getValue().length;
 		}
@@ -235,7 +235,7 @@ public class Message implements Serializable {
 	public static long getCRC32(Message m){
 		if(m == null) return 0;
 		CRC32 crc = new CRC32();
-		crc.update(m.getInstance());
+		crc.update((int)m.getInstance());
 		crc.update(m.getSender());
 		crc.update(m.getReceiver().getId());
 		crc.update(m.getType().getId());
@@ -251,7 +251,7 @@ public class Message implements Serializable {
 	 * @param m
 	 */
 	public static void toBuffer(ByteBuffer b,Message m){
-		// int   instance
+		// long   instance
 		// int   sender
 		// short role
 		// short type
@@ -261,7 +261,7 @@ public class Message implements Serializable {
 		//   byte[]ID
 		//   int   value length
 		//   byte[]value
-		b.putInt(m.getInstance());
+		b.putLong(m.getInstance());
 		b.putInt(m.getSender());
 		b.putShort((short)m.getReceiver().getId());
 		b.putShort((short)m.getType().getId());
@@ -284,7 +284,7 @@ public class Message implements Serializable {
 	 * @return Message object
 	 */
 	public static Message fromBuffer(ByteBuffer buffer) throws Exception {
-		int instance = buffer.getInt();
+		long instance = buffer.getLong();
 		int sender = buffer.getInt();
 		PaxosRole role = PaxosRole.fromId(buffer.getShort());
 		MessageType type = MessageType.fromId(buffer.getShort());

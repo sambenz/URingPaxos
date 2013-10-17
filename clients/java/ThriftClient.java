@@ -64,7 +64,7 @@ public class ThriftClient {
 	            	String s = "Hi Thrift! (" + i + ")";
 	            	value = new Value(ByteBuffer.wrap(s.getBytes()));
 	            	//long time = System.nanoTime();
-	            	int instance = proposer.propose(value);
+	            	long instance = proposer.propose(value);
 	            	if(instance < 0){
 	            		System.err.println("error in proposing " + value + "!");
 	            	}

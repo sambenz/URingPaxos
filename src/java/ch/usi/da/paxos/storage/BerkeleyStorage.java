@@ -65,7 +65,7 @@ public class BerkeleyStorage implements StableStorage {
 
 	private final DatabaseEntry key = new DatabaseEntry();
 
-    private final EntryBinding<Integer> keyBinding;
+    private final EntryBinding<Long> keyBinding;
 
 	private final DatabaseEntry data = new DatabaseEntry();
     
@@ -108,7 +108,7 @@ public class BerkeleyStorage implements StableStorage {
         db = env.openDatabase(null,"paxosDB",dbConfig);
         classCatalogDb = env.openDatabase(null,"ClassCatalogDB", dbConfig);
         classCatalog = new StoredClassCatalog(classCatalogDb);
-        keyBinding = TupleBinding.getPrimitiveBinding(Integer.class);
+        keyBinding = TupleBinding.getPrimitiveBinding(Long.class);
         dataBinding = new SerialBinding<Decision>(classCatalog,Decision.class);
 
         logger.info("BerkeleyStorage cache size: " + env.getMutableConfig().getCacheSize());
@@ -117,7 +117,7 @@ public class BerkeleyStorage implements StableStorage {
 	}
 	
 	@Override
-	public synchronized void put(Integer instance, Decision decision) {
+	public synchronized void put(Long instance, Decision decision) {
         keyBinding.objectToEntry(instance,key);
         dataBinding.objectToEntry(decision,data);
         OperationStatus status = db.put(null,key,data);
@@ -127,7 +127,7 @@ public class BerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public synchronized Decision get(Integer instance) {
+	public synchronized Decision get(Long instance) {
 	    keyBinding.objectToEntry(instance,key);
 	    Decision decision = null;
 	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
@@ -144,7 +144,7 @@ public class BerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public synchronized boolean contains(Integer instance) {
+	public synchronized boolean contains(Long instance) {
 		boolean found = false;
 		keyBinding.objectToEntry(instance,key);
 	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
@@ -158,18 +158,18 @@ public class BerkeleyStorage implements StableStorage {
 	}
 	
 	@Override
-	public synchronized boolean trim(Integer instance) {
+	public synchronized boolean trim(Long instance) {
 		if(instance == 0) { return true; } // fast track
 		Cursor cursor = db.openCursor(null, null);
 		try{
 			while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				Integer i = keyBinding.entryToObject(key);
+				Long i = keyBinding.entryToObject(key);
 				if(i < instance && cursor.delete() != OperationStatus.SUCCESS){
 					logger.error("Error deleting instance " + i + " from DB!");
 					return false;
 				}
 			}
-			put(-1,new Decision(0,instance,0,null));
+			put(-1L,new Decision(0,instance,0,null));
 		}finally{
 			cursor.close();
 		}
@@ -178,8 +178,8 @@ public class BerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public synchronized Integer getLastTrimInstance() {
-		return get(-1).getInstance();
+	public synchronized Long getLastTrimInstance() {
+		return get(-1L).getInstance();
 	}
 	
 	@Override
@@ -200,7 +200,7 @@ public class BerkeleyStorage implements StableStorage {
 		Cursor cursor = db.openCursor(null, null);
 	    while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 	    	
-            Integer instance = keyBinding.entryToObject(key);
+            Long instance = keyBinding.entryToObject(key);
             Decision decision = dataBinding.entryToObject(data);
             System.out.println("instance " +  instance + " -> " + decision + "");
 	    }
@@ -214,24 +214,24 @@ public class BerkeleyStorage implements StableStorage {
 		File file = new File("/tmp/ringpaxos-db/0");
 		file.mkdirs();
 		BerkeleyStorage db = new BerkeleyStorage(file,false,true);
-		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,1,43,new Value("id","value".getBytes()));
-		db.contains(1);
-		db.put(1,d);
-		db.put(1,d2);
-		db.contains(1);
-		System.out.println(db.get(1));
+		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
+		db.contains(1L);
+		db.put(1L,d);
+		db.put(1L,d2);
+		db.contains(1L);
+		System.out.println(db.get(1L));
 		
-		db.put(2,d);
-		db.put(3,d);
-		db.put(4,d);
-		db.put(5,d);
-		db.put(6,d);
-		db.put(7,d);
-		db.put(8,d);
-		db.put(9,d);
-		db.put(10,d);
-		System.out.println(db.trim(7));
+		db.put(2L,d);
+		db.put(3L,d);
+		db.put(4L,d);
+		db.put(5L,d);
+		db.put(6L,d);
+		db.put(7L,d);
+		db.put(8L,d);
+		db.put(9L,d);
+		db.put(10L,d);
+		System.out.println(db.trim(7L));
 		
 		db.listAll();
 		db.close();

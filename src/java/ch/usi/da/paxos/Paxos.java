@@ -46,7 +46,7 @@ public class Paxos {
 	
 	private final Acceptor acceptor;
 	
-	private final int instance;
+	private final long instance;
 	
 	/**
 	 * Public constructor
@@ -54,7 +54,7 @@ public class Paxos {
 	 * @param acceptor a acceptor instance
 	 * @param instance the instance of paxos
 	 */
-	public Paxos(Acceptor acceptor,Integer instance){
+	public Paxos(Acceptor acceptor,Long instance){
 		this.acceptor = acceptor;
 		this.instance = instance;
 		if(acceptor.getHistory().containsKey(instance)){
@@ -78,7 +78,7 @@ public class Paxos {
 	 * 
 	 * @return paxos instance 
 	 */
-	public int getInstance(){
+	public long getInstance(){
 		return instance;
 	}
 	

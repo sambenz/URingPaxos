@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TransferQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
@@ -49,13 +49,13 @@ public class CoordinatorRole extends Role {
 
 	private final RingManager ring;
 	
-	private final AtomicInteger instance = new AtomicInteger();
+	private final AtomicLong instance = new AtomicLong();
 
 	private final TransferQueue<Promise> promises = new LinkedTransferQueue<Promise>();
 	
-	private final Map<Integer,Promise> phase1_in_transit = new ConcurrentHashMap<Integer,Promise>();
+	private final Map<Long,Promise> phase1_in_transit = new ConcurrentHashMap<Long,Promise>();
 
-	private final Map<Integer,Promise> phase1range_in_transit = new ConcurrentHashMap<Integer,Promise>();
+	private final Map<Long,Promise> phase1range_in_transit = new ConcurrentHashMap<Long,Promise>();
 
 	private int reserved = 10000;
 	
@@ -71,13 +71,13 @@ public class CoordinatorRole extends Role {
 	
 	private int trim_quorum = 2;
 	
-	private int last_trimmed_instance = 0;
+	private long last_trimmed_instance = 0;
 	
 	public int multi_ring_lambda = 9000; 
 
 	public int multi_ring_delta_t = 100;
 	
-	public int value_count = 0;
+	public long value_count = 0;
 	
 	/**
 	 * @param ring
@@ -151,7 +151,7 @@ public class CoordinatorRole extends Role {
 						}
 					}
 					long time = System.currentTimeMillis();
-					for(Entry<Integer, Promise> e : phase1range_in_transit.entrySet()){
+					for(Entry<Long, Promise> e : phase1range_in_transit.entrySet()){
 						if(time-e.getValue().getDate()>resend_time){
 							instance.addAndGet(-reserved);
 							fastmode = false;
@@ -173,7 +173,7 @@ public class CoordinatorRole extends Role {
 						}
 					}
 					long time = System.currentTimeMillis();
-					for(Entry<Integer, Promise> e : phase1_in_transit.entrySet()){
+					for(Entry<Long, Promise> e : phase1_in_transit.entrySet()){
 						if(time-e.getValue().getDate()>resend_time){ 
 							Message m = new Message(e.getKey(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1,e.getValue().getBallot()+10, null);
 							phase1_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));
@@ -208,7 +208,7 @@ public class CoordinatorRole extends Role {
 			} catch (InterruptedException e) {
 			}
 			if(p != null){
-				int instance = p.getInstance();
+				long instance = p.getInstance();
 				PaxosRole rcv = PaxosRole.Acceptor;
 				Message n = new Message(instance,m.getSender(),rcv,MessageType.Phase2,p.getBallot(),new Value(m.getValue().getID(),new byte[0]));
 				if(ring.getNetwork().getAcceptor() != null){
@@ -273,7 +273,7 @@ public class CoordinatorRole extends Role {
 		}else if(m.getType() == MessageType.Phase1Range && m.getSender() == ring.getNodeID()){
 			if(m.getVoteCount() >= ring.getQuorum()){
 				int n = NetworkManager.byteToInt(m.getValue().getValue());
-				for(int i=m.getInstance();i<n+m.getInstance();i++){
+				for(long i=m.getInstance();i<n+m.getInstance();i++){
 					Promise p = new Promise(i,m.getBallot());
 					promises.add(p);
 				}
@@ -291,12 +291,12 @@ public class CoordinatorRole extends Role {
 		}
 	}
 	
-	private int getTrimInstance(String s) {
-		int min = Integer.MAX_VALUE;
+	private long getTrimInstance(String s) {
+		long min = Long.MAX_VALUE;
 		int q = 0;
 		for(String is : s.split(";")){
 			try {
-				int i = Integer.valueOf(is);
+				long i = Long.valueOf(is);
 				q++;
 				if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
 				if(i<min){

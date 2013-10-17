@@ -48,15 +48,15 @@ public class AcceptorRole extends Role {
 	
 	private StableStorage storage;
 	
-	private final Map<Integer,Integer> promised = new ConcurrentHashMap<Integer,Integer>();
+	private final Map<Long,Integer> promised = new ConcurrentHashMap<Long,Integer>();
 
 	private final Map<String,Value> learned = new ConcurrentHashMap<String,Value>();
 
-	private int highest_seen_instance = 0;
+	private long highest_seen_instance = 0;
 	
-	private int highest_accepted_instance = 0;
+	private long highest_accepted_instance = 0;
 	
-	private int last_trimmed_instance = 0;
+	private long last_trimmed_instance = 0;
 	
 	/**
 	 * @param ring
@@ -87,7 +87,7 @@ public class AcceptorRole extends Role {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("acceptor " + ring.getNodeID() + " received " + m);
 		}*/
-		int instance = m.getInstance();
+		long instance = m.getInstance();
 		int ballot = 0;
 		Value value = null;
 
@@ -128,7 +128,7 @@ public class AcceptorRole extends Role {
 				ballot = m.getBallot();
 				m.incrementVoteCount();
 				int p1_range = NetworkManager.byteToInt(value.getValue());
-				for(int i=m.getInstance();i<p1_range+m.getInstance();i++){
+				for(long i=m.getInstance();i<p1_range+m.getInstance();i++){
 					promised.put(i,ballot);
 					if(i>highest_seen_instance){
 						highest_seen_instance=i;
@@ -222,7 +222,7 @@ public class AcceptorRole extends Role {
 	/**
 	 * @return the promised
 	 */
-	public Map<Integer, Integer> getPromised() {
+	public Map<Long, Integer> getPromised() {
 		return promised;
 	}
 

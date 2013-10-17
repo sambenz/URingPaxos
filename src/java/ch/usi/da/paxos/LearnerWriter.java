@@ -41,11 +41,11 @@ public class LearnerWriter implements Runnable {
 	
 	private final LinkedList<Decision> list = new LinkedList<Decision>();
 	
-	private int next_instance = 1;
+	private long next_instance = 1;
 	
-	private int max_seen_instance = 0;
+	private long max_seen_instance = 0;
 	
-	private Set<Integer> requested = new HashSet<Integer>();
+	private Set<Long> requested = new HashSet<Long>();
 	
 	private Set<String> delivered = new HashSet<String>(1000);
 	
@@ -70,8 +70,8 @@ public class LearnerWriter implements Runnable {
 					if(requested.contains(d.getInstance())){
 						requested.remove(d.getInstance());
 					}
-					if(d.getInstance().intValue() > max_seen_instance){
-						max_seen_instance = d.getInstance().intValue();
+					if(d.getInstance().longValue() > max_seen_instance){
+						max_seen_instance = d.getInstance().longValue();
 					}
 					if(d.getInstance() == next_instance){
 						list.add(d);
@@ -81,7 +81,7 @@ public class LearnerWriter implements Runnable {
 						if(pos >= 0){
 							list.add(pos,d);
 							if(pos == list.size()-1){
-								next_instance = d.getInstance().intValue()+1;
+								next_instance = d.getInstance().longValue()+1;
 							}
 						}
 					}
@@ -91,16 +91,16 @@ public class LearnerWriter implements Runnable {
 
 			// request missing
 			if((max_seen_instance - learner.getInstance().get()) > 20){
-				int first = max_seen_instance;
+				long first = max_seen_instance;
 				int max = 10;
 				if(!list.isEmpty()){
-					first = list.get(0).getInstance().intValue();
+					first = list.get(0).getInstance().longValue();
 				}
 				int n = 0;
-				for(int i = learner.getInstance().get();i<first;i++){
-					if(!requested.contains(new Integer(i))){
-						requested.add(new Integer(i));
-						learner.getRequests().add(new Integer(i));
+				for(long i = learner.getInstance().get();i<first;i++){
+					if(!requested.contains(new Long(i))){
+						requested.add(new Long(i));
+						learner.getRequests().add(new Long(i));
 						n++;
 						if(n > max){ break; };
 					}
@@ -115,7 +115,7 @@ public class LearnerWriter implements Runnable {
 			Iterator<Decision> i = list.iterator();
 			while(i.hasNext()){
 				Decision d = i.next();
-				if(d.getInstance().intValue() == learner.getInstance().get()){
+				if(d.getInstance().longValue() == learner.getInstance().get()){
 					i.remove();
 					learner.getInstance().incrementAndGet();
 					//System.out.println(d);
@@ -125,26 +125,26 @@ public class LearnerWriter implements Runnable {
 							delivered.add(d.getValue().getID());
 						}
 					}
-				}else if (d.getInstance().intValue() < learner.getInstance().get()){
+				}else if (d.getInstance().longValue() < learner.getInstance().get()){
 					i.remove(); // duplicate
 				}else{
 					break_counter++;
-					//System.err.println("queue:" + d.getInstance().intValue() + " server:" + learner.getInstance().get() + " break:" + break_counter);
+					//System.err.println("queue:" + d.getInstance().longValue() + " server:" + learner.getInstance().get() + " break:" + break_counter);
 					break; // since the list is sorted
 				}
 			}
 		}
 	}
 
-	private int findPos(int instance) {
+	private int findPos(long instance) {
 		int pos = 0;
 		Iterator<Decision> i = list.iterator();
 		// ok, this would be possible in log(n) and not n ...
 		while(i.hasNext()){
 			Decision d = i.next();
-			if(instance == d.getInstance().intValue()){
+			if(instance == d.getInstance().longValue()){
 				return -1;
-			}else if(instance < d.getInstance().intValue()){
+			}else if(instance < d.getInstance().longValue()){
 				return pos;
 			}
 			pos++;

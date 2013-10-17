@@ -62,7 +62,7 @@ public class ProposerReserver implements Runnable {
 	
 	private Majority majority;
 	
-	private int instance;
+	private long instance;
 	
 	private int ballot;
 	
@@ -135,7 +135,7 @@ public class ProposerReserver implements Runnable {
 				if(!proposer.isPerfTest()){
 					System.out.println("reserve ballot " + ballot + " in instance " + instance);
 				}
-				proposer.getPromiseQueue().put(new Promise(new Integer(instance),new Integer(ballot)));
+				proposer.getPromiseQueue().put(new Promise(new Long(instance),new Integer(ballot)));
 			} catch (InterruptedException e) {
 			} catch (IOException e) {
 				e.printStackTrace();

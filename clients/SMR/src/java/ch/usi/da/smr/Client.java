@@ -107,7 +107,7 @@ public class Client implements Receiver {
 		    		Response r = new Response();
 		    		responses.put(id,r);
 		    		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
-			    	int ret = 0;
+			    	long ret = 0;
 			    	if(cmds.get(0).getType() == CommandType.GETRANGE){
 			    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
 			    		if(sender == null){ cmds.clear(); break; };

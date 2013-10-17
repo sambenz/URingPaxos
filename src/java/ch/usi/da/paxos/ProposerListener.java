@@ -65,7 +65,7 @@ public class ProposerListener implements Runnable {
 	
 	private Majority majority;
 	
-	private int instance;
+	private long instance;
 	
 	private long start;
 	
@@ -103,7 +103,7 @@ public class ProposerListener implements Runnable {
 								break;
 							}
 						}else{
-						instance = p.getInstance().intValue();
+						instance = p.getInstance().longValue();
 						Message m = new Message(p.getInstance(),proposer.getID(),PaxosRole.Acceptor,MessageType.Accept,p.getBallot(),v);
 						byte[] b = Message.toWire(m);
 						DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));

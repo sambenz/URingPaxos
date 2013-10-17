@@ -56,7 +56,7 @@ public class ABSender {
         transport.open();
 	}
 			
-	public int abroadcast(Message m){
+	public long abroadcast(Message m){
 		Value value = new Value(ByteBuffer.wrap(Message.toByteArray(m)));
 		try {
 			return proposer.propose(value);

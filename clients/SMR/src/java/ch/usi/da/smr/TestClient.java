@@ -91,7 +91,7 @@ public class TestClient implements Runnable, Receiver {
     		Response r = new Response();
     		responses.put(id,r);
     		Message m = new Message(id,sender,cmds);
-	    	int ret = ab.abroadcast(m);
+	    	long ret = ab.abroadcast(m);
 	    	if(ret > 0){
 				try {
 					r.getResponse(5000);
@@ -113,7 +113,7 @@ public class TestClient implements Runnable, Receiver {
 		Response r = new Response();
 		responses.put(id,r);
 		Message m = new Message(id,sender,cmds);
-    	int ret = ab.abroadcast(m);
+    	long ret = ab.abroadcast(m);
     	if(ret > 0){
 			try {
 				Message response = r.getResponse(5000);

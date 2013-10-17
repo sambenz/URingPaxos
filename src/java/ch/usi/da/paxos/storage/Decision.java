@@ -37,7 +37,7 @@ public class Decision implements Serializable {
 
 	private final Integer ring;
 	
-	private final Integer instance;
+	private final Long instance;
 	
 	private Integer ballot;
 	
@@ -49,7 +49,7 @@ public class Decision implements Serializable {
 	 * @param ballot
 	 * @param value
 	 */
-	public Decision(Integer ring,Integer instance,Integer ballot,Value value){
+	public Decision(Integer ring,Long instance,Integer ballot,Value value){
 		this.ring = ring;
 		this.ballot = ballot;
 		this.instance = instance;
@@ -80,7 +80,7 @@ public class Decision implements Serializable {
 	/**
 	 * @return the instance
 	 */
-	public Integer getInstance() {
+	public Long getInstance() {
 		return instance;
 	}
 

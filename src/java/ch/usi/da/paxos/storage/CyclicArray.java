@@ -39,13 +39,13 @@ public class CyclicArray implements StableStorage {
 
 	private final static Logger logger = Logger.getLogger(CyclicArray.class);
 	
-	private int last_trimmed_instance = 0;
+	private long last_trimmed_instance = 0;
 	
 	private native int init();
 	
-	private native void nput(int i,byte[] b);
+	private native void nput(long i,byte[] b);
 	
-	private native byte[] nget(int i);
+	private native byte[] nget(long i);
 	
 	public CyclicArray(){
 		try{
@@ -59,15 +59,15 @@ public class CyclicArray implements StableStorage {
 	}
 
 	@Override
-	public void put(Integer instance, Decision decision) {
+	public void put(Long instance, Decision decision) {
 		// not optimal with this kind of serialization; but still fast ...
 		Message m = new Message(instance, decision.getRing(), PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getValue());
-		nput(instance.intValue(),Message.toWire(m));
+		nput(instance.longValue(),Message.toWire(m));
 	}
 
 	@Override
-	public Decision get(Integer instance) {
-		byte[] b = nget(instance.intValue());
+	public Decision get(Long instance) {
+		byte[] b = nget(instance.longValue());
 		if(b.length > 0){
 			Message m = Message.fromWire(b);
 			if(m.getInstance() == instance){
@@ -81,16 +81,16 @@ public class CyclicArray implements StableStorage {
 	}
 
 	@Override
-	public native boolean contains(Integer instance);
+	public native boolean contains(Long instance);
 
 	@Override
-	public boolean trim(Integer instance) {
+	public boolean trim(Long instance) {
 		last_trimmed_instance = instance;
 		return true;
 	}
 
 	@Override
-	public Integer getLastTrimInstance() {
+	public Long getLastTrimInstance() {
 		return last_trimmed_instance;
 	}
 
@@ -107,8 +107,8 @@ public class CyclicArray implements StableStorage {
 		CyclicArray db = new CyclicArray();
 		CyclicArray db2 = new CyclicArray();
 
-		Decision d = new Decision(0,1,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,15001,43,new Value("id","value".getBytes()));
+		Decision d = new Decision(0,Long.MAX_VALUE,42,new Value("id","value".getBytes()));
+		Decision d2 = new Decision(0,15001L,43,new Value("id","value".getBytes()));
 
 		db.put(d.getInstance(),d);
 		db2.put(d2.getInstance(),d2);
@@ -117,8 +117,8 @@ public class CyclicArray implements StableStorage {
 		d2 = null;		
 		System.gc();
 
-		System.out.println(db.get(15001));
-		System.out.println(db2.get(15001));
+		System.out.println(db.get(Long.MAX_VALUE));
+		System.out.println(db2.get(15001L));
 
 	}
 

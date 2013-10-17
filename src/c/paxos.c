@@ -26,7 +26,7 @@
 
 jbyte **buf;
 int *len;
-int *inst;
+long *inst;
 
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
@@ -36,7 +36,7 @@ int *inst;
 JNIEXPORT jint JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_init
   (JNIEnv *env, jobject object){
     len = calloc(BUFFERS, sizeof(int));
-    inst = calloc(BUFFERS, sizeof(int));    
+    inst = calloc(BUFFERS, sizeof(long));
     buf = calloc (BUFFERS, sizeof(jbyte *)); //make array of arrays
     if(buf == NULL){
       // calloc failed
@@ -54,10 +54,10 @@ JNIEXPORT jint JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_init
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    nput
- * Signature: (I[B)V
+ * Signature: (J[B)V
  */
 JNIEXPORT void JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nput
-  (JNIEnv *env, jobject object, jint instance, jbyteArray data){
+  (JNIEnv *env, jobject object, jlong instance, jbyteArray data){
     int key = instance % BUFFERS;
     inst[key] = instance;
     len[key]=(*env)->GetArrayLength(env,data);
@@ -67,10 +67,10 @@ JNIEXPORT void JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nput
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    nget
- * Signature: (I)[B
+ * Signature: (J)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nget
-  (JNIEnv *env, jobject object, jint instance){
+  (JNIEnv *env, jobject object, jlong instance){
     int key = instance % BUFFERS;
     jbyteArray result;
     result = (*env)->NewByteArray(env, len[key]);
@@ -84,12 +84,12 @@ JNIEXPORT jbyteArray JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nget
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
  * Method:    contains
- * Signature: (Ljava/lang/Integer;)Z
+ * Signature: (Ljava/lang/Long;)Z
  */
 JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_contains
   (JNIEnv *env, jobject object, jobject instance){
-   jclass Integer = (*env)->GetObjectClass(env,instance);
-   int i = (int)(*env)->GetIntField(env,instance,(*env)->GetFieldID(env,Integer,"value","I"));
+   jclass Long = (*env)->GetObjectClass(env,instance);
+   long i = (long)(*env)->GetIntField(env,instance,(*env)->GetFieldID(env,Long,"value","J"));
    int key = i % BUFFERS;
    if(inst[key] == i){
       return JNI_TRUE;

@@ -49,7 +49,7 @@ public class Acceptor{
 	
 	private final DatagramChannel channel;
 	
-	private final Map<Integer,Paxos> instanceList = new ConcurrentHashMap<Integer,Paxos>(1000);
+	private final Map<Long,Paxos> instanceList = new ConcurrentHashMap<Long,Paxos>(1000);
 
 	/*
 	 * The stable storage ...
@@ -59,9 +59,9 @@ public class Acceptor{
 	 * control)
 	 * (Java hash of Integer is the integer value!)
 	 */
-	private final Map<Integer,Decision> history = new LinkedHashMap<Integer, Decision>(10000,0.75F,false){
+	private final Map<Long,Decision> history = new LinkedHashMap<Long, Decision>(10000,0.75F,false){
 		private static final long serialVersionUID = -3708800228030327063L;
-		protected boolean removeEldestEntry(Map.Entry<Integer, Decision> eldest) {  
+		protected boolean removeEldestEntry(Map.Entry<Long, Decision> eldest) {  
 			return size() > 15000;                               
 	}};
 
@@ -107,7 +107,7 @@ public class Acceptor{
 	 * 
 	 * @return the local instance list
 	 */
-	public Map<Integer,Paxos> getInstanceList(){
+	public Map<Long,Paxos> getInstanceList(){
 		return instanceList;
 	}
 
@@ -116,7 +116,7 @@ public class Acceptor{
 	 * 
 	 * @return the history
 	 */
-	public Map<Integer,Decision> getHistory(){
+	public Map<Long,Decision> getHistory(){
 		return history;
 	}
 		

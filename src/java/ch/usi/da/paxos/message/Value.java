@@ -20,8 +20,6 @@ package ch.usi.da.paxos.message;
 
 import java.io.Serializable;
 
-import ch.usi.da.paxos.ring.NetworkManager;
-
 /**
  * Name: Value<br>
  * Description: <br>
@@ -84,8 +82,6 @@ public class Value implements Serializable {
 			return("<none> (" + ID + ")");
 		}else if(new String(value).length()>40){
 			return(new String(value).subSequence(0,39) + "... (" + ID + ")");
-		}else if(ID.equals(skipID)){
-			return(NetworkManager.byteToInt(value) + " (" + ID + ")");
 		}else{
 			return(new String(value) + " (" + ID + ")");
 		}

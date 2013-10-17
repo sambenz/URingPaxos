@@ -34,7 +34,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Decision");
 
   private static final org.apache.thrift.protocol.TField RING_FIELD_DESC = new org.apache.thrift.protocol.TField("ring", org.apache.thrift.protocol.TType.I32, (short)1);
-  private static final org.apache.thrift.protocol.TField INSTANCE_FIELD_DESC = new org.apache.thrift.protocol.TField("instance", org.apache.thrift.protocol.TType.I32, (short)2);
+  private static final org.apache.thrift.protocol.TField INSTANCE_FIELD_DESC = new org.apache.thrift.protocol.TField("instance", org.apache.thrift.protocol.TType.I64, (short)2);
   private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRUCT, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -44,7 +44,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
   }
 
   public int ring; // required
-  public int instance; // required
+  public long instance; // required
   public Value value; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -121,7 +121,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
     tmpMap.put(_Fields.RING, new org.apache.thrift.meta_data.FieldMetaData("ring", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.INSTANCE, new org.apache.thrift.meta_data.FieldMetaData("instance", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.VALUE, new org.apache.thrift.meta_data.FieldMetaData("value", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Value.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -133,7 +133,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
 
   public Decision(
     int ring,
-    int instance,
+    long instance,
     Value value)
   {
     this();
@@ -192,11 +192,11 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __RING_ISSET_ID, value);
   }
 
-  public int getInstance() {
+  public long getInstance() {
     return this.instance;
   }
 
-  public Decision setInstance(int instance) {
+  public Decision setInstance(long instance) {
     this.instance = instance;
     setInstanceIsSet(true);
     return this;
@@ -253,7 +253,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
       if (value == null) {
         unsetInstance();
       } else {
-        setInstance((Integer)value);
+        setInstance((Long)value);
       }
       break;
 
@@ -274,7 +274,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
       return Integer.valueOf(getRing());
 
     case INSTANCE:
-      return Integer.valueOf(getInstance());
+      return Long.valueOf(getInstance());
 
     case VALUE:
       return getValue();
@@ -478,8 +478,8 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
             }
             break;
           case 2: // INSTANCE
-            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.instance = iprot.readI32();
+            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+              struct.instance = iprot.readI64();
               struct.setInstanceIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -513,7 +513,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
       oprot.writeI32(struct.ring);
       oprot.writeFieldEnd();
       oprot.writeFieldBegin(INSTANCE_FIELD_DESC);
-      oprot.writeI32(struct.instance);
+      oprot.writeI64(struct.instance);
       oprot.writeFieldEnd();
       if (struct.value != null) {
         oprot.writeFieldBegin(VALUE_FIELD_DESC);
@@ -552,7 +552,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
         oprot.writeI32(struct.ring);
       }
       if (struct.isSetInstance()) {
-        oprot.writeI32(struct.instance);
+        oprot.writeI64(struct.instance);
       }
       if (struct.isSetValue()) {
         struct.value.write(oprot);
@@ -568,7 +568,7 @@ public class Decision implements org.apache.thrift.TBase<Decision, Decision._Fie
         struct.setRingIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.instance = iprot.readI32();
+        struct.instance = iprot.readI64();
         struct.setInstanceIsSet(true);
       }
       if (incoming.get(2)) {

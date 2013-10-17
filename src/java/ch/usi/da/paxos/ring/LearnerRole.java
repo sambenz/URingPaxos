@@ -58,13 +58,13 @@ public class LearnerRole extends Role implements Learner {
 	
 	private final CountDownLatch latch; // used to synchronize multi-learner start
 	
-	private int next_instance = 1; // only needed to optimize linked list insert
+	private long next_instance = 1; // only needed to optimize linked list insert
 	
-	private int delivered_instance = 0;
+	private long delivered_instance = 0;
 	
-	private int safe_instance = 0;
+	private long safe_instance = 0;
 	
-	private int highest_online_instance = 0;
+	private long highest_online_instance = 0;
 	
 	private boolean auto_trim = false; // for testing purpose (safe_instance = delivered_instance)
 	
@@ -124,7 +124,7 @@ public class LearnerRole extends Role implements Learner {
 				// re-request missing decisions
 				else if(!delivery.isEmpty() && delivery.peek().getInstance() > delivered_instance){
 					Decision head = delivery.peek();
-					for(int i=delivered_instance+1;i<head.getInstance();i++){
+					for(long i=delivered_instance+1;i<head.getInstance();i++){
 						if(highest_online_instance == 0 || i <= highest_online_instance){
 							Message m = new Message(i,ring.getRingSuccessor(ring.getNodeID()),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
 							ring.getNetwork().send(m);
@@ -170,7 +170,7 @@ public class LearnerRole extends Role implements Learner {
 						if(pos >= 0){
 							delivery.add(pos,d);
 							if(pos == delivery.size()-1){
-								next_instance = d.getInstance().intValue()+1;
+								next_instance = d.getInstance().longValue()+1;
 							}
 						}
 					}
@@ -221,22 +221,22 @@ public class LearnerRole extends Role implements Learner {
 	}
 	
 	@Override
-	public void setSafeInstance(Integer ring,Integer instance){
+	public void setSafeInstance(Integer ring,Long instance){
 		if(instance <= delivered_instance){
-			safe_instance = instance.intValue();
+			safe_instance = instance.longValue();
 		}else{
 			logger.error("Learner setSafeInstance() for not delivered instance number?!");
 		}
 	}
 	
-	private int findPos(int instance) {
+	private int findPos(long instance) {
 		int pos = 0;
 		Iterator<Decision> i = delivery.iterator();
 		while(i.hasNext()){
 			Decision d = i.next();
-			if(instance == d.getInstance().intValue()){
+			if(instance == d.getInstance().longValue()){
 				return -1;
-			}else if(instance < d.getInstance().intValue()){
+			}else if(instance < d.getInstance().longValue()){
 				return pos;
 			}
 			pos++;

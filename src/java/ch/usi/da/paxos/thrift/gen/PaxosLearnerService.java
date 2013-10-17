@@ -38,7 +38,7 @@ public class PaxosLearnerService {
 
     public Decision nb_deliver() throws org.apache.thrift.TException;
 
-    public void safe(int ring, int instance) throws org.apache.thrift.TException;
+    public void safe(int ring, long instance) throws org.apache.thrift.TException;
 
   }
 
@@ -48,7 +48,7 @@ public class PaxosLearnerService {
 
     public void nb_deliver(org.apache.thrift.async.AsyncMethodCallback<AsyncClient.nb_deliver_call> resultHandler) throws org.apache.thrift.TException;
 
-    public void safe(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.safe_call> resultHandler) throws org.apache.thrift.TException;
+    public void safe(int ring, long instance, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.safe_call> resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -117,13 +117,13 @@ public class PaxosLearnerService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "nb_deliver failed: unknown result");
     }
 
-    public void safe(int ring, int instance) throws org.apache.thrift.TException
+    public void safe(int ring, long instance) throws org.apache.thrift.TException
     {
       send_safe(ring, instance);
       recv_safe();
     }
 
-    public void send_safe(int ring, int instance) throws org.apache.thrift.TException
+    public void send_safe(int ring, long instance) throws org.apache.thrift.TException
     {
       safe_args args = new safe_args();
       args.setRing(ring);
@@ -217,7 +217,7 @@ public class PaxosLearnerService {
       }
     }
 
-    public void safe(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler) throws org.apache.thrift.TException {
+    public void safe(int ring, long instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       safe_call method_call = new safe_call(ring, instance, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
@@ -226,8 +226,8 @@ public class PaxosLearnerService {
 
     public static class safe_call extends org.apache.thrift.async.TAsyncMethodCall {
       private int ring;
-      private int instance;
-      public safe_call(int ring, int instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private long instance;
+      public safe_call(int ring, long instance, org.apache.thrift.async.AsyncMethodCallback<safe_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.ring = ring;
         this.instance = instance;
@@ -1653,7 +1653,7 @@ public class PaxosLearnerService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("safe_args");
 
     private static final org.apache.thrift.protocol.TField RING_FIELD_DESC = new org.apache.thrift.protocol.TField("ring", org.apache.thrift.protocol.TType.I32, (short)1);
-    private static final org.apache.thrift.protocol.TField INSTANCE_FIELD_DESC = new org.apache.thrift.protocol.TField("instance", org.apache.thrift.protocol.TType.I32, (short)2);
+    private static final org.apache.thrift.protocol.TField INSTANCE_FIELD_DESC = new org.apache.thrift.protocol.TField("instance", org.apache.thrift.protocol.TType.I64, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -1662,7 +1662,7 @@ public class PaxosLearnerService {
     }
 
     public int ring; // required
-    public int instance; // required
+    public long instance; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -1735,7 +1735,7 @@ public class PaxosLearnerService {
       tmpMap.put(_Fields.RING, new org.apache.thrift.meta_data.FieldMetaData("ring", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
       tmpMap.put(_Fields.INSTANCE, new org.apache.thrift.meta_data.FieldMetaData("instance", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(safe_args.class, metaDataMap);
     }
@@ -1745,7 +1745,7 @@ public class PaxosLearnerService {
 
     public safe_args(
       int ring,
-      int instance)
+      long instance)
     {
       this();
       this.ring = ring;
@@ -1798,11 +1798,11 @@ public class PaxosLearnerService {
       __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __RING_ISSET_ID, value);
     }
 
-    public int getInstance() {
+    public long getInstance() {
       return this.instance;
     }
 
-    public safe_args setInstance(int instance) {
+    public safe_args setInstance(long instance) {
       this.instance = instance;
       setInstanceIsSet(true);
       return this;
@@ -1835,7 +1835,7 @@ public class PaxosLearnerService {
         if (value == null) {
           unsetInstance();
         } else {
-          setInstance((Integer)value);
+          setInstance((Long)value);
         }
         break;
 
@@ -1848,7 +1848,7 @@ public class PaxosLearnerService {
         return Integer.valueOf(getRing());
 
       case INSTANCE:
-        return Integer.valueOf(getInstance());
+        return Long.valueOf(getInstance());
 
       }
       throw new IllegalStateException();
@@ -2017,8 +2017,8 @@ public class PaxosLearnerService {
               }
               break;
             case 2: // INSTANCE
-              if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-                struct.instance = iprot.readI32();
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.instance = iprot.readI64();
                 struct.setInstanceIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -2043,7 +2043,7 @@ public class PaxosLearnerService {
         oprot.writeI32(struct.ring);
         oprot.writeFieldEnd();
         oprot.writeFieldBegin(INSTANCE_FIELD_DESC);
-        oprot.writeI32(struct.instance);
+        oprot.writeI64(struct.instance);
         oprot.writeFieldEnd();
         oprot.writeFieldStop();
         oprot.writeStructEnd();
@@ -2074,7 +2074,7 @@ public class PaxosLearnerService {
           oprot.writeI32(struct.ring);
         }
         if (struct.isSetInstance()) {
-          oprot.writeI32(struct.instance);
+          oprot.writeI64(struct.instance);
         }
       }
 
@@ -2087,7 +2087,7 @@ public class PaxosLearnerService {
           struct.setRingIsSet(true);
         }
         if (incoming.get(1)) {
-          struct.instance = iprot.readI32();
+          struct.instance = iprot.readI64();
           struct.setInstanceIsSet(true);
         }
       }

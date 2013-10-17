@@ -41,28 +41,28 @@ public class SyncBerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public void put(Integer instance, Decision decision) {
+	public void put(Long instance, Decision decision) {
 		storage.put(instance, decision);
 		
 	}
 
 	@Override
-	public Decision get(Integer instance) {
+	public Decision get(Long instance) {
 		return storage.get(instance);
 	}
 
 	@Override
-	public boolean contains(Integer instance) {
+	public boolean contains(Long instance) {
 		return storage.contains(instance);
 	}
 
 	@Override
-	public boolean trim(Integer instance) {
+	public boolean trim(Long instance) {
 		return storage.trim(instance);
 	}
 
 	@Override
-	public Integer getLastTrimInstance() {
+	public Long getLastTrimInstance() {
 		return storage.getLastTrimInstance();
 	}
 	

@@ -87,7 +87,7 @@ public class Replica implements Receiver {
 	
 	private final int max_ring = 20;
 	
-	private Map<Integer,Integer> exec_instance = new HashMap<Integer,Integer>();
+	private Map<Integer,Long> exec_instance = new HashMap<Integer,Long>();
 	
 	private long exec_cmd = 0;
 	
@@ -125,7 +125,7 @@ public class Replica implements Receiver {
 	public boolean checkpoint(){
 		if(storeState(exec_instance)){
 			try {
-				for(Entry<Integer, Integer> e : exec_instance.entrySet()){
+				for(Entry<Integer, Long> e : exec_instance.entrySet()){
 					ab.getLearner().safe(e.getKey(),e.getValue());
 				}
 				logger.info("Replica checkpointed up to instance " + exec_instance);
@@ -137,11 +137,11 @@ public class Replica implements Receiver {
 		return false;
 	}
 	
-	private boolean storeState(Map<Integer,Integer> instances){
+	private boolean storeState(Map<Integer,Long> instances){
 		try {
 			synchronized(db){
 				logger.info("Replica start storing state ... ");
-				for(Entry<Integer,Integer> e : instances.entrySet()){
+				for(Entry<Integer,Long> e : instances.entrySet()){
 					db.put("r:" + e.getKey(),e.getValue().toString().getBytes());
 				}
 				FileOutputStream fs = new FileOutputStream(snapshot_file);
@@ -151,7 +151,7 @@ public class Replica implements Receiver {
 		        fs.getChannel().force(false); // fsync
 		        os.close();
 				fs = new FileOutputStream(state_file);
-				for(Entry<Integer, Integer> e : exec_instance.entrySet()){
+				for(Entry<Integer, Long> e : exec_instance.entrySet()){
 					fs.write((e.getKey() + "=" + e.getValue() + "\n").getBytes());
 				}
 				fs.getChannel().force(false);
@@ -165,8 +165,8 @@ public class Replica implements Receiver {
 		return false;
 	}
 	
-	private Map<Integer,Integer> installState(){
-		Map<Integer,Integer> instances = new HashMap<Integer,Integer>();
+	private Map<Integer,Long> installState(){
+		Map<Integer,Long> instances = new HashMap<Integer,Long>();
 		try {
 			URL url = null;
 			// local
@@ -204,14 +204,14 @@ public class Replica implements Receiver {
 				byte[] b = null;
 				for(int i = 1;i<max_ring+1;i++){
 					if((b = db.get("r:" + i)) != null){
-						instances.put(i,Integer.valueOf(new String(b)));
+						instances.put(i,Long.valueOf(new String(b)));
 					}
 				}
 			}
 		} catch (IOException | ClassNotFoundException e) {
-			instances.put(partitions.getGlobalRing(),0);
+			instances.put(partitions.getGlobalRing(),0L);
 			for(Partition p : partitions.getPartitions()){
-				instances.put(p.getRing(),0);
+				instances.put(p.getRing(),0L);
 			}
 			logger.error(e);
 		}

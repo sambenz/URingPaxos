@@ -62,7 +62,7 @@ public class MultiLearnerRole extends Role implements Learner {
 		
 	private int deliverRing;
 
-	private final int[] skip_count = new int[maxRing];
+	private final long[] skip_count = new long[maxRing];
 	
 	private boolean deliver_skip_messages = false;
 
@@ -125,11 +125,11 @@ public class MultiLearnerRole extends Role implements Learner {
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().getID().equals(Value.skipID)){
 						// skip message
-						if(d.getValue().getValue().length == 4){
-							int skip = NetworkManager.byteToInt(d.getValue().getValue());
+						try {
+							long skip = Long.parseLong(new String(d.getValue().getValue()));
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
-						}else{
-							logger.error("MultiRingLrearner received incomplete SKIP message! -> " + d);
+						}catch (NumberFormatException e) {
+							logger.error("MultiRingLrearner received incomplete SKIP message! -> " + d,e);
 						}
 						if(deliver_skip_messages){
 							values.add(d);
@@ -165,7 +165,7 @@ public class MultiLearnerRole extends Role implements Learner {
 		return values;
 	}
 
-	public void setSafeInstance(Integer ring, Integer instance) {
+	public void setSafeInstance(Integer ring, Long instance) {
 		learner[ring].setSafeInstance(ring,instance);
 	}
 

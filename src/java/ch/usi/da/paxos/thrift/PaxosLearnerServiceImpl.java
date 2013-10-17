@@ -83,7 +83,7 @@ public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
 	}
 
 	@Override
-	public void safe(int ring,int instance) throws TException {
+	public void safe(int ring,long instance) throws TException {
 		learner.setSafeInstance(ring,instance);
 	}
 
