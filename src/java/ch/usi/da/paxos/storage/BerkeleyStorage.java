@@ -20,6 +20,7 @@ package ch.usi.da.paxos.storage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
@@ -41,6 +42,7 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Transaction;
 
 /**
  * Name: BerkeleyStorage<br>
@@ -97,9 +99,11 @@ public class BerkeleyStorage implements StableStorage {
     	envConfig.setCacheMode(CacheMode.DEFAULT);
     	//envConfig.setCacheSize(1000000*800); // 800M
     	if(async){
+    		dbConfig.setTransactional(false);
         	envConfig.setDurability(Durability.COMMIT_NO_SYNC);
         	dbConfig.setDeferredWrite(true);
         }else{
+    		dbConfig.setTransactional(true);
         	envConfig.setDurability(Durability.COMMIT_SYNC);
         	dbConfig.setDeferredWrite(false);        	
         }
@@ -160,19 +164,30 @@ public class BerkeleyStorage implements StableStorage {
 	@Override
 	public synchronized boolean trim(Long instance) {
 		if(instance == 0) { return true; } // fast track
-		Cursor cursor = db.openCursor(null, null);
+		Transaction t = null;
+		if(db.getConfig().getTransactional()){
+			t = env.beginTransaction(null,null);
+		}
+		Cursor cursor = db.openCursor(t, null);
+		boolean dirty = false; 
 		try{
-			while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+			while (cursor.getNext(key,data,LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS) {
 				Long i = keyBinding.entryToObject(key);
 				if(i < instance && cursor.delete() != OperationStatus.SUCCESS){
 					logger.error("Error deleting instance " + i + " from DB!");
-					return false;
+					dirty = true;
 				}
 			}
-			put(-1L,new Decision(0,instance,0,null));
 		}finally{
 			cursor.close();
+			if(!dirty){
+				if(t != null){ t.commit(); }
+			}else{
+				if(t != null){ t.abort(); }
+				return false;
+			}
 		}
+		put(-1L,new Decision(0,instance,0,null));
 		logger.debug("DB deltete up to instance " + instance);
 		return true;
 	}
@@ -213,7 +228,7 @@ public class BerkeleyStorage implements StableStorage {
 	public static void main(String[] args){
 		File file = new File("/tmp/ringpaxos-db/0");
 		file.mkdirs();
-		BerkeleyStorage db = new BerkeleyStorage(file,false,true);
+		BerkeleyStorage db = new BerkeleyStorage(file,false,false);
 		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
 		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
 		db.contains(1L);
