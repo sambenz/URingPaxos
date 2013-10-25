@@ -30,6 +30,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.ArrayList;
@@ -168,27 +169,41 @@ public class Replica implements Receiver {
 	private Map<Integer,Long> installState(){
 		Map<Integer,Long> instances = new HashMap<Integer,Long>();
 		try {
-			URL url = null;
+			String host = null;
 			// local
 			InputStreamReader isr = new InputStreamReader(new FileInputStream(state_file));
 			BufferedReader bin = new BufferedReader(isr);
 			String line;
-			Map<Integer, Integer> state = new HashMap<Integer, Integer>();		
+			Map<Integer, Long> state = new HashMap<Integer, Long>();		
 			while ((line = bin.readLine()) != null){
 				String[] s = line.split("=");
-				state.put(Integer.parseInt(s[0]),Integer.parseInt(s[1]));
+				state.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
 			}
+			logger.info("Replica found local snapshot: " + state);
 			bin.close();
-//			// remote
-//			for(GSQ-1? partition replicas){ //TODO: must ask get-state quorum (GSQ) servers
-//				Map<Integer, Integer> nstate = URL get remote ...
-//				if(nstate > state ...){
-//					url = ...
-//				}
-//			}
+			// remote
+			for(String h : partitions.getReplicas()){
+				URL url = new URL("http://" + h + ":8080/state"); //TODO: must only ask GSQ replicas
+				HttpURLConnection con = (HttpURLConnection)url.openConnection();
+				isr = new InputStreamReader(con.getInputStream());
+				BufferedReader in = new BufferedReader(isr);
+				Map<Integer, Long> nstate = new HashMap<Integer, Long>();
+				while ((line = in.readLine()) != null){
+					String[] s = line.split("=");
+					nstate.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
+				}
+				logger.info("Replica found remote snapshot: " + nstate + " (" + h + ")");
+				in.close();
+				if(newerState(nstate,state)){
+					state = nstate;
+					host = h;
+					System.err.println(h);
+				}
+			}
 			synchronized(db){
 				InputStream in;
-				if(url != null){
+				if(host != null){
+					URL url = new URL(host + "/state");
 					HttpURLConnection con = (HttpURLConnection)url.openConnection();
 					in = con.getInputStream();
 				}else{
@@ -219,6 +234,17 @@ public class Replica implements Receiver {
 		return instances;
 	}
 
+	private boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
+		for(Entry<Integer, Long> e : state.entrySet()){
+			long i = e.getValue();
+			long ni = nstate.get(e.getKey());
+			if(ni > i){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void receive(Message m) {
 		List<Command> cmds = new ArrayList<Command>();
@@ -245,7 +271,7 @@ public class Replica implements Receiver {
 		exec_cmd++;
 		if(exec_cmd % 5 == 0){ //TODO: testing only!
 			logger.warn("force testing snapshot (" + exec_cmd + ")");
-			checkpoint();
+			checkpoint(); //TODO: can we write this asynchronous?
 		}
 		
 		synchronized(db){
@@ -335,7 +361,8 @@ public class Replica implements Receiver {
 				final PartitionManager partitions = new PartitionManager(zoo);
 				final Partition partition = new Partition(ringID,0,token);
 				partitions.init();
-				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID),nodeID);
+				InetAddress ip = Client.getHostAddress(false);
+				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID);
 				Runtime.getRuntime().addShutdownHook(new Thread(){
 					@Override
 					public void run(){

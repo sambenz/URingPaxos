@@ -19,6 +19,7 @@ package ch.usi.da.smr;
  */
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,6 +63,8 @@ public class PartitionManager implements Watcher {
 	
 	private final Map<String,ABSender> proposers = new HashMap<String,ABSender>();
 	
+	private final List<String> replicas = new ArrayList<String>();
+	
 	private int global_ring = 16;
 	
 	public PartitionManager(ZooKeeper zoo) throws IOException {
@@ -87,7 +90,7 @@ public class PartitionManager implements Watcher {
 		readPartitions();
 	}
 
-	public Partition register(Partition partition, int replicaID){
+	public Partition register(Partition partition, int replicaID, InetAddress ip){
 		String partitionID = Integer.toString(partition.getHigh());
 		try {
 			if(zoo.exists(path + "/" + partitionID,false) == null){
@@ -95,7 +98,8 @@ public class PartitionManager implements Watcher {
 			}else{
 				zoo.setData(path + "/" + partitionID, Integer.toString(partition.getRing()).getBytes(), -1);
 			}
-			zoo.create(path + "/" + partitionID + "/" + Integer.toString(replicaID),null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
+			byte[] data = ip.getHostAddress().getBytes();
+			zoo.create(path + "/" + partitionID + "/" + Integer.toString(replicaID),data,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
 		} catch (KeeperException e) {
 			logger.error(e);
 		} catch (InterruptedException e) {
@@ -120,6 +124,10 @@ public class PartitionManager implements Watcher {
 	
 	public List<Partition> getPartitions(){
 		return Collections.unmodifiableList(partitions);
+	}
+
+	public List<String> getReplicas(){
+		return Collections.unmodifiableList(replicas);
 	}
 
 	public int getGlobalRing(){
@@ -198,8 +206,9 @@ public class PartitionManager implements Watcher {
 		}
 	}
 
-	private void readPartitions(){
+	private synchronized void readPartitions(){
 		partitions.clear();
+		replicas.clear();
 		try {
 			List<String> ls = zoo.getChildren(path, true);
 			List<Integer> li = new ArrayList<Integer>();
@@ -208,6 +217,12 @@ public class PartitionManager implements Watcher {
 					global_ring = Integer.parseInt(new String(zoo.getData(path + "/all", false, null)));
 				}else{
 					li.add(Integer.valueOf(s));
+					// get replicas of partition s
+					List<String> rs = zoo.getChildren(path + "/" + s, true);
+					for(String r : rs){
+						String ip = new String(zoo.getData(path + "/" + s + "/" + r,false,null));
+						replicas.add(ip);
+					}
 				}
 			}
 			Collections.sort(li);
