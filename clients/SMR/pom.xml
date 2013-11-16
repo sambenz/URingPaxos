@@ -5,16 +5,20 @@
 	<groupId>ch.usi.da</groupId>
 	<artifactId>smr</artifactId>
 	<packaging>jar</packaging>
-	<name>StateMachineReplication</name>
-	<version>1.1</version>
+	<name>SMR</name>
+	<version>trunk</version>
 
+	<properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+	
 	<dependencies>
 	    <dependency>
-       			<groupId>com.yahoo.ycsb</groupId>
-       			<artifactId>core</artifactId>
-       			<version>0.1.4</version>
-    		        <type>jar</type>
-       	    </dependency>
+       		<groupId>com.yahoo.ycsb</groupId>
+       		<artifactId>core</artifactId>
+       		<version>0.1.4</version>
+    		<type>jar</type>
+       	</dependency>
 	    <dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>zookeeper</artifactId>
@@ -95,6 +99,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
@@ -103,12 +108,13 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
 				<configuration>
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<!-- <classpathPrefix>lib/</classpathPrefix> -->
-							<mainClass>ch.usi.da.smr.SMR</mainClass>
+							<mainClass>ch.usi.da.smr.Replica</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -116,6 +122,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -128,6 +135,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9</version>
 				<executions>
 					<execution>
 						<id>attach-javadoc</id>
