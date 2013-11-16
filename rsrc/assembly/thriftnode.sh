@@ -28,4 +28,4 @@ JVM_OPTS="-XX:+UseParallelGC -XX:+HeapDumpOnOutOfMemoryError"
 #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.port=9001 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
 
 # start the program
-$JAVA -cp $PRGDIR/lib:$CLASSPATH -Xms2G -Xmx2G $JVM_OPTS ch.usi.da.paxos.thrift.ThriftNode $@
+$JAVA -cp $PRGDIR/lib:$CLASSPATH -Xms2G -Xmx2G $JVM_OPTS ch.usi.da.paxos.examples.ThriftNode $@

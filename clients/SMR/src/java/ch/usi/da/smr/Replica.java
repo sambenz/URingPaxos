@@ -92,10 +92,13 @@ public class Replica implements Receiver {
 	
 	private long exec_cmd = 0;
 	
-	public Replica(PartitionManager partitions, Partition partition, int nodeID) throws IOException, TTransportException {
+	private int snapshot_modulo = 0; // disabled
+	
+	public Replica(PartitionManager partitions, Partition partition, int nodeID, int snapshot_modulo) throws IOException, TTransportException {
 		this.partitions = partitions;
 		this.partition = partition;
 		this.nodeID = nodeID;
+		this.snapshot_modulo = snapshot_modulo;
 		udp = new UDPSender();
 		ab = partitions.getABListener(partition,nodeID);
 		db = new  HashMap<String,byte[]>();
@@ -246,9 +249,7 @@ public class Replica implements Receiver {
 	}
 
 	@Override
-	public void receive(Message m) {
-		List<Command> cmds = new ArrayList<Command>();
-		
+	public void receive(Message m) {				
 		//if(exec_instance[partition.getRing()] == 0){} -> already done in start(); 
 		
 		// skip already executed commands
@@ -259,6 +260,8 @@ public class Replica implements Receiver {
 			return;
 		}
 		
+		List<Command> cmds = new ArrayList<Command>();
+
 		// recover if a not ascending instance arrives 
 		if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
 			logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));
@@ -269,8 +272,7 @@ public class Replica implements Receiver {
 		
 		// snapshot
 		exec_cmd++;
-		if(exec_cmd % 5 == 0){ //TODO: testing only!
-			logger.warn("force testing snapshot (" + exec_cmd + ")");
+		if(snapshot_modulo > 0 && exec_cmd % snapshot_modulo == 0){
 			checkpoint(); //TODO: can we write this asynchronous?
 		}
 		
@@ -302,10 +304,11 @@ public class Replica implements Receiver {
 					if(data != null){
 		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),data);
 		    			cmds.add(cmd);
-					}else{
+					}
+					/*else{
 		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"<no entry>".getBytes());
 		    			cmds.add(cmd);
-					}
+					}*/
 					break;
 				case GETRANGE:
 					int from = Integer.valueOf(c.getKey());
@@ -323,10 +326,11 @@ public class Replica implements Receiver {
 						if(data != null){
 			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,data);
 			    			cmds.add(cmd);
-						}else{
+						}
+						/*else{
 			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,"<no entry>".getBytes());
 			    			cmds.add(cmd);
-						}					
+						}*/					
 						from++;
 						if(msg++ > max_response_msg){ break; }
 					}
@@ -346,11 +350,15 @@ public class Replica implements Receiver {
 	 */
 	public static void main(String[] args) {
 		String zoo_host = "127.0.0.1:2181";
+		int snapshot = 0;
+		if (args.length > 2) {
+			zoo_host = args[2];
+		}
 		if (args.length > 1) {
-			zoo_host = args[1];
+			snapshot = Integer.parseInt(args[1]);
 		}
 		if (args.length < 1) {
-			System.err.println("Plese use \"Replica\" \"ringID,nodeID,Token\"");
+			System.err.println("Plese use \"Replica\" \"ringID,nodeID,Token\" [snapshot_modulo]");
 		} else {
 			String[] arg = args[0].split(",");
 			final int nodeID = Integer.parseInt(arg[1]);
@@ -362,7 +370,7 @@ public class Replica implements Receiver {
 				final Partition partition = new Partition(ringID,0,token);
 				partitions.init();
 				InetAddress ip = Client.getHostAddress(false);
-				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID);
+				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID,snapshot);
 				Runtime.getRuntime().addShutdownHook(new Thread(){
 					@Override
 					public void run(){

@@ -134,9 +134,17 @@ public class PartitionManager implements Watcher {
 		return global_ring;
 	}
 	
-	public Partition getPartition(int key){
+	/**
+	 * 
+	 * Implements a trivial byte order partitioner
+	 * 
+	 * @param key as String
+	 * @return byte value from first character (0-254)
+	 */
+	public Partition getPartition(String key){
+		int partition_id = key.getBytes()[0];
 		for(Partition p : partitions){
-			if(key <= p.getHigh()){
+			if(partition_id <= p.getHigh()){
 				return p;
 			}
 		}

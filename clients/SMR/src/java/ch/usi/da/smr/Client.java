@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.thrift.transport.TTransportException;
 import org.apache.zookeeper.ZooKeeper;
@@ -67,6 +68,8 @@ public class Client implements Receiver {
 	
 	private final int port;
 	
+	private AtomicInteger msg_id = new AtomicInteger(0); 
+		
 	public Client(PartitionManager partitions,Map<Integer,Integer> connectMap) throws IOException {
 		this.partitions = partitions;
 		this.connectMap = connectMap;
@@ -76,9 +79,12 @@ public class Client implements Receiver {
 		Thread t = new Thread(udp);
 		t.start();
 	}
+
+	public void init() {
+		udp.registerReceiver(this);		
+	}
 	
-	public void start() throws TTransportException {
-		udp.registerReceiver(this);
+	public void readStdin() throws TTransportException {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	    String s;
 	    try {
@@ -89,61 +95,46 @@ public class Client implements Receiver {
 		    	String[] line = s.split("\\s+");
 		    	if(line.length > 2){
 		    		try{
-		    			cmds.add(new Command(id,CommandType.valueOf(line[0]),line[1],line[2].getBytes()));
+		    			cmds.add(new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],line[2].getBytes()));
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
 		    	}else if(line.length > 1){
 		    		try{
-		    			cmds.add(new Command(id,CommandType.valueOf(line[0]),line[1],new byte[0]));
+		    			cmds.add(new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],new byte[0]));
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
 		    	}else{
-		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key value");
+		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key <value>");
 		    	}
 		    	// send one command
 		    	if(cmds.size() > 0){
-		    		Response r = new Response();
-		    		responses.put(id,r);
-		    		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
-			    	long ret = 0;
-			    	if(cmds.get(0).getType() == CommandType.GETRANGE){
-			    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
-			    		if(sender == null){ cmds.clear(); break; };
-			    		ret = sender.abroadcast(m);
-			    	}else{
-			    		Partition p = partitions.getPartition(Integer.valueOf(cmds.get(0).getKey()));
-			    		if(p == null){ System.err.println("No partition found for key " + cmds.get(0).getKey()); cmds.clear(); continue; };
-			    		ABSender sender = partitions.getABSender(p,connectMap.get(p.getRing()));
-			    		if(sender == null){ cmds.clear(); continue; };
-			    		ret = sender.abroadcast(m);
-			    	}
-			    	if(ret > 0){ // is abroadcasted
-			    		Message response = r.getResponse(10000); // wait response
-			    		if(response != null){
-			    			for(Command c : response.getCommands()){
-				    			if(c.getType() == CommandType.RESPONSE){
-				    				System.out.println("  -> " + new String(c.getValue()));
-				    			}			    				
-			    			}
-			    		}else{
-			    			System.err.println("Did not receive response from replicas: " + cmds);
-			    			responses.remove(id);
-			    		}
-			    	}else{
-			    		System.err.println("Could not send command: " + cmds);
-			    		responses.remove(id);
-			    	}
+		    		Response r = null;
+		        	if((r = send(cmds)) != null){ // is abroadcasted
+		        		Message response = r.getResponse(20000); // wait response
+		        		if(response != null){
+		        			for(Command c : response.getCommands()){
+		    	    			if(c.getType() == CommandType.RESPONSE){
+		    	    				System.out.println("  -> " + new String(c.getValue()));
+		    	    			}			    				
+		        			}
+		        		}else{
+		        			System.err.println("Did not receive response from replicas: " + cmds);
+		        			responses.remove(id);
+		        		}
+		        	}else{
+		        		System.err.println("Could not send command: " + cmds);
+		        		responses.remove(id);
+		        	}
+		        	id++;
 			    	cmds.clear();
-			    	id++;	    		
-		    	}		    	
+		    	}
 		    }
 		    in.close();
-	    }catch(IOException e){
+	    } catch(IOException e){
 	    	e.printStackTrace();
 	    } catch (InterruptedException e) {
-			e.printStackTrace();
 		}
 	    stop();
 	}
@@ -152,8 +143,35 @@ public class Client implements Receiver {
 		udp.close();
 	}
 	
+	public Response send(List<Command> cmds) throws TTransportException {
+		//TODO: batching with Map<Ring,List<Command>> 
+		Response r = new Response();
+		int id = msg_id.incrementAndGet();
+		responses.put(id,r);
+		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
+    	long ret = 0;
+    	if(cmds.get(0).getType() == CommandType.GETRANGE){
+    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
+    		if(sender != null){
+    			ret = sender.abroadcast(m);
+    		}
+    	}else{
+		    Partition p = partitions.getPartition(cmds.get(0).getKey());
+    		if(p == null){ System.err.println("No partition found for key " + cmds.get(0).getKey()); return null; };
+    		ABSender sender = partitions.getABSender(p,connectMap.get(p.getRing()));
+    		if(sender != null){
+    			ret = sender.abroadcast(m);
+    		}
+    	}
+    	if(ret > 0){
+    		return r;
+    	}
+    	return null;
+	}
+	
 	@Override
 	public void receive(Message m) {
+		//TODO: how handle GETRANGE responses from different partitions?
 		if(responses.containsKey(m.getID())){
 			Response r = responses.get(m.getID());
 			r.setResponse(m);
@@ -172,7 +190,7 @@ public class Client implements Receiver {
 		if (args.length < 1) {
 			System.err.println("Plese use \"Client\" \"ring ID,node ID[;ring ID,node ID]\"");
 		} else {
-			final Map<Integer,Integer> connectMap = parseArg(args[0]);
+			final Map<Integer,Integer> connectMap = parseConnectMap(args[0]);
 			try {
 				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
 				final PartitionManager partitions = new PartitionManager(zoo);
@@ -188,7 +206,8 @@ public class Client implements Receiver {
 						}
 					}
 				});
-				client.start();
+				client.init();
+				client.readStdin();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -196,7 +215,7 @@ public class Client implements Receiver {
 		}
 	}
 
-	private static Map<Integer, Integer> parseArg(String arg) {
+	public static Map<Integer, Integer> parseConnectMap(String arg) {
 		Map<Integer,Integer> connectMap = new HashMap<Integer,Integer>();
 		for(String s : arg.split(";")){
 			connectMap.put(Integer.valueOf(s.split(",")[0]),Integer.valueOf(s.split(",")[1]));
