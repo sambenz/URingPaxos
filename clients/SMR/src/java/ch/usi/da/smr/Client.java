@@ -31,8 +31,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.thrift.transport.TTransportException;
 import org.apache.zookeeper.ZooKeeper;
@@ -40,7 +42,6 @@ import org.apache.zookeeper.ZooKeeper;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
-import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.Response;
 import ch.usi.da.smr.transport.UDPListener;
@@ -57,19 +58,19 @@ import ch.usi.da.smr.transport.UDPListener;
 public class Client implements Receiver {
 
 	private final PartitionManager partitions;
-	
-	private final Map<Integer,Integer> connectMap;
-			
+				
 	private final UDPListener udp;
 	
-	private Map<Integer,Response> responses = new HashMap<Integer,Response>();
+	private Map<Integer,Response> open_cmd = new HashMap<Integer,Response>();
+	
+	private Map<Integer, BlockingQueue<Response>> send_queues = new HashMap<Integer, BlockingQueue<Response>>();
 	
 	private final InetAddress ip;
 	
 	private final int port;
 	
-	private AtomicInteger msg_id = new AtomicInteger(0); 
-		
+	private final Map<Integer,Integer> connectMap;
+	
 	public Client(PartitionManager partitions,Map<Integer,Integer> connectMap) throws IOException {
 		this.partitions = partitions;
 		this.connectMap = connectMap;
@@ -77,6 +78,7 @@ public class Client implements Receiver {
 		port = 3000 + new Random().nextInt(1000);
 		udp = new UDPListener(port);
 		Thread t = new Thread(udp);
+		t.setName("UDPListener");
 		t.start();
 	}
 
@@ -89,46 +91,47 @@ public class Client implements Receiver {
 	    String s;
 	    try {
 	    	int id = 0;
-	    	List<Command> cmds = new ArrayList<Command>();
+	    	Command cmd = null;
 		    while((s = in.readLine()) != null && s.length() != 0){
 		    	// read input
 		    	String[] line = s.split("\\s+");
 		    	if(line.length > 2){
 		    		try{
-		    			cmds.add(new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],line[2].getBytes()));
+		    			cmd = new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],line[2].getBytes());
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
 		    	}else if(line.length > 1){
 		    		try{
-		    			cmds.add(new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],new byte[0]));
+		    			cmd = new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],new byte[0]);
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
 		    	}else{
 		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key <value>");
 		    	}
-		    	// send one command
-		    	if(cmds.size() > 0){
+		    	// send a command
+		    	if(cmd != null){
 		    		Response r = null;
-		        	if((r = send(cmds)) != null){ // is abroadcasted
-		        		Message response = r.getResponse(20000); // wait response
-		        		if(response != null){
-		        			for(Command c : response.getCommands()){
+		        	if((r = send(cmd)) != null){
+		        		List<Command> response = r.getResponse(20000); // wait response
+		        		if(!response.isEmpty()){
+		        			for(Command c : response){
 		    	    			if(c.getType() == CommandType.RESPONSE){
-		    	    				System.out.println("  -> " + new String(c.getValue()));
+		    	    				if(c.getValue() != null){
+		    	    					System.out.println("  -> " + new String(c.getValue()));
+		    	    				}else{
+		    	    					System.out.println("<no entry>");
+		    	    				}
 		    	    			}			    				
 		        			}
+		        			id++; // re-use same ID if you run into a timeout
 		        		}else{
-		        			System.err.println("Did not receive response from replicas: " + cmds);
-		        			responses.remove(id);
+		        			System.err.println("Did not receive response from replicas: " + cmd);
 		        		}
 		        	}else{
-		        		System.err.println("Could not send command: " + cmds);
-		        		responses.remove(id);
+		        		System.err.println("Could not send command: " + cmd);
 		        	}
-		        	id++;
-			    	cmds.clear();
 		    	}
 		    }
 		    in.close();
@@ -142,41 +145,82 @@ public class Client implements Receiver {
 	public void stop(){
 		udp.close();
 	}
-	
-	public Response send(List<Command> cmds) throws TTransportException {
-		//TODO: batching with Map<Ring,List<Command>> 
-		Response r = new Response();
-		int id = msg_id.incrementAndGet();
-		responses.put(id,r);
-		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
-    	long ret = 0;
-    	if(cmds.get(0).getType() == CommandType.GETRANGE){
-    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
-    		if(sender != null){
-    			ret = sender.abroadcast(m);
+		
+	/**
+	 * Send a command (use same ID your Response ended in a timeout)
+	 * 
+	 * (the commands will be batched to larger Paxos instances)
+	 * 
+	 * @param cmd The command to send
+	 * @return A Response object on which you can wait
+	 * @throws TTransportException
+	 */
+	public synchronized Response send(Command cmd) throws TTransportException {
+		Response r = new Response(cmd);
+		open_cmd.put(cmd.getID(),r);
+    	if(cmd.getType() == CommandType.GETRANGE){
+    		int ring  = partitions.getGlobalRing();
+    		if(!send_queues.containsKey(ring)){
+    			send_queues.put(ring,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(ring,null,this));
+    			t.setName("BatchSender-" + ring);
+    			t.start();
     		}
+    		send_queues.get(ring).add(r);
     	}else{
-		    Partition p = partitions.getPartition(cmds.get(0).getKey());
-    		if(p == null){ System.err.println("No partition found for key " + cmds.get(0).getKey()); return null; };
-    		ABSender sender = partitions.getABSender(p,connectMap.get(p.getRing()));
-    		if(sender != null){
-    			ret = sender.abroadcast(m);
+		    Partition p = partitions.getPartition(cmd.getKey());
+    		if(p == null){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
+    		int ring = partitions.getRing(p);
+    		if(!send_queues.containsKey(ring)){
+    			send_queues.put(ring,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(ring,p,this));
+    			t.setName("BatchSender-" + ring);
+    			t.start();
     		}
+    		send_queues.get(ring).add(r);
     	}
-    	if(ret > 0){
-    		return r;
-    	}
-    	return null;
+    	return r;		
 	}
 	
 	@Override
 	public void receive(Message m) {
 		//TODO: how handle GETRANGE responses from different partitions?
-		if(responses.containsKey(m.getID())){
-			Response r = responses.get(m.getID());
-			r.setResponse(m);
-			responses.remove(m.getID());
-		}		
+		// un-batch response
+		Map<Integer,List<Command>> ml = new HashMap<Integer,List<Command>>();
+		for(Command c : m.getCommands()){
+			if(!ml.containsKey(c.getID())){
+				List<Command> l = new ArrayList<Command>();
+				ml.put(c.getID(),l);
+			}
+			ml.get(c.getID()).add(c);
+		}
+		// set response
+		for(Entry<Integer, List<Command>> e : ml.entrySet()){
+			if(open_cmd.containsKey(e.getKey())){
+				open_cmd.get(e.getKey()).setResponse(e.getValue());
+				open_cmd.remove(e.getKey());
+			}
+		}
+	}
+
+	public PartitionManager getPartitions() {
+		return partitions;
+	}
+
+	public Map<Integer, BlockingQueue<Response>> getSendQueues() {
+		return send_queues;
+	}
+
+	public InetAddress getIp() {
+		return ip;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public Map<Integer, Integer> getConnectMap() {
+		return connectMap;
 	}
 
 	/**
@@ -196,7 +240,7 @@ public class Client implements Receiver {
 				final PartitionManager partitions = new PartitionManager(zoo);
 				partitions.init();
 				final Client client = new Client(partitions,connectMap);
-				Runtime.getRuntime().addShutdownHook(new Thread(){
+				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){
 						client.stop();

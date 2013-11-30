@@ -18,10 +18,13 @@ package ch.usi.da.smr.transport;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.message.Command;
 
 /**
  * Name: Response<br>
@@ -34,36 +37,42 @@ import ch.usi.da.smr.message.Message;
  */
 public class Response {
 
-	private Message message = null;
-	
+	private final List<Command> response = new ArrayList<Command>();
+
 	private final CountDownLatch done = new CountDownLatch(1);
 	
-	public Response(){
-		
+	private final Command cmd;
+	
+	public Response(Command cmd){
+		this.cmd = cmd;
 	}
 	
 	public boolean isProccessed(){
 		return (done.getCount() == 0);
 	}
 	
-	public synchronized void setResponse(Message message){
+	public synchronized void setResponse(List<Command> list){
 		if(!isProccessed()){
-			this.message = message;
+			response.addAll(list);
 			done.countDown();
 		}
 	}
 	
-	public Message getResponse() throws InterruptedException {
+	public List<Command> getResponse() throws InterruptedException {
 		done.await();
 		synchronized (this) {
-			return message;
+			return Collections.unmodifiableList(response);
 		}
 	}
 	
-	public Message getResponse(int timeout) throws InterruptedException {
+	public Command getCommand(){
+		return cmd;
+	}
+	
+	public List<Command> getResponse(int timeout) throws InterruptedException {
 		done.await(timeout,TimeUnit.MILLISECONDS);
 		synchronized (this) {
-			return message;
+			return Collections.unmodifiableList(response);
 		}
 	}
 

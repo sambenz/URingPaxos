@@ -49,7 +49,7 @@ public class Command {
 		this.id = id;
 		this.type = type;
 		this.key = new String(key);
-		this.value = value.clone();
+		this.value = value;
 	}
 
 	public int getID(){
@@ -65,7 +65,7 @@ public class Command {
 	}
 	
 	public byte[] getValue(){
-		return value.clone();
+		return value;
 	}
 	
 	public String toString(){

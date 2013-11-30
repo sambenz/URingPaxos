@@ -118,6 +118,7 @@ public class Replica implements Receiver {
 		ab.registerReceiver(this);
 		logger.info("Replica start serving partition: " + partition);
 		Thread t = new Thread(ab);
+		t.setName("ABListener");
 		t.start();
 	}
 
@@ -249,7 +250,8 @@ public class Replica implements Receiver {
 	}
 
 	@Override
-	public void receive(Message m) {				
+	public void receive(Message m) {
+		logger.debug("Replica received " + m);
 		//if(exec_instance[partition.getRing()] == 0){} -> already done in start(); 
 		
 		// skip already executed commands
@@ -305,10 +307,10 @@ public class Replica implements Receiver {
 		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),data);
 		    			cmds.add(cmd);
 					}
-					/*else{
-		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),"<no entry>".getBytes());
+					else{
+		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),null);
 		    			cmds.add(cmd);
-					}*/
+					}
 					break;
 				case GETRANGE:
 					int from = Integer.valueOf(c.getKey());
@@ -328,7 +330,7 @@ public class Replica implements Receiver {
 			    			cmds.add(cmd);
 						}
 						/*else{
-			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,"<no entry>".getBytes());
+			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,null);
 			    			cmds.add(cmd);
 						}*/					
 						from++;
@@ -371,7 +373,7 @@ public class Replica implements Receiver {
 				partitions.init();
 				InetAddress ip = Client.getHostAddress(false);
 				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID,snapshot);
-				Runtime.getRuntime().addShutdownHook(new Thread(){
+				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){
 						replica.close();

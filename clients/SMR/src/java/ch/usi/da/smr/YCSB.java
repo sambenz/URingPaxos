@@ -19,7 +19,6 @@ package ch.usi.da.smr;
  */
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
-import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.transport.Response;
 
 import com.yahoo.ycsb.ByteIterator;
@@ -89,18 +87,20 @@ public class YCSB extends DB {
 
 	@Override
 	public int read(String table, String key, Set<String> fields, HashMap<String, ByteIterator> result) {
-    	List<Command> cmds = new ArrayList<Command>();
-    	cmds.add(new Command(cmd_id.incrementAndGet(),CommandType.GET,key,new byte[0]));
+    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GET,key,new byte[0]);
 		try {
-			Response r = client.send(cmds);
+			Response r = client.send(cmd);
 			if(r != null){
-				Message m = r.getResponse(10000);
-				if(m == null){ return ERROR; }
-				if(m.getCommands().size() == 0){
+				List<Command> lc = r.getResponse(10000);
+				if(lc.size() == 0){
 					return NOT_FOUND;
-				}else if(m.getCommands().get(0).getType() == CommandType.RESPONSE){
-					decode(fields, new String(m.getCommands().get(0).getValue()), result); 
-					return OK;
+				}else if(lc.get(0).getType() == CommandType.RESPONSE){
+					if(lc.get(0).getValue() != null){
+						decode(fields, new String(lc.get(0).getValue()), result); 
+						return OK;
+					}else{
+						return NOT_FOUND;
+					}
 				}
 			}
 		} catch (TTransportException | InterruptedException e) {
@@ -111,14 +111,13 @@ public class YCSB extends DB {
 
 	@Override
 	public int scan(String table, String startkey, int recordcount,	Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
-    	List<Command> cmds = new ArrayList<Command>();
-    	cmds.add(new Command(cmd_id.incrementAndGet(),CommandType.GETRANGE,startkey,Integer.toString(recordcount).getBytes()));
+    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GETRANGE,startkey,Integer.toString(recordcount).getBytes());
 		try {
-			Response r = client.send(cmds);
+			Response r = client.send(cmd);
 			if(r != null){
-				Message m = r.getResponse(10000);
-				if(m == null){ return ERROR; }
-    			for(Command c : m.getCommands()){
+				List<Command> lc = r.getResponse(10000);
+				if(lc.isEmpty()){ return ERROR; }
+    			for(Command c : lc){
 	    			if(c.getType() == CommandType.RESPONSE){
 	    				HashMap<String, ByteIterator> tuple = new HashMap<String, ByteIterator>();
 	    				tuple.put("key", new StringByteIterator(c.getKey()));
@@ -149,14 +148,13 @@ public class YCSB extends DB {
 
 	@Override
 	public int insert(String table, String key, HashMap<String, ByteIterator> values) {
-    	List<Command> cmds = new ArrayList<Command>();
-    	cmds.add(new Command(cmd_id.incrementAndGet(),CommandType.PUT,key,encode(values).array()));
+    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.PUT,key,encode(values).array());
 		try {
-			Response r = client.send(cmds);
+			Response r = client.send(cmd);
 			if(r != null){
-				Message m = r.getResponse(10000);
-				if(m == null){ return ERROR; }
-				if(m.getCommands().get(0).getType() == CommandType.RESPONSE){
+				List<Command> lc = r.getResponse(10000);
+				if(lc.isEmpty()){ return ERROR; }
+				if(lc.get(0).getType() == CommandType.RESPONSE){
 					return OK;
 				}
 			}
@@ -168,14 +166,13 @@ public class YCSB extends DB {
 
 	@Override
 	public int delete(String table, String key) {
-    	List<Command> cmds = new ArrayList<Command>();
-    	cmds.add(new Command(cmd_id.incrementAndGet(),CommandType.DELETE,key,new byte[0]));
+    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.DELETE,key,new byte[0]);
 		try {
-			Response r = client.send(cmds);
+			Response r = client.send(cmd);
 			if(r != null){
-				Message m = r.getResponse(10000);
-				if(m == null){ return ERROR; }
-				if(m.getCommands().get(0).getType() == CommandType.RESPONSE){
+				List<Command> lc = r.getResponse(10000);
+				if(lc.isEmpty()){ return ERROR; }
+				if(lc.get(0).getType() == CommandType.RESPONSE){
 					return OK;
 				}
 			}
