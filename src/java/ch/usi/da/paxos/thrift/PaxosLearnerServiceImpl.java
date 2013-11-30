@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
 import ch.usi.da.paxos.api.Learner;
@@ -39,6 +40,9 @@ import ch.usi.da.paxos.thrift.gen.Value;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
+
+	private final static Logger valuelogger = Logger.getLogger(Value.class);
+
 	private final Learner learner;
 	
 	private final BlockingQueue<Decision> values;
@@ -54,6 +58,7 @@ public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
 		try {
 			Decision d = values.poll(timeout,TimeUnit.MILLISECONDS);
 			if(d != null){
+				valuelogger.debug(d);
 				decision = new ch.usi.da.paxos.thrift.gen.Decision();
 				decision.setInstance(d.getInstance());
 				decision.setRing(d.getRing());
@@ -73,6 +78,7 @@ public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
 		ch.usi.da.paxos.thrift.gen.Decision decision = null;
 		Decision d = values.poll();
 		if(d != null){
+			valuelogger.debug(d);
 			decision = new ch.usi.da.paxos.thrift.gen.Decision();
 			decision.setInstance(d.getInstance());
 			decision.setRing(d.getRing());

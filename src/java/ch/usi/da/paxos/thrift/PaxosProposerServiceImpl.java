@@ -54,6 +54,7 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 		try {
 			Decision d = f.getDecision(3000);
 			if(d != null){
+				logger.debug("TrhiftProposer proposed and " + d);
 				return d.getInstance();
 			}
 		} catch (InterruptedException e) {
