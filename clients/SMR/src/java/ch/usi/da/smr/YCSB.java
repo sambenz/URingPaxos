@@ -55,7 +55,7 @@ public class YCSB extends DB {
     private static final String HOST = "zoo.host";
     private static final String HOST_DEFAULT = "127.0.0.1:2181";
     private static final String MAP = "smr.map";
-    private static final String MAP_DEFAULT = "1,1:16,1";
+    private static final String MAP_DEFAULT = "1,1;16,1";
 
 	private ZooKeeper zoo;
 	private PartitionManager partitions;
@@ -191,6 +191,10 @@ public class YCSB extends DB {
 		}		
 	}
 
+	public Client getClient(){
+		return client;
+	}
+	
 	/* see MapKeeperClient.java */
     ByteBuffer encode(HashMap<String, ByteIterator> values) {
         int len = 0;
@@ -231,4 +235,14 @@ public class YCSB extends DB {
         }
     }
 
+    public static void main(String[] args) throws Exception {
+    	YCSB y = new YCSB();
+    	y.init();
+    	Client c = y.getClient(); // test performance (batching) asynchronous 
+    	for(int i=0;i<100000;i++){
+        	c.send(new Command(i,CommandType.PUT,"user" + i,new byte[1000]));
+    	}
+    	y.cleanup();
+    }
+    
 }

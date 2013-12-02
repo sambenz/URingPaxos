@@ -49,7 +49,7 @@ public class BatchSender implements Runnable {
 	
 	private final BlockingQueue<Response> queue;
 	
-	private final boolean batch = true;
+	private final int batch_size = 8192; // 0: disable
 	
 	public BatchSender(int ring,Partition p, Client client) throws TTransportException {
 		this.client = client;
@@ -65,18 +65,18 @@ public class BatchSender implements Runnable {
 				List<Command> cmds = new ArrayList<Command>();
 				int size = r.getCommand().getValue().length;
 				cmds.add(r.getCommand());
-				if(batch){
+				if(batch_size > 0){
 					while(!queue.isEmpty()){
 						r = queue.poll();
 						if(r != null){
 							cmds.add(r.getCommand());
 							size = size + r.getCommand().getValue().length;
 						}
-						if(size > 20000){
+						if(size >= batch_size){
 							break;
 						}
-						logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
 					}
+					logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
 				}
 				Message m = new Message(1,client.getIp().getHostAddress() + ":" + client.getPort(),cmds);
 				sender.abroadcast(m);
