@@ -18,6 +18,7 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -73,6 +74,8 @@ public class LearnerRole extends Role implements Learner {
 	private boolean recovered = false;
 			
 	public long deliver_count = 0;
+	
+	public long batch_count = 0;
 	
 	public long deliver_bytes = 0;
 
@@ -157,10 +160,25 @@ public class LearnerRole extends Role implements Learner {
 			}
 			if(d != null){
 				if(!recovery){
-					deliver_count++;
-					deliver_bytes = deliver_bytes + d.getValue().getValue().length;
 					if(auto_trim) { safe_instance = d.getInstance(); }
-					values.add(d);
+					deliver_bytes = deliver_bytes + d.getValue().getValue().length;
+					if(d.getValue().isBatch()){
+						batch_count++;
+						ByteBuffer buffer = ByteBuffer.wrap(d.getValue().getValue());
+						while(buffer.remaining() > 0){
+							try {
+								Message n = Message.fromBuffer(buffer);
+								Decision bd = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),n.getValue());
+								deliver_count++;
+								values.add(bd);
+							} catch (Exception e) {
+								logger.error("Learner could not de-serialize batch message!" + e);
+							}
+						}
+					}else{
+						deliver_count++;					
+						values.add(d);
+					}
 				}else{
 					if(d.getInstance() == next_instance){
 						delivery.add(d);
@@ -182,9 +200,24 @@ public class LearnerRole extends Role implements Learner {
 						Decision de = delivery.poll();
 						delivered_instance = de.getInstance();
 						if(auto_trim) { safe_instance = delivered_instance; }
-						deliver_count++;
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
-						values.add(de);
+						if(d.getValue().isBatch()){
+							batch_count++;
+							ByteBuffer buffer = ByteBuffer.wrap(d.getValue().getValue());
+							while(buffer.remaining() > 0){
+								try {
+									Message n = Message.fromBuffer(buffer);
+									Decision bd = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),n.getValue());
+									deliver_count++;
+									values.add(bd);
+								} catch (Exception e) {
+									logger.error("Learner could not de-serialize batch message!" + e);
+								}
+							}
+						}else{
+							deliver_count++;					
+							values.add(d);
+						}
 					}else{
 						delivery.poll(); // remove duplicate
 					}

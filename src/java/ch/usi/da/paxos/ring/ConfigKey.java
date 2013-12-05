@@ -56,6 +56,11 @@ abstract class ConfigKey {
 
 	/**
 	 * see RingManager for default
+	 */	
+	public static final String batch_size = "value_batch_size";
+
+	/**
+	 * see RingManager for default
 	 */
 	public static final String value_resend_time = "value_resend_time";
 	

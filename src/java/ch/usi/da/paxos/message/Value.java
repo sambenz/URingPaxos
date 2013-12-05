@@ -39,8 +39,10 @@ public class Value implements Serializable {
 	
 	private final String ID;
 	
-	public static final String skipID = "SKIP!";
+	public static final String skipID  = "SKIP!";
 
+	private final boolean batch;
+	
 	/**
 	 * Public constructor
 	 * 
@@ -52,8 +54,24 @@ public class Value implements Serializable {
 		this.ID = ID;
 		this.id = ID.getBytes();
 		this.value = value;
+		this.batch = false;
 	}
-		
+
+	/**
+	 * Public constructor
+	 * 
+	 * @param ID the value id
+	 * @param value the bytes
+	 * @param batch is batch Value
+	 * 
+	 */
+	public Value(String ID, byte[] value, boolean batch){
+		this.ID = ID;
+		this.id = ID.getBytes();
+		this.value = value;
+		this.batch = batch;
+	}
+
 	/**
 	 * Get the ID
 	 * 
@@ -78,7 +96,9 @@ public class Value implements Serializable {
 	}
 	
 	public String toString(){
-		if(value.length == 0){
+		if(isBatch()){
+			return("<batch>");
+		}else if(value.length == 0){
 			return("<none> (" + ID + ")");
 		}else if(new String(value).length()>40){
 			return(new String(value).subSequence(0,39) + "... (" + ID + ")");
@@ -88,7 +108,9 @@ public class Value implements Serializable {
 	}
 
 	public String asString(){
-		if(value.length == 0){
+		if(isBatch()){
+			return("<batch>");
+		}else if(value.length == 0){
 			return("<none>");
 		}else if(new String(value).length()>40){
 			return(new String(value).subSequence(0,39) + "...");
@@ -112,6 +134,10 @@ public class Value implements Serializable {
 
 	public boolean isSkip() {
 		return this.getID().equals(Value.skipID);
+	}
+
+	public boolean isBatch() {
+		return this.batch;
 	}
 
 }

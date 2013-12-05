@@ -18,12 +18,16 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.log4j.Logger;
@@ -68,6 +72,10 @@ public class ProposerRole extends Role implements Proposer {
 
 	private final Map<String,FutureDecision> futures = new ConcurrentHashMap<String,FutureDecision>();
 	
+	private int batch_size = 0; // 0: disabled
+	
+	private final BlockingQueue<Message> send_queue = new LinkedBlockingQueue<Message>();
+	
 	private long send_count = 0;
 	
 	private boolean test = false;
@@ -83,6 +91,10 @@ public class ProposerRole extends Role implements Proposer {
 		if(ring.getConfiguration().containsKey(ConfigKey.concurrent_values)){
 			concurrent_values = Integer.parseInt(ring.getConfiguration().get(ConfigKey.concurrent_values));
 			logger.info("Proposer concurrent_values: " + concurrent_values);
+		}
+		if(ring.getConfiguration().containsKey(ConfigKey.batch_size)){
+			batch_size = Integer.parseInt(ring.getConfiguration().get(ConfigKey.batch_size));
+			logger.info("Proposer value_batch_size: " + batch_size);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_size)){
 			String v = ring.getConfiguration().get(ConfigKey.value_size);
@@ -115,6 +127,35 @@ public class ProposerRole extends Role implements Proposer {
 		Thread t = new Thread(new ProposerResender(this));
 		t.setName("ProposerResender");
 		t.start();
+		if(batch_size > 0){
+			ByteBuffer buffer = ByteBuffer.allocate(65536);
+			while(true){
+				try {
+					buffer.clear();
+					Message m = send_queue.take();
+					if(Message.length(m) < batch_size){
+						Message.toBuffer(buffer, m);
+						Message bm = null;
+						while((bm = send_queue.poll(500,TimeUnit.MICROSECONDS)) != null){ // do-batching if possible
+							Message.toBuffer(buffer, bm);
+							if(buffer.position() >= batch_size){
+								break;
+							}
+						}
+						buffer.flip();
+						byte[] b = new byte[buffer.limit()];
+						buffer.get(b);
+						Value batch = new Value(System.nanoTime() + "" + ring.getNodeID(),b,true);
+						m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,batch);
+						logger.debug("Proposer sent Value batch of size " + buffer.limit());
+					}
+					send(m);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+		}
 	}
 
 	/**
@@ -124,10 +165,16 @@ public class ProposerRole extends Role implements Proposer {
 	 * @return A FutureDecision object on which you can wait until the value is proposed
 	 */
 	public FutureDecision propose(byte[] b){
+		send_count++;
 		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),b);
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
-		send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v));
+		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v);
+		if(batch_size > 0){
+			send_queue.add(m);
+		}else{
+			send(m);
+		}
 		return future;
 	}
 	
@@ -135,7 +182,6 @@ public class ProposerRole extends Role implements Proposer {
 	 * @param m
 	 */
 	public void send(Message m){
-		send_count++;
 		proposals.put(m.getValue().getID(),new Proposal(m.getValue()));
 		ring.getNetwork().send(m); // send to all !
 		if(ring.getNetwork().getLearner() != null){
@@ -148,7 +194,7 @@ public class ProposerRole extends Role implements Proposer {
 			ring.getNetwork().getLeader().deliver(ring,m);
 		}
 	}
-
+	
 	public void deliver(RingManager fromRing,Message m){
 		/*if(logger.isDebugEnabled()){
 			logger.debug("proposer " + ring.getNodeID() + " received " + m);
@@ -159,30 +205,19 @@ public class ProposerRole extends Role implements Proposer {
 				Proposal p = proposals.get(ID);
 				Value v = p.getValue();
 				if(m.getValue().equals(v)){ // compared by ID
-					if(futures.containsKey(ID)){
-						FutureDecision f = futures.get(ID);
-						f.setDecision(new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),v));
-						futures.remove(ID);
-					}
-					if(test){
-						long time = System.nanoTime();
-						long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
-						long lat = time - send_time;
-						latency.add(lat);
-						if(send_count < value_count){
-							Value v2 = new Value(System.nanoTime() + "" + ring.getNodeID(),new byte[getValueSize()]);
-							send(new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v2));
-						}else{
-							printHistogram();
-							test = false;
+					if(v.isBatch()){
+						ByteBuffer buffer = ByteBuffer.wrap(v.getValue());
+						while(buffer.remaining() > 0){
+							try {
+								Message n = Message.fromBuffer(buffer);
+								set_decision(fromRing,n);
+							} catch (Exception e) {
+								logger.error("Proposer could not de-serialize batch message!" + e);
+							}
 						}
+					}else{
+						set_decision(fromRing,m);
 					}
-					/*if(!test && logger.isDebugEnabled()){
-						long time = System.nanoTime();
-						long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
-						long lat = time - send_time;
-						logger.debug("Value " + v + " proposed and learned in " + lat + " ns (@proposer)");
-					}*/
 				}else{
 					logger.error("Proposer received Decision with different values for same instance " + m.getInstance() + "!");
 				}
@@ -190,7 +225,34 @@ public class ProposerRole extends Role implements Proposer {
 			}
 		}
 	}
-	
+
+	private void set_decision(RingManager fromRing,Message m){
+		String ID = m.getValue().getID();
+		if(futures.containsKey(ID)){
+			FutureDecision f = futures.get(ID);
+			f.setDecision(new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),m.getValue()));
+			futures.remove(ID);
+		}
+		if(test){
+			long time = System.nanoTime();
+			long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
+			long lat = time - send_time;
+			latency.add(lat);
+			if(send_count < value_count){
+				propose(new byte[getValueSize()]);
+			}else{
+				printHistogram();
+				test = false;
+			}
+		}
+		if(!test && logger.isDebugEnabled()){
+			long time = System.nanoTime();
+			long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
+			long lat = time - send_time;
+			logger.debug("Value " + m.getValue() + " proposed and learned in " + lat + " ns (@proposer)");
+		}		
+	}
+
 	/**
 	 * @return the open proposals
 	 */

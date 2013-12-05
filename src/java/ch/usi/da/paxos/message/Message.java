@@ -221,7 +221,7 @@ public class Message implements Serializable {
 	public static int length(Message m){
 		int length = 28;
 		if(m.getValue() != null){
-			length = length + m.getValue().getByteID().length + 4 + m.getValue().getValue().length;
+			length = length + m.getValue().getByteID().length + 4 + m.getValue().getValue().length + 1;
 		}
 		return length;
 	}
@@ -272,6 +272,11 @@ public class Message implements Serializable {
 			b.put(m.getValue().getByteID());
 			b.putInt(m.getValue().getValue().length);
 			b.put(m.getValue().getValue());
+			if(m.getValue().isBatch()){
+				b.put((byte) 0x01);
+			}else{
+				b.put((byte) 0x00);
+			}
 		}else{
 			b.putInt(-1);
 		}		
@@ -299,7 +304,13 @@ public class Message implements Serializable {
 			int v_length = buffer.getInt();
 			byte[] vb = new byte[v_length];
 			buffer.get(vb);
-			value = new Value(id,vb);
+			byte[] batch = new byte[1];
+			buffer.get(batch);
+			if(batch[0] > 0){
+				value = new Value(id,vb,true);
+			}else{
+				value = new Value(id,vb,false);
+			}
 		}
 		Message msg = new Message(instance,sender,role,type,ballot,value);
 		msg.setVoteCount(vote_count);

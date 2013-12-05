@@ -69,7 +69,7 @@ public class LearnerStatsWriter implements Runnable {
 				float t2 = (float)(time-start_time)/(1000*1000*1000);
 				float deliver_bw = (float)8*(learner.deliver_bytes/t2)/1024/1024; // Mbit/s
 				
-				logger.info(String.format("Learner %d delivered %.1f values/s %.2f Mbit/s (avg: %.2f Mbit/s) (wait: %d) (count: %d)",ringID,deliver_count/t,deliver_bwm,deliver_bw,learner.getDecisions().size(),learner.deliver_count));
+				logger.info(String.format("Learner %d delivered %.1f values/s %.2f Mbit/s (avg: %.2f Mbit/s) (wait: %d) (count: %d) (batch_count: %d)",ringID,deliver_count/t,deliver_bwm,deliver_bw,learner.getDecisions().size(),learner.deliver_count,learner.batch_count));
 				
 				last_deliver_count += deliver_count;
 				last_deliver_bytes += deliver_bytes;
