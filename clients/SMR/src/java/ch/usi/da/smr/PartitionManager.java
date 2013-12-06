@@ -37,8 +37,12 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
+import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.ring.RingDescription;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
+import ch.usi.da.smr.transport.RawABListener;
+import ch.usi.da.smr.transport.ThriftABListener;
 
 /**
  * Name: PartitionManager<br>
@@ -71,7 +75,8 @@ public class PartitionManager implements Watcher {
 		this.zoo = zoo;
 	}
 
-	public void init() throws KeeperException, InterruptedException{
+	public void init() throws KeeperException, InterruptedException {
+		logger.info("Init PartitionManager");
 		zoo.register(this);
 		// create path
 		String p = "";
@@ -160,7 +165,18 @@ public class PartitionManager implements Watcher {
 		return -1;
 	}
 
-	public ABListener getABListener(Partition partition, int replicaID) throws TTransportException {
+	public ABListener getRawABListener(Partition partition, int replicaID, String zoo_host) throws IOException, KeeperException, InterruptedException {
+		List<PaxosRole> role = new ArrayList<PaxosRole>();
+		role.add(PaxosRole.Learner);
+		List<RingDescription> rings = new ArrayList<RingDescription>();
+		rings.add(new RingDescription(getRing(partition),replicaID, role));
+		rings.add(new RingDescription(getGlobalRing(),replicaID,role));
+		logger.info("Create RawABListener " + rings);
+		Thread.sleep(1000); // wait until PartitionManger is ready
+		return new RawABListener(zoo_host,rings);
+	}
+
+	public ABListener getThriftABListener(Partition partition, int replicaID) throws TTransportException {
 		int ring = getRing(partition);
 		String host = "127.0.0.1";
 		try {
@@ -176,8 +192,8 @@ public class PartitionManager implements Watcher {
 		} catch (KeeperException | InterruptedException e) {
 			logger.error(e);
 		}
-		logger.info("ABListener host: " + host + ":" + (9090+replicaID));
-		return new ABListener(host,9090+replicaID);
+		logger.info("ThriftABListener host: " + host + ":" + (9090+replicaID));
+		return new ThriftABListener(host,9090+replicaID);
 	}
 	
 	public ABSender getABSender(Partition partition, int clientID) throws TTransportException {

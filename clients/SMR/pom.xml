@@ -13,6 +13,12 @@
     </properties>
 	
 	<dependencies>
+	   	<dependency>
+       		<groupId>ch.usi.da</groupId>
+       		<artifactId>paxos</artifactId>
+       		<version>trunk</version>
+    		<type>jar</type>
+       	</dependency>
 	    <dependency>
        		<groupId>com.yahoo.ycsb</groupId>
        		<artifactId>core</artifactId>

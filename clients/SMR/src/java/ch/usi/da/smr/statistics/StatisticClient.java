@@ -23,7 +23,7 @@ import org.apache.thrift.transport.TTransportException;
 
 import ch.usi.da.smr.thrift.gen.Decision;
 import ch.usi.da.smr.thrift.gen.Value;
-import ch.usi.da.smr.transport.ABListener;
+import ch.usi.da.smr.transport.ThriftABListener;
 import ch.usi.da.smr.transport.ABSender;
 
 /**
@@ -39,11 +39,11 @@ public class StatisticClient implements Runnable {
 
 	private final ABSender proposer;
 	
-	private final ABListener learner;
+	private final ThriftABListener learner;
 	
 	public StatisticClient() throws TTransportException{
 		proposer = new ABSender("localhost",9081);
-		learner = new ABListener("localhost",9093);
+		learner = new ThriftABListener("localhost",9093);
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class StatisticClient implements Runnable {
 		return proposer;
 	}
 
-	public ABListener getLearner(){
+	public ThriftABListener getLearner(){
 		return learner;
 	}
 

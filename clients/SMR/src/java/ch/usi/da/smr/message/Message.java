@@ -142,7 +142,22 @@ public class Message {
 		}
 		return m;
 	}
-	
+
+	public static Message fromDecision(ch.usi.da.paxos.storage.Decision decision){
+		Message m = null;
+		if(decision.getValue() != null && decision.getValue().isSkip()){
+			m = new Message(0,"",null);
+			m.setSkip(true);
+		}else{
+			m = fromByteArray(decision.getValue().getValue());
+		}
+		if(m != null){
+			m.setInstance(decision.getInstance());
+			m.setRing(decision.getRing());
+		}
+		return m;
+	}
+
 	public static Message fromByteArray(byte[] b){
 		TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message m = new ch.usi.da.smr.thrift.gen.Message();

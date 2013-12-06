@@ -68,4 +68,8 @@ public class RingDescription {
 	public synchronized RingManager getRingManager(){
 		return ring;
 	}
+	
+	public String toString(){
+		return "ringID:" + ringID + " nodeID:" + nodeID + " " + roles;
+	}
 }

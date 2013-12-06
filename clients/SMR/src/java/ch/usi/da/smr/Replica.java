@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
-import org.apache.thrift.TException;
-import org.apache.thrift.transport.TTransportException;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
@@ -94,13 +92,19 @@ public class Replica implements Receiver {
 	
 	private int snapshot_modulo = 0; // disabled
 	
-	public Replica(PartitionManager partitions, Partition partition, int nodeID, int snapshot_modulo) throws IOException, TTransportException {
+	private final boolean use_thrift = false;
+	
+	public Replica(PartitionManager partitions, Partition partition, int nodeID, int snapshot_modulo, String zoo_host) throws Exception {
 		this.partitions = partitions;
 		this.partition = partition;
 		this.nodeID = nodeID;
 		this.snapshot_modulo = snapshot_modulo;
 		udp = new UDPSender();
-		ab = partitions.getABListener(partition,nodeID);
+		if(use_thrift){
+			ab = partitions.getThriftABListener(partition,nodeID);
+		}else{
+			ab = partitions.getRawABListener(partition,nodeID,zoo_host);
+		}
 		db = new  HashMap<String,byte[]>();
 		
 		// remote snapshot transfer server
@@ -117,7 +121,7 @@ public class Replica implements Receiver {
 		// start listening
 		ab.registerReceiver(this);
 		logger.info("Replica start serving partition: " + partition);
-		Thread t = new Thread(ab);
+		Thread t = new Thread((Runnable) ab);
 		t.setName("ABListener");
 		t.start();
 	}
@@ -131,11 +135,11 @@ public class Replica implements Receiver {
 		if(storeState(exec_instance)){
 			try {
 				for(Entry<Integer, Long> e : exec_instance.entrySet()){
-					ab.getLearner().safe(e.getKey(),e.getValue());
+					ab.safe(e.getKey(),e.getValue());
 				}
 				logger.info("Replica checkpointed up to instance " + exec_instance);
 				return true;
-			} catch (TException e) {
+			} catch (Exception e) {
 				logger.error(e);
 			}
 		}
@@ -252,7 +256,6 @@ public class Replica implements Receiver {
 	@Override
 	public void receive(Message m) {
 		logger.debug("Replica received " + m);
-		//if(exec_instance[partition.getRing()] == 0){} -> already done in start(); 
 		
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
@@ -360,7 +363,7 @@ public class Replica implements Receiver {
 			snapshot = Integer.parseInt(args[1]);
 		}
 		if (args.length < 1) {
-			System.err.println("Plese use \"Replica\" \"ringID,nodeID,Token\" [snapshot_modulo]");
+			System.err.println("Plese use \"Replica\" \"ringID,nodeID,Token\" [snapshot_modulo] [zookeeper host]");
 		} else {
 			String[] arg = args[0].split(",");
 			final int nodeID = Integer.parseInt(arg[1]);
@@ -372,7 +375,7 @@ public class Replica implements Receiver {
 				final Partition partition = new Partition(ringID,0,token);
 				partitions.init();
 				InetAddress ip = Client.getHostAddress(false);
-				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID,snapshot);
+				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID,snapshot,zoo_host);
 				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){
