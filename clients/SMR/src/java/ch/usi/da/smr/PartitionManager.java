@@ -41,6 +41,8 @@ import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.ring.RingDescription;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
+import ch.usi.da.smr.transport.RawABSender;
+import ch.usi.da.smr.transport.ThriftABSender;
 import ch.usi.da.smr.transport.RawABListener;
 import ch.usi.da.smr.transport.ThriftABListener;
 
@@ -57,7 +59,9 @@ public class PartitionManager implements Watcher {
 	
 	private final static Logger logger = Logger.getLogger(PartitionManager.class);
 	
-	private final ZooKeeper zoo;
+	private final String zoo_host;
+	
+	private ZooKeeper zoo;
 	
 	private final String prefix = "/smr";
 	
@@ -71,12 +75,13 @@ public class PartitionManager implements Watcher {
 	
 	private int global_ring = 16;
 	
-	public PartitionManager(ZooKeeper zoo) throws IOException {
-		this.zoo = zoo;
+	public PartitionManager(String zoo_host) {
+		this.zoo_host = zoo_host;
 	}
 
-	public void init() throws KeeperException, InterruptedException {
+	public void init() throws KeeperException, InterruptedException, IOException {
 		logger.info("Init PartitionManager");
+		zoo = new ZooKeeper(zoo_host,3000,null);
 		zoo.register(this);
 		// create path
 		String p = "";
@@ -165,12 +170,12 @@ public class PartitionManager implements Watcher {
 		return -1;
 	}
 
-	public ABListener getRawABListener(Partition partition, int replicaID, String zoo_host) throws IOException, KeeperException, InterruptedException {
+	public ABListener getRawABListener(Partition partition, int replicaID) throws IOException, KeeperException, InterruptedException {
 		List<PaxosRole> role = new ArrayList<PaxosRole>();
 		role.add(PaxosRole.Learner);
 		List<RingDescription> rings = new ArrayList<RingDescription>();
 		rings.add(new RingDescription(getRing(partition),replicaID, role));
-		rings.add(new RingDescription(getGlobalRing(),replicaID,role));
+		//TODO: remove testing only rings.add(new RingDescription(getGlobalRing(),replicaID,role));
 		logger.info("Create RawABListener " + rings);
 		Thread.sleep(1000); // wait until PartitionManger is ready
 		return new RawABListener(zoo_host,rings);
@@ -195,8 +200,27 @@ public class PartitionManager implements Watcher {
 		logger.info("ThriftABListener host: " + host + ":" + (9090+replicaID));
 		return new ThriftABListener(host,9090+replicaID);
 	}
-	
-	public ABSender getABSender(Partition partition, int clientID) throws TTransportException {
+
+	public ABSender getRawABSender(Partition partition, int clientID) throws IOException, KeeperException, InterruptedException {
+		int ring = global_ring;
+		if(partition != null){
+			ring = partition.getRing();
+		}
+		if(proposers.containsKey(ring + "-" + clientID)){
+			return proposers.get(ring + "-" + clientID);
+		}else{
+			List<PaxosRole> role = new ArrayList<PaxosRole>();
+			role.add(PaxosRole.Proposer);
+			List<RingDescription> rings = new ArrayList<RingDescription>();
+			rings.add(new RingDescription(ring, clientID, role));
+			logger.info("RawABSender " + rings);
+			ABSender proposer = new RawABSender(zoo_host, rings);
+			proposers.put(ring + "-" + clientID, proposer);
+			return proposer;
+		}
+	}
+
+	public ABSender getThriftABSender(Partition partition, int clientID) throws TTransportException {
 		int ring = global_ring;
 		if(partition != null){
 			ring = partition.getRing();
@@ -216,8 +240,8 @@ public class PartitionManager implements Watcher {
 			} catch (KeeperException | InterruptedException e) {
 				logger.error(e);
 			}
-			logger.info("ABSender host: " + host + ":" + (9080+clientID));
-			ABSender proposer = new ABSender(host,9080+clientID);
+			logger.info("ThriftABSender host: " + host + ":" + (9080+clientID));
+			ABSender proposer = new ThriftABSender(host,9080+clientID);
 			proposers.put(ring + "-" + clientID, proposer);
 			return proposer;
 		}

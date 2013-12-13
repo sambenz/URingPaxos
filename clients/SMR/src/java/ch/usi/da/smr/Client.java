@@ -37,7 +37,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.thrift.transport.TTransportException;
-import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
@@ -75,7 +74,7 @@ public class Client implements Receiver {
 		this.partitions = partitions;
 		this.connectMap = connectMap;
 		ip = getHostAddress(false);
-		port = 3000 + new Random().nextInt(1000);
+		port = 5000 + new Random(Thread.currentThread().getId()).nextInt(15000);
 		udp = new UDPListener(port);
 		Thread t = new Thread(udp);
 		t.setName("UDPListener");
@@ -86,7 +85,7 @@ public class Client implements Receiver {
 		udp.registerReceiver(this);		
 	}
 	
-	public void readStdin() throws TTransportException {
+	public void readStdin() throws Exception {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	    String s;
 	    try {
@@ -155,7 +154,7 @@ public class Client implements Receiver {
 	 * @return A Response object on which you can wait
 	 * @throws TTransportException
 	 */
-	public synchronized Response send(Command cmd) throws TTransportException {
+	public synchronized Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
 		open_cmd.put(cmd.getID(),r);
     	if(cmd.getType() == CommandType.GETRANGE){
@@ -236,22 +235,23 @@ public class Client implements Receiver {
 		} else {
 			final Map<Integer,Integer> connectMap = parseConnectMap(args[0]);
 			try {
-				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
-				final PartitionManager partitions = new PartitionManager(zoo);
+				final PartitionManager partitions = new PartitionManager(zoo_host);
 				partitions.init();
 				final Client client = new Client(partitions,connectMap);
 				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){
 						client.stop();
-						try {
-							zoo.close();
-						} catch (InterruptedException e) {
-						}
 					}
 				});
 				client.init();
+				
+				//for(int i=0;i<1000000;i++){
+				//	Command cmd = new Command(i,CommandType.PUT,"user" + i,new byte[1000]);
+				//	client.send(cmd);
+				//}
 				client.readStdin();
+				
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);

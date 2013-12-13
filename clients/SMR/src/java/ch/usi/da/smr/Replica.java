@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
-import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
@@ -103,7 +102,7 @@ public class Replica implements Receiver {
 		if(use_thrift){
 			ab = partitions.getThriftABListener(partition,nodeID);
 		}else{
-			ab = partitions.getRawABListener(partition,nodeID,zoo_host);
+			ab = partitions.getRawABListener(partition,nodeID);
 		}
 		db = new  HashMap<String,byte[]>();
 		
@@ -255,8 +254,8 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		logger.debug("Replica received " + m);
-		
+		//logger.debug("Replica received " + m);
+
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
 			return;
@@ -264,7 +263,7 @@ public class Replica implements Receiver {
 			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
-		
+
 		List<Command> cmds = new ArrayList<Command>();
 
 		// recover if a not ascending instance arrives 
@@ -332,10 +331,10 @@ public class Replica implements Receiver {
 			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,data);
 			    			cmds.add(cmd);
 						}
-						/*else{
-			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,null);
-			    			cmds.add(cmd);
-						}*/					
+						//else{
+			    		//	Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,null);
+			    		//	cmds.add(cmd);
+						//}					
 						from++;
 						if(msg++ > max_response_msg){ break; }
 					}
@@ -346,6 +345,7 @@ public class Replica implements Receiver {
 			}
 		}
 		exec_instance.put(m.getRing(),m.getInstnce());
+		
 		Message msg = new Message(m.getID(),m.getSender(),cmds);
 		udp.send(msg);
 	}
@@ -370,8 +370,7 @@ public class Replica implements Receiver {
 			final int ringID = Integer.parseInt(arg[0]);
 			final int token = Integer.parseInt(arg[2]);
 			try {
-				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
-				final PartitionManager partitions = new PartitionManager(zoo);
+				final PartitionManager partitions = new PartitionManager(zoo_host);
 				final Partition partition = new Partition(ringID,0,token);
 				partitions.init();
 				InetAddress ip = Client.getHostAddress(false);
@@ -380,10 +379,6 @@ public class Replica implements Receiver {
 					@Override
 					public void run(){
 						replica.close();
-						try {
-							zoo.close();
-						} catch (InterruptedException e) {
-						}
 					}
 				});
 				replica.start();

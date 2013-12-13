@@ -26,9 +26,6 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.thrift.transport.TTransportException;
-import org.apache.zookeeper.ZooKeeper;
-
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.transport.Response;
@@ -57,7 +54,6 @@ public class YCSB extends DB {
     private static final String MAP = "smr.map";
     private static final String MAP_DEFAULT = "1,1;16,1";
 
-	private ZooKeeper zoo;
 	private PartitionManager partitions;
 	private Client client;
 	
@@ -73,8 +69,7 @@ public class YCSB extends DB {
 	public void init() throws DBException {
 		final Map<Integer,Integer> connectMap = Client.parseConnectMap(getProperties().getProperty(MAP, MAP_DEFAULT));
 		try {
-			zoo = new ZooKeeper(getProperties().getProperty(HOST, HOST_DEFAULT),3000,null);
-			partitions = new PartitionManager(zoo);
+			partitions = new PartitionManager(getProperties().getProperty(HOST, HOST_DEFAULT));
 			partitions.init();
 			client = new Client(partitions,connectMap);
 			client.init();
@@ -103,7 +98,7 @@ public class YCSB extends DB {
 					}
 				}
 			}
-		} catch (TTransportException | InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ERROR;
@@ -127,7 +122,7 @@ public class YCSB extends DB {
     			}
 				return OK;
 			}
-		} catch (TTransportException | InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ERROR;
@@ -158,7 +153,7 @@ public class YCSB extends DB {
 					return OK;
 				}
 			}
-		} catch (TTransportException | InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ERROR;
@@ -176,19 +171,10 @@ public class YCSB extends DB {
 					return OK;
 				}
 			}
-		} catch (TTransportException | InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ERROR;
-	}
-
-	@Override
-	public void cleanup() throws DBException {
-		client.stop();
-		try {
-			zoo.close();
-		} catch (InterruptedException e) {
-		}		
 	}
 
 	public Client getClient(){
@@ -239,7 +225,7 @@ public class YCSB extends DB {
     	YCSB y = new YCSB();
     	y.init();
     	Client c = y.getClient(); // test performance (batching) asynchronous 
-    	for(int i=0;i<100000;i++){
+    	for(int i=0;i<1000000;i++){
         	c.send(new Command(i,CommandType.PUT,"user" + i,new byte[1000]));
     	}
     	y.cleanup();

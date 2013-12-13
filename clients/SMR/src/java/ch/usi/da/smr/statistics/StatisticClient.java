@@ -24,7 +24,7 @@ import org.apache.thrift.transport.TTransportException;
 import ch.usi.da.smr.thrift.gen.Decision;
 import ch.usi.da.smr.thrift.gen.Value;
 import ch.usi.da.smr.transport.ThriftABListener;
-import ch.usi.da.smr.transport.ABSender;
+import ch.usi.da.smr.transport.ThriftABSender;
 
 /**
  * Name: StatisticClient<br>
@@ -37,12 +37,12 @@ import ch.usi.da.smr.transport.ABSender;
  */
 public class StatisticClient implements Runnable {
 
-	private final ABSender proposer;
+	private final ThriftABSender proposer;
 	
 	private final ThriftABListener learner;
 	
 	public StatisticClient() throws TTransportException{
-		proposer = new ABSender("localhost",9081);
+		proposer = new ThriftABSender("localhost",9081);
 		learner = new ThriftABListener("localhost",9093);
 	}
 
@@ -61,7 +61,7 @@ public class StatisticClient implements Runnable {
 		}
 	}
 
-	public ABSender getProposer(){
+	public ThriftABSender getProposer(){
 		return proposer;
 	}
 

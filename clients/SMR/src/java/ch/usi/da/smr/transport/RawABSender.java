@@ -25,56 +25,36 @@ import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingDescription;
-import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.smr.message.Message;
 
 /**
- * Name: RawABListener<br>
+ * Name: RawABSender<br>
  * Description: <br>
  * 
- * Creation date: Dec 06, 2013<br>
+ * Creation date: Dec 13, 2013<br>
  * $Id$
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class RawABListener implements ABListener, Runnable {
-	
-	private Receiver receiver = null;
-	
+public class RawABSender implements ABSender {
+
 	private final Node paxos;
+
+	private final int ring;
 	
-	public RawABListener(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
+	public RawABSender(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
 		paxos = new Node(zoo_host, rings);
+		ring = rings.get(0).getRingID();
 		paxos.start();
 	}
-
+			
 	@Override
-	public void run() {
-		while(true) {
-			try {
-				Decision d = paxos.getLearner().getDecisions().take();
-				if(d != null && d.getValue() != null){					
-					Message m = Message.fromDecision(d);
-					if(m != null && receiver != null){
-						receiver.receive(m);
-					}
-				}
-			} catch (InterruptedException e) {
-				break;
-			}
-		}
+	public long abroadcast(Message m){
+		paxos.getProposer(ring).propose(Message.toByteArray(m));
+		return 1;
 	}
-
+	
 	@Override
-	public void safe(int ring, long instance) {
-		paxos.getLearner().setSafeInstance(ring, instance);
-	}
-
-	@Override
-	public void registerReceiver(Receiver receiver){
-		this.receiver = receiver; 
-	}
-
 	public void close(){
 		try {
 			paxos.stop();

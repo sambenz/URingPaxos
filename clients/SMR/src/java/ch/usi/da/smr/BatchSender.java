@@ -18,12 +18,14 @@ package ch.usi.da.smr;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.Message;
@@ -49,11 +51,17 @@ public class BatchSender implements Runnable {
 	
 	private final BlockingQueue<Response> queue;
 	
-	private final int batch_size = 8192; // 0: disable
+	private final int batch_size = 8912; // 0: disable
 	
-	public BatchSender(int ring,Partition p, Client client) throws TTransportException {
+	private final boolean use_thrift = true;
+	
+	public BatchSender(int ring,Partition p, Client client) throws TTransportException, IOException, KeeperException, InterruptedException {
 		this.client = client;
-		sender = client.getPartitions().getABSender(p,client.getConnectMap().get(ring));
+		if(use_thrift){
+			sender = client.getPartitions().getThriftABSender(p,client.getConnectMap().get(ring));
+		}else{
+			sender = client.getPartitions().getRawABSender(p,client.getConnectMap().get(ring));			
+		}
 		queue = client.getSendQueues().get(ring);
 	}
 	

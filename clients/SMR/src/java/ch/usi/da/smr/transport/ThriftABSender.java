@@ -33,7 +33,7 @@ import ch.usi.da.smr.thrift.gen.PaxosProposerService;
 import ch.usi.da.smr.thrift.gen.Value;
 
 /**
- * Name: ABSender<br>
+ * Name: ThriftABSender<br>
  * Description: <br>
  * 
  * Creation date: Mar 12, 2013<br>
@@ -41,7 +41,7 @@ import ch.usi.da.smr.thrift.gen.Value;
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class ABSender {
+public class ThriftABSender implements ABSender {
 
 	private final TTransport transport;
     
@@ -49,17 +49,22 @@ public class ABSender {
 	
     private final PaxosProposerService.Client proposer;
 
-	public ABSender(String host, int port) throws TTransportException {
+	public ThriftABSender(String host, int port) throws TTransportException {
     	transport = new TFramedTransport(new TSocket(host,port));
         protocol = new TBinaryProtocol(transport);
         proposer = new PaxosProposerService.Client(protocol);
         transport.open();
 	}
-			
+	
+	@Override
 	public long abroadcast(Message m){
 		Value value = new Value(ByteBuffer.wrap(Message.toByteArray(m)));
 		try {
-			return proposer.propose(value);
+			//long start = System.nanoTime();
+			long ret = 1; //proposer.propose(value);
+			proposer.nb_propose(value);
+			//System.err.println(System.nanoTime() - start);
+			return ret;
 		} catch (TException e) {
 			e.printStackTrace();
 			return -1;
@@ -70,6 +75,7 @@ public class ABSender {
 		return proposer;
 	}
 	
+	@Override
 	public void close(){
 		transport.close();
 	}
