@@ -296,7 +296,10 @@ public class CoordinatorRole extends Role {
 		int q = 0;
 		for(String is : s.split(";")){
 			try {
-				long i = Long.valueOf(is);
+				long i = 0;
+				if(!is.isEmpty()){
+					i = Long.valueOf(is);
+				}
 				q++;
 				if(i == 0) { return last_trimmed_instance; } // notify recovering learner what is online
 				if(i<min){
