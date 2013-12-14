@@ -175,7 +175,7 @@ public class PartitionManager implements Watcher {
 		role.add(PaxosRole.Learner);
 		List<RingDescription> rings = new ArrayList<RingDescription>();
 		rings.add(new RingDescription(getRing(partition),replicaID, role));
-		//TODO: remove testing only rings.add(new RingDescription(getGlobalRing(),replicaID,role));
+		rings.add(new RingDescription(getGlobalRing(),replicaID,role));
 		logger.info("Create RawABListener " + rings);
 		Thread.sleep(1000); // wait until PartitionManger is ready
 		return new RawABListener(zoo_host,rings);

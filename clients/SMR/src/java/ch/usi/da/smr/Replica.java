@@ -204,7 +204,6 @@ public class Replica implements Receiver {
 				if(newerState(nstate,state)){
 					state = nstate;
 					host = h;
-					System.err.println(h);
 				}
 			}
 			synchronized(db){
@@ -231,9 +230,13 @@ public class Replica implements Receiver {
 				}
 			}
 		} catch (IOException | ClassNotFoundException e) {
-			instances.put(partitions.getGlobalRing(),0L);
-			for(Partition p : partitions.getPartitions()){
-				instances.put(p.getRing(),0L);
+			if(!exec_instance.isEmpty()){
+				return exec_instance;
+			}else{ // init to 0
+				instances.put(partitions.getGlobalRing(),0L);
+				for(Partition p : partitions.getPartitions()){
+					instances.put(p.getRing(),0L);
+				}				
 			}
 			logger.error(e);
 		}
@@ -254,7 +257,7 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		//logger.debug("Replica received " + m);
+		//logger.debug("Replica received " + m.getRing() + " " + m.getInstnce() + "(" + m + ")");
 
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
@@ -268,8 +271,8 @@ public class Replica implements Receiver {
 
 		// recover if a not ascending instance arrives 
 		if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
-			logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));
 			while(m.getInstnce()-1 > exec_instance.get(m.getRing())){
+				logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));				
 				exec_instance = installState();
 			}
 		}
@@ -315,7 +318,7 @@ public class Replica implements Receiver {
 					}
 					break;
 				case GETRANGE:
-					int from = Integer.valueOf(c.getKey());
+					int from = Integer.valueOf(c.getKey()); //TODO: non integer keys?
 					if(from < partition.getLow()){
 						from = partition.getLow();
 					}

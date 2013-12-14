@@ -78,7 +78,7 @@ public class LearnerRole extends Role implements Learner {
 	public long batch_count = 0;
 	
 	public long deliver_bytes = 0;
-
+	
 	/**
 	 * @param ring
 	 */
@@ -176,7 +176,7 @@ public class LearnerRole extends Role implements Learner {
 							}
 						}
 					}else{
-						deliver_count++;					
+						deliver_count++;
 						values.add(d);
 					}
 				}else{
@@ -201,9 +201,9 @@ public class LearnerRole extends Role implements Learner {
 						delivered_instance = de.getInstance();
 						if(auto_trim) { safe_instance = delivered_instance; }
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
-						if(d.getValue().isBatch()){
+						if(de.getValue().isBatch()){
 							batch_count++;
-							ByteBuffer buffer = ByteBuffer.wrap(d.getValue().getValue());
+							ByteBuffer buffer = ByteBuffer.wrap(de.getValue().getValue());
 							while(buffer.remaining() > 0){
 								try {
 									Message n = Message.fromBuffer(buffer);
@@ -215,8 +215,8 @@ public class LearnerRole extends Role implements Learner {
 								}
 							}
 						}else{
-							deliver_count++;					
-							values.add(d);
+							deliver_count++;
+							values.add(de);
 						}
 					}else{
 						delivery.poll(); // remove duplicate
