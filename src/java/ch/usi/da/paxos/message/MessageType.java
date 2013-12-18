@@ -75,7 +75,11 @@ public enum MessageType {
 	/**
 	 * new type for RingPaxos (coord. to accptors)
 	 */
-	Trim(11);
+	Trim(11),
+	/**
+	 * new type for RingPaxos (learners to coord.)
+	 */
+	Relearn(12);
 
 	
 	private final int id;

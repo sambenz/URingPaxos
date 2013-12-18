@@ -18,7 +18,9 @@ package ch.usi.da.paxos.examples;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -43,7 +45,28 @@ import ch.usi.da.paxos.storage.Decision;
  * @author leandro.pacheco.de.sousa@usi.ch
  */
 public class TTYNode {
-	
+	static {
+		// get hostname and pid for log file name
+		String host = "localhost";
+		try {
+			Process proc = Runtime.getRuntime().exec("hostname");
+			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
+			byte [] b = new byte[in.available()];
+			in.read(b);
+			in.close();
+			host = new String(b).replace("\n","");
+		} catch (IOException e) {
+		}
+		int pid = 0;
+		try {
+			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
+		} catch (NumberFormatException | IOException e) {
+		}
+		System.setProperty("logfilename", host + "-" + pid + ".log");
+		System.setProperty("valuesfilename", host + "-" + pid + ".values");
+		System.setProperty("proposalfilename", host + "-" + pid + ".proposal");		
+	}
+
 	private final static Logger logger = Logger.getLogger(TTYNode.class);
 
 	private final static Logger valuelogger = Logger.getLogger(Value.class);
@@ -114,7 +137,7 @@ public class TTYNode {
 					Decision d = paxos.getLearner().getDecisions().take();
 					if(valuelogger.isDebugEnabled()){
 						valuelogger.debug(d);
-					}else if(valuelogger.isInfoEnabled() && !d.getValue().isSkip()){
+					}else if(valuelogger.isInfoEnabled() && !d.getValue().isSkip() && d.getValue().getValue().length > 0){
 						valuelogger.info(d.getValue().asString());
 					}
 				} catch (InterruptedException e) {

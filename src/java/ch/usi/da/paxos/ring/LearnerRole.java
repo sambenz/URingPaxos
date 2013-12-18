@@ -129,9 +129,9 @@ public class LearnerRole extends Role implements Learner {
 					Decision head = delivery.peek();
 					for(long i=delivered_instance+1;i<head.getInstance();i++){
 						if(highest_online_instance == 0 || i <= highest_online_instance){
-							Message m = new Message(i,ring.getRingSuccessor(ring.getNodeID()),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
-							ring.getNetwork().send(m);
+							Message m = new Message(i,ring.getNodeID(),PaxosRole.Leader,MessageType.Relearn,0,null);
 							logger.debug("Learner re-request missing instance " + i);
+							ring.getNetwork().receive(m);
 						}else{
 							recovered = false;
 						}

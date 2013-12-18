@@ -55,7 +55,9 @@ public class ProposerRole extends Role implements Proposer {
 	private final static Logger logger = Logger.getLogger(ProposerRole.class);
 
 	private final static Logger stats = Logger.getLogger("ch.usi.da.paxos.Stats");
-	
+
+	private final static Logger proposallogger = Logger.getLogger("ch.usi.da.paxos.storage.Proposal");
+
 	private final RingManager ring;
 	
 	private final RandomDataGenerator random = new RandomDataGenerator();;
@@ -167,6 +169,11 @@ public class ProposerRole extends Role implements Proposer {
 	public FutureDecision propose(byte[] b){
 		send_count++;
 		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),b);
+		if(proposallogger.isDebugEnabled()){
+			proposallogger.debug(v);
+		}else if(proposallogger.isInfoEnabled()){
+			proposallogger.info(v.asString());
+		}
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
 		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v);
@@ -199,7 +206,7 @@ public class ProposerRole extends Role implements Proposer {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("proposer " + ring.getNodeID() + " received " + m);
 		}*/
-		if(m.getType() == MessageType.Decision && m.getSender() == ring.getNodeID()){
+		if(m.getType() == MessageType.Decision){
 			String ID = m.getValue().getID();
 			if(proposals.containsKey(ID)){
 				Proposal p = proposals.get(ID);
@@ -210,13 +217,13 @@ public class ProposerRole extends Role implements Proposer {
 						while(buffer.remaining() > 0){
 							try {
 								Message n = Message.fromBuffer(buffer);
-								set_decision(fromRing,n);
+								set_decision(fromRing,n,n.getValue());
 							} catch (Exception e) {
 								logger.error("Proposer could not de-serialize batch message!" + e);
 							}
 						}
 					}else{
-						set_decision(fromRing,m);
+						set_decision(fromRing,m,v);
 					}
 				}else{
 					logger.error("Proposer received Decision with different values for same instance " + m.getInstance() + "!");
@@ -226,11 +233,11 @@ public class ProposerRole extends Role implements Proposer {
 		}
 	}
 
-	private void set_decision(RingManager fromRing,Message m){
+	private void set_decision(RingManager fromRing,Message m,Value v){
 		String ID = m.getValue().getID();
 		if(futures.containsKey(ID)){
 			FutureDecision f = futures.get(ID);
-			f.setDecision(new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),m.getValue()));
+			f.setDecision(new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),v));
 			futures.remove(ID);
 		}
 		if(test){
@@ -249,7 +256,7 @@ public class ProposerRole extends Role implements Proposer {
 			long time = System.nanoTime();
 			long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
 			long lat = time - send_time;
-			logger.debug("Value " + m.getValue() + " proposed and learned in " + lat + " ns (@proposer)");
+			logger.debug("Value " + v + " proposed and learned in " + lat + " ns (@proposer)");
 		}		
 	}
 

@@ -149,13 +149,18 @@ public class NetworkManager {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("receive network message (ring:" + ring.getRingID() + ") : " + m);
 		}*/
+
 		if(stats.isDebugEnabled()){
 			messages_distribution[m.getType().getId()]++;
 			messages_size[m.getType().getId()] = messages_size[m.getType().getId()] + Message.length(m);
 		}
 		
 		// network forwarding
-		if(m.getType() == MessageType.Value){
+		if(m.getType() == MessageType.Relearn){
+			if(leader == null){
+				send(m);
+			}
+		}else if(m.getType() == MessageType.Value){
 			if(ring.getRingSuccessor(ring.getNodeID()) != m.getSender()){ // D,v -> until predecessor(P0)
 				send(m);
 			}
@@ -189,7 +194,11 @@ public class NetworkManager {
 		}
 
 		// local delivery
-		if(m.getType() == MessageType.Value){
+		if(m.getType() == MessageType.Relearn){
+			if(leader != null){
+				leader.deliver(ring,m);
+			}
+		}else if(m.getType() == MessageType.Value){
 			if(learner != null){
 				learner.deliver(ring,m);
 			}

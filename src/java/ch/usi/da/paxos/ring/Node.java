@@ -18,7 +18,6 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -49,26 +48,6 @@ import ch.usi.da.paxos.examples.Util;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class Node implements PaxosNode {
-	static {
-		// get hostname and pid for log file name
-		String host = "localhost";
-		try {
-			Process proc = Runtime.getRuntime().exec("hostname");
-			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
-			byte [] b = new byte[in.available()];
-			in.read(b);
-			in.close();
-			host = new String(b).replace("\n","");
-		} catch (IOException e) {
-		}
-		int pid = 0;
-		try {
-			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
-		} catch (NumberFormatException | IOException e) {
-		}
-		System.setProperty("logfilename", host + "-" + pid + ".log");
-		System.setProperty("valuesfilename", host + "-" + pid + ".values");
-	}
 
 	private final Logger logger;
 	

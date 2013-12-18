@@ -35,6 +35,14 @@
 		</layout>
 	</appender>
 
+	<appender name="PROPOSAL-FILE" class="org.apache.log4j.FileAppender">
+		<param name="file" value="${proposalfilename}" />
+		<param name="Append" value="true" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%m%n" />
+		</layout>
+	</appender>
+	
 	<category name="org.apache.zookeeper" additivity="false">
 		<priority value="error" />
 		<appender-ref ref="STDOUT" />
@@ -54,9 +62,15 @@
 	<category name="ch.usi.da.paxos.message.Value" additivity="false">
 		<priority value="debug" />
 		<appender-ref ref="VALUES-STDOUT" />
-		<!-- <appender-ref ref="VALUES-FILE" />  -->
+		<!-- <appender-ref ref="VALUES-FILE" /> -->
 	</category>
 
+	<category name="ch.usi.da.paxos.storage.Proposal" additivity="false">
+		<priority value="error" />
+		<appender-ref ref="STDOUT" />
+		<!-- <appender-ref ref="PROPOSAL-FILE" /> -->
+	</category>
+	
 	<root>
 		<priority value="info" />
 		<appender-ref ref="STDOUT" />

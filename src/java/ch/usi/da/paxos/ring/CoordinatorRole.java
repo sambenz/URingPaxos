@@ -197,10 +197,17 @@ public class CoordinatorRole extends Role {
 	}
 
 	public synchronized void deliver(RingManager fromRing,Message m){
-		/*if(logger.isDebugEnabled()){
+		if(logger.isDebugEnabled()){
 			logger.debug("coordinator " + ring.getNodeID() + " received " + m);
-		}*/
-		if(m.getType() == MessageType.Value){
+		}
+		if(m.getType() == MessageType.Relearn){
+			Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
+			if(ring.getNetwork().getAcceptor() != null){
+				ring.getNetwork().getAcceptor().deliver(ring,n);
+			}else{ // else should never happen, since there is no coordinator without acceptor!
+				ring.getNetwork().send(n);
+			}		
+		}else if(m.getType() == MessageType.Value){
 			value_count++;
 			Promise p = null;
 			try {
