@@ -39,7 +39,7 @@ public class Value implements Serializable {
 	
 	private final String ID;
 	
-	public static final String skipID  = "SKIP!";
+	private final static String skipID  = "SKIP:";
 
 	private final boolean batch;
 	
@@ -133,11 +133,14 @@ public class Value implements Serializable {
 	}
 
 	public boolean isSkip() {
-		return this.getID().equals(Value.skipID);
+		return this.getID().startsWith(Value.skipID);
 	}
 
 	public boolean isBatch() {
 		return this.batch;
 	}
 
+	public static String getSkipID(){
+		return skipID + "" + System.nanoTime();
+	}
 }

@@ -231,9 +231,7 @@ public class LearnerRole extends Role implements Learner {
 							}
 						}else{
 							deliver_count++;
-							if(de.getValue().isSkip()){
-								values.add(de);
-							}else if(!delivered.contains(de.getValue().getID())){
+							if(!delivered.contains(de.getValue().getID())){
 								values.add(de);
 								delivered.add(de.getValue().getID());
 							}

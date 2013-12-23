@@ -77,7 +77,7 @@ public class InstanceSkipper implements Runnable {
 						}
 						//send Phase2 with skip value
 						if(p != null){
-							Value v = new Value(Value.skipID,Long.toString(skip).getBytes());
+							Value v = new Value(Value.getSkipID(),Long.toString(skip).getBytes());
 							coordinator.value_count = coordinator.value_count + skip;
 							Message m = new Message(p.getInstance(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2,p.getBallot(),v);
 							if(ring.getNetwork().getLearner() != null){
