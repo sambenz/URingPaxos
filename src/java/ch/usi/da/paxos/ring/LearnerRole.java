@@ -19,9 +19,12 @@ package ch.usi.da.paxos.ring;
  */
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +62,14 @@ public class LearnerRole extends Role implements Learner {
 	
 	private final CountDownLatch latch; // used to synchronize multi-learner start
 	
+	// at most once delivery for the most recent 500k Values
+	Set<String> delivered = Collections.newSetFromMap(new LinkedHashMap<String, Boolean>(){
+		private static final long serialVersionUID = -5679181663800465934L;
+		protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+	        return size() > 500000;
+	    }
+	});
+		
 	private long next_instance = 1; // only needed to optimize linked list insert
 	
 	private long delivered_instance = 0;
@@ -210,14 +221,22 @@ public class LearnerRole extends Role implements Learner {
 									// decision from a batch will contain same instance number for all entries !!!
 									Decision bd = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),n.getValue());
 									deliver_count++;
-									values.add(bd);
+									if(!delivered.contains(bd.getValue().getID())){
+										values.add(bd);
+										delivered.add(bd.getValue().getID());
+									}
 								} catch (Exception e) {
 									logger.error("Learner could not de-serialize batch message!" + e);
 								}
 							}
 						}else{
 							deliver_count++;
-							values.add(de);
+							if(de.getValue().isSkip()){
+								values.add(de);
+							}else if(!delivered.contains(de.getValue().getID())){
+								values.add(de);
+								delivered.add(de.getValue().getID());
+							}
 						}
 					}else{
 						delivery.poll(); // remove duplicate

@@ -25,7 +25,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Random;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
 
@@ -88,9 +87,7 @@ public class NetworkManager {
 
 	public final long[] messages_size = new long[MessageType.values().length];
 
-	private final Random random = new Random(System.currentTimeMillis());
-	
-	private final boolean drop = false;
+	//private final Random random = new Random(System.currentTimeMillis());
 	
 	/**
 	 * @param ring the ring manager
@@ -155,10 +152,10 @@ public class NetworkManager {
 			logger.debug("receive network message (ring:" + ring.getRingID() + ") : " + m);
 		}*/
 
-		if(drop && (random.nextInt(100) == 1)){
+		/*if(random.nextInt(100) == 1){
 			logger.debug("!! drop: " + m);
 			return;
-		}
+		}*/
 		
 		if(stats.isDebugEnabled()){
 			messages_distribution[m.getType().getId()]++;
