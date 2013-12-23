@@ -201,7 +201,7 @@ public class CoordinatorRole extends Role {
 			logger.debug("coordinator " + ring.getNodeID() + " received " + m);
 		}*/
 		if(m.getType() == MessageType.Relearn){
-			Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(System.currentTimeMillis()+ "" + ring.getNodeID(),new byte[0]));
+			Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(Value.skipID,Long.toString(1).getBytes()));
 			if(ring.getNetwork().getAcceptor() != null){
 				ring.getNetwork().getAcceptor().deliver(ring,n);
 			}else{ // else should never happen, since there is no coordinator without acceptor!
