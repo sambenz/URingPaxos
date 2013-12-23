@@ -100,7 +100,9 @@ public class ProposerRole extends Role implements Proposer {
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_size)){
 			String v = ring.getConfiguration().get(ConfigKey.value_size);
-			if(v.toLowerCase().startsWith("uni")){
+			if(v.toLowerCase().startsWith("int")){
+				value_type = ValueType.INTVALUE;
+			}else if(v.toLowerCase().startsWith("uni")){
 				value_type = ValueType.UNIFORM;
 			}else if(v.toLowerCase().startsWith("nor")){
 				value_type = ValueType.NORMAL;
@@ -246,7 +248,7 @@ public class ProposerRole extends Role implements Proposer {
 			long lat = time - send_time;
 			latency.add(lat);
 			if(send_count < value_count){
-				propose(new byte[getValueSize()]);
+				propose(getTestValue());
 			}else{
 				printHistogram();
 				test = false;
@@ -278,9 +280,11 @@ public class ProposerRole extends Role implements Proposer {
 		test = true;
 	}
 	
-	public int getValueSize(){
+	public byte[] getTestValue(){
 		int v = value_size;
 		switch(value_type){
+		case INTVALUE: // use for correctness test
+			return Integer.toString(random.nextInt(0,Integer.MAX_VALUE)).getBytes();
 		case NORMAL: 
 			v = (int)random.nextGaussian(16000,14000); // tune this parameter to something meaningful
 			break;
@@ -295,9 +299,9 @@ public class ProposerRole extends Role implements Proposer {
 			break;
 		}
 		if(v > 0 && v <= 60000){
-			return v;
+			return new byte[v];
 		}else{
-			return value_size;
+			return new byte[value_size];
 		}
 	}
 

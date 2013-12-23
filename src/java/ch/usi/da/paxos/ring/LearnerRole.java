@@ -207,6 +207,7 @@ public class LearnerRole extends Role implements Learner {
 							while(buffer.remaining() > 0){
 								try {
 									Message n = Message.fromBuffer(buffer);
+									// decision from a batch will contain same instance number for all entries !!!
 									Decision bd = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),n.getValue());
 									deliver_count++;
 									values.add(bd);

@@ -5,5 +5,6 @@ public enum ValueType {
 	UNIFORM,
 	NORMAL,
 	EXPONENTIAL,
-	ZIPF;
+	ZIPF,
+	INTVALUE;
 }

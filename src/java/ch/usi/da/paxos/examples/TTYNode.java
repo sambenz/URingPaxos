@@ -95,7 +95,7 @@ public class TTYNode {
 								ProposerRole p = (ProposerRole) paxos.getProposer(ring.getRingID());
 								p.setTestMode();
 								for(int i=0;i<p.getConcurrentValues();i++){
-									p.propose(new byte[p.getValueSize()]);
+									p.propose(p.getTestValue());
 								}
 							} catch (ClassCastException e){
 								logger.error("Proposer did not support TestMode");
