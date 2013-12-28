@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosRole;
-import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 
 /**
@@ -120,7 +119,7 @@ public class MultiLearnerRole extends Role implements Learner {
 				if(skip_count[deliverRing] > 0){
 					count++;
 					skip_count[deliverRing]--;
-					logger.debug("Learner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
+					//logger.debug("MultiRingLearner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().isSkip()){

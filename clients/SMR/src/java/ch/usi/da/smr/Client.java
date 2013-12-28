@@ -84,7 +84,7 @@ public class Client implements Receiver {
 	public void init() {
 		udp.registerReceiver(this);		
 	}
-	
+
 	public void readStdin() throws Exception {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	    String s;
@@ -94,7 +94,15 @@ public class Client implements Receiver {
 		    while((s = in.readLine()) != null && s.length() != 0){
 		    	// read input
 		    	String[] line = s.split("\\s+");
-		    	if(line.length > 2){
+		    	if(line.length > 3){
+		    		try{
+		    			String arg2 = line[2];
+		    			if(arg2.equals(".")){ arg2 = ""; } // simulate empty string
+		    			cmd = new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],arg2.getBytes(),Integer.parseInt(line[3]));
+		    		}catch (IllegalArgumentException e){
+		    			System.err.println(e.getMessage());
+		    		}
+		    	}else if(line.length > 2){
 		    		try{
 		    			cmd = new Command(id,CommandType.valueOf(line[0].toUpperCase()),line[1],line[2].getBytes());
 		    		}catch (IllegalArgumentException e){
@@ -144,9 +152,9 @@ public class Client implements Receiver {
 	public void stop(){
 		udp.close();
 	}
-		
+
 	/**
-	 * Send a command (use same ID your Response ended in a timeout)
+	 * Send a command (use same ID if your Response ended in a timeout)
 	 * 
 	 * (the commands will be batched to larger Paxos instances)
 	 * 
@@ -157,30 +165,23 @@ public class Client implements Receiver {
 	public synchronized Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
 		open_cmd.put(cmd.getID(),r);
+		int ring = -1;
     	if(cmd.getType() == CommandType.GETRANGE){
-    		int ring  = partitions.getGlobalRing();
-    		if(!send_queues.containsKey(ring)){
-    			send_queues.put(ring,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(ring,null,this));
-    			t.setName("BatchSender-" + ring);
-    			t.start();
-    		}
-    		send_queues.get(ring).add(r);
+    		ring  = partitions.getGlobalRing();
     	}else{
-		    Partition p = partitions.getPartition(cmd.getKey());
-    		if(p == null){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
-    		int ring = partitions.getRing(p);
-    		if(!send_queues.containsKey(ring)){
+    		ring = partitions.getRing(cmd.getKey());
+    	}
+		if(ring < 0){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
+    	if(!send_queues.containsKey(ring)){
     			send_queues.put(ring,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(ring,p,this));
+    			Thread t = new Thread(new BatchSender(ring,this));
     			t.setName("BatchSender-" + ring);
     			t.start();
-    		}
-    		send_queues.get(ring).add(r);
     	}
+    	send_queues.get(ring).add(r);
     	return r;		
 	}
-	
+
 	@Override
 	public void receive(Message m) {
 		//TODO: how handle GETRANGE responses from different partitions?
@@ -245,13 +246,13 @@ public class Client implements Receiver {
 					}
 				});
 				client.init();
-				
+
 				//for(int i=0;i<1000000;i++){
 				//	Command cmd = new Command(i,CommandType.PUT,"user" + i,new byte[1000]);
 				//	client.send(cmd);
 				//}
 				client.readStdin();
-				
+
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);

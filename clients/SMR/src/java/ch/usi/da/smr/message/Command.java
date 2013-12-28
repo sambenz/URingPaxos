@@ -45,11 +45,22 @@ public class Command {
 	
 	private final byte[] value;
 	
+	private final int count;
+	
 	public Command(int id,CommandType type,String key,byte[] value){
 		this.id = id;
 		this.type = type;
 		this.key = new String(key);
 		this.value = value;
+		this.count = 100;
+	}
+
+	public Command(int id,CommandType type,String key,byte[] value,int count){
+		this.id = id;
+		this.type = type;
+		this.key = new String(key);
+		this.value = value;
+		this.count = count;
 	}
 
 	public int getID(){
@@ -66,6 +77,10 @@ public class Command {
 	
 	public byte[] getValue(){
 		return value;
+	}
+	
+	public int getCount(){
+		return count;
 	}
 	
 	public String toString(){
@@ -88,6 +103,7 @@ public class Command {
 	public static Cmd toCmd(Command c){
 		Cmd cmd = new Cmd();
 		cmd.setId(c.getID());
+		cmd.setCount(c.getCount());
 		switch(c.getType()){
 		case DELETE:
 			cmd.setType(CmdType.DELETE); break;
@@ -129,7 +145,7 @@ public class Command {
 		case GETRANGE:
 			type = CommandType.GETRANGE; break;
 		}
-		return new Command(c.getId(),type,c.getKey(),c.getValue());
+		return new Command(c.getId(),type,c.getKey(),c.getValue(),c.getCount());
 	}
 	
 	public static Command fromByteArray(byte[] b){

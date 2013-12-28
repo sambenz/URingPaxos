@@ -37,6 +37,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
   private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
   private static final org.apache.thrift.protocol.TField KEY_FIELD_DESC = new org.apache.thrift.protocol.TField("key", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I32, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -52,6 +53,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
   public CmdType type; // required
   public String key; // required
   public ByteBuffer value; // required
+  public int count; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -62,7 +64,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
      */
     TYPE((short)2, "type"),
     KEY((short)3, "key"),
-    VALUE((short)4, "value");
+    VALUE((short)4, "value"),
+    COUNT((short)5, "count");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -85,6 +88,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
           return KEY;
         case 4: // VALUE
           return VALUE;
+        case 5: // COUNT
+          return COUNT;
         default:
           return null;
       }
@@ -126,6 +131,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
 
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
+  private static final int __COUNT_ISSET_ID = 1;
   private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
@@ -138,6 +144,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.VALUE, new org.apache.thrift.meta_data.FieldMetaData("value", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
+    tmpMap.put(_Fields.COUNT, new org.apache.thrift.meta_data.FieldMetaData("count", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Cmd.class, metaDataMap);
   }
@@ -149,7 +157,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     int id,
     CmdType type,
     String key,
-    ByteBuffer value)
+    ByteBuffer value,
+    int count)
   {
     this();
     this.id = id;
@@ -157,6 +166,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     this.type = type;
     this.key = key;
     this.value = value;
+    this.count = count;
+    setCountIsSet(true);
   }
 
   /**
@@ -175,6 +186,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       this.value = org.apache.thrift.TBaseHelper.copyBinary(other.value);
 ;
     }
+    this.count = other.count;
   }
 
   public Cmd deepCopy() {
@@ -188,6 +200,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     this.type = null;
     this.key = null;
     this.value = null;
+    setCountIsSet(false);
+    this.count = 0;
   }
 
   public int getId() {
@@ -303,6 +317,29 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     }
   }
 
+  public int getCount() {
+    return this.count;
+  }
+
+  public Cmd setCount(int count) {
+    this.count = count;
+    setCountIsSet(true);
+    return this;
+  }
+
+  public void unsetCount() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __COUNT_ISSET_ID);
+  }
+
+  /** Returns true if field count is set (has been assigned a value) and false otherwise */
+  public boolean isSetCount() {
+    return EncodingUtils.testBit(__isset_bitfield, __COUNT_ISSET_ID);
+  }
+
+  public void setCountIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __COUNT_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -337,6 +374,14 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       }
       break;
 
+    case COUNT:
+      if (value == null) {
+        unsetCount();
+      } else {
+        setCount((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -353,6 +398,9 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
 
     case VALUE:
       return getValue();
+
+    case COUNT:
+      return Integer.valueOf(getCount());
 
     }
     throw new IllegalStateException();
@@ -373,6 +421,8 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       return isSetKey();
     case VALUE:
       return isSetValue();
+    case COUNT:
+      return isSetCount();
     }
     throw new IllegalStateException();
   }
@@ -423,6 +473,15 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (!(this_present_value && that_present_value))
         return false;
       if (!this.value.equals(that.value))
+        return false;
+    }
+
+    boolean this_present_count = true;
+    boolean that_present_count = true;
+    if (this_present_count || that_present_count) {
+      if (!(this_present_count && that_present_count))
+        return false;
+      if (this.count != that.count)
         return false;
     }
 
@@ -482,6 +541,16 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetCount()).compareTo(typedOther.isSetCount());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCount()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.count, typedOther.count);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -528,6 +597,10 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     } else {
       org.apache.thrift.TBaseHelper.toString(this.value, sb);
     }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("count:");
+    sb.append(this.count);
     first = false;
     sb.append(")");
     return sb.toString();
@@ -606,6 +679,14 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 5: // COUNT
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.count = iprot.readI32();
+              struct.setCountIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -639,6 +720,9 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         oprot.writeBinary(struct.value);
         oprot.writeFieldEnd();
       }
+      oprot.writeFieldBegin(COUNT_FIELD_DESC);
+      oprot.writeI32(struct.count);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -669,7 +753,10 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (struct.isSetValue()) {
         optionals.set(3);
       }
-      oprot.writeBitSet(optionals, 4);
+      if (struct.isSetCount()) {
+        optionals.set(4);
+      }
+      oprot.writeBitSet(optionals, 5);
       if (struct.isSetId()) {
         oprot.writeI32(struct.id);
       }
@@ -682,12 +769,15 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (struct.isSetValue()) {
         oprot.writeBinary(struct.value);
       }
+      if (struct.isSetCount()) {
+        oprot.writeI32(struct.count);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, Cmd struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(4);
+      BitSet incoming = iprot.readBitSet(5);
       if (incoming.get(0)) {
         struct.id = iprot.readI32();
         struct.setIdIsSet(true);
@@ -703,6 +793,10 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (incoming.get(3)) {
         struct.value = iprot.readBinary();
         struct.setValueIsSet(true);
+      }
+      if (incoming.get(4)) {
+        struct.count = iprot.readI32();
+        struct.setCountIsSet(true);
       }
     }
   }

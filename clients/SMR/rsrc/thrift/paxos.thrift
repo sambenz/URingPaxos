@@ -42,7 +42,8 @@ struct Cmd {
   1: i32 id,
   2: CmdType type,
   3: string key,
-  4: binary value
+  4: binary value,
+  5: i32 count
 }
 
 struct Message {

@@ -30,18 +30,25 @@ package ch.usi.da.smr;
  */
 public class Partition {
 
+	private final String ID;
+
 	private final int ring;
 	
 	private final int low;
 
 	private final int high;
 
-	public Partition(int ring, int low, int high){
+	public Partition(String ID, int ring, int low, int high){
+		this.ID = ID.toUpperCase();
 		this.ring = ring;
 		this.low = low;
 		this.high = high;
 	}
 	
+	public String getID(){
+		return ID;
+	}
+
 	public int getRing(){
 		return ring;
 	}
@@ -55,16 +62,12 @@ public class Partition {
 	}
 	
 	public String toString(){
-		return low + "->" + high + " (ring " + ring + ")";
+		return ID + ": " + low + "->" + high + " (ring " + ring + ")";
 	}
 	
 	public boolean equals(Object obj) {
-		if(obj instanceof Partition){
-            if(this.low == ((Partition)obj).getLow() && 
-               this.high == ((Partition)obj).getHigh() &&
-               this.ring == ((Partition)obj).getRing()){
-                    return true;
-            }
+		if(obj instanceof Partition && this.ID.equals(((Partition)obj).getID())){
+			return true;
 		}
 		return false;
 	}

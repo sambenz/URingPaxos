@@ -38,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -65,20 +67,22 @@ public class Replica implements Receiver {
 
 	private final static Logger logger = Logger.getLogger(Replica.class);
 	
+	public final int nodeID;
+
+	public final String token;
+	
 	private final PartitionManager partitions;
 	
-	private final Partition partition;
+	private volatile int min_token;
 	
-	private final int nodeID;
-	
+	private volatile int max_token; // if min_token > max_token : replica serves whole key space
+
 	private final UDPSender udp;
-	
+
 	private final ABListener ab;
-	
-	private final Map<String,byte[]> db;
-	
-	private final int max_response_msg = 10000;
-	
+
+	private final SortedMap<String,byte[]> db;
+
 	private final String snapshot_file = "/tmp/snapshot.ser";
 
 	private final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
@@ -93,18 +97,21 @@ public class Replica implements Receiver {
 	
 	private final boolean use_thrift = false;
 	
-	public Replica(PartitionManager partitions, Partition partition, int nodeID, int snapshot_modulo, String zoo_host) throws Exception {
-		this.partitions = partitions;
-		this.partition = partition;
+	public Replica(String token, int ringID, int nodeID, int snapshot_modulo, String zoo_host) throws Exception {
 		this.nodeID = nodeID;
+		this.token = token;
 		this.snapshot_modulo = snapshot_modulo;
+		this.partitions = new PartitionManager(zoo_host);
+		final InetAddress ip = Client.getHostAddress(false);
+		partitions.init();
+		setPartition(partitions.register(nodeID, ringID, ip, token));
 		udp = new UDPSender();
 		if(use_thrift){
-			ab = partitions.getThriftABListener(partition,nodeID);
+			ab = partitions.getThriftABListener(ringID,nodeID);
 		}else{
-			ab = partitions.getRawABListener(partition,nodeID);
+			ab = partitions.getRawABListener(ringID,nodeID);
 		}
-		db = new  HashMap<String,byte[]>();
+		db = new  TreeMap<String,byte[]>();
 		
 		// remote snapshot transfer server
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
@@ -114,12 +121,23 @@ public class Replica implements Receiver {
         server.start();
 	}
 
+	public void setPartition(Partition partition){
+		logger.info("Replica update partition " + partition);
+		min_token = partition.getLow();
+		max_token = partition.getHigh();
+	}
+
 	public void start(){
+		partitions.registerPartitionChangeNotifier(this);
 		// install old state
 		exec_instance = installState();
 		// start listening
 		ab.registerReceiver(this);
-		logger.info("Replica start serving partition: " + partition);
+		if(min_token > max_token){
+			logger.info("Replica start serving partition " + token + ": whole key space");
+		}else{
+			logger.info("Replica start serving partition " + token + ": " + min_token + "->" + max_token);			
+		}
 		Thread t = new Thread((Runnable) ab);
 		t.setName("ABListener");
 		t.start();
@@ -127,7 +145,7 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
-		partitions.deregister(partition,nodeID);
+		partitions.deregister(nodeID,token);
 	}
 	
 	public boolean checkpoint(){
@@ -189,7 +207,7 @@ public class Replica implements Receiver {
 			logger.info("Replica found local snapshot: " + state);
 			bin.close();
 			// remote
-			for(String h : partitions.getReplicas()){
+			for(String h : partitions.getReplicas(token)){
 				URL url = new URL("http://" + h + ":8080/state"); //TODO: must only ask GSQ replicas
 				HttpURLConnection con = (HttpURLConnection)url.openConnection();
 				isr = new InputStreamReader(con.getInputStream());
@@ -257,7 +275,6 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		//logger.debug("Replica received " + m.getRing() + " " + m.getInstnce() + "(" + m + ")");
 
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
@@ -266,6 +283,8 @@ public class Replica implements Receiver {
 			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
+
+		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 
 		List<Command> cmds = new ArrayList<Command>();
 
@@ -317,29 +336,32 @@ public class Replica implements Receiver {
 		    			cmds.add(cmd);
 					}
 					break;
-				case GETRANGE:
-					int from = Integer.valueOf(c.getKey()); //TODO: non integer keys?
-					if(from < partition.getLow()){
-						from = partition.getLow();
-					}
-					int to = Integer.valueOf(new String(c.getValue()));
-					if(to > partition.getHigh()){
-						to = partition.getHigh();
-					}
+				case GETRANGE: // key range (token range not implemented)
+					/* Inspired by the Cassandra API:
+					The semantics of start keys and tokens are slightly different. 
+					Keys are start-inclusive; tokens are start-exclusive. Token 
+					ranges may also wrap -- that is, the end token may be less than 
+					the start one. Thus, a range from keyX to keyX is a one-element 
+					range, but a range from tokenY to tokenY is the full ring (one 
+					exception is if keyX is mapped to the minimum token, then the 
+					range from keyX to keyX is the full ring).
+					Attribute	Description
+					start_key	The first key in the inclusive KeyRange.
+					end_key		The last key in the inclusive KeyRange.
+					start_token	The first token in the exclusive KeyRange.
+					end_token	The last token in the exclusive KeyRange.
+					count		The total number of keys to permit in the KeyRange.
+					 */
+					String start_key = c.getKey();
+					String end_key = new String(c.getValue());
+					int count = c.getCount();
+					//logger.debug("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
+					//logger.debug("tailMap:" + db.tailMap(start_key).keySet() + " count:" + count);
 					int msg = 0;
-					while(from <= to){
-						String key = Integer.toString(from);
-						data = db.get(key);
-						if(data != null){
-			    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,data);
-			    			cmds.add(cmd);
-						}
-						//else{
-			    		//	Command cmd = new Command(c.getID(),CommandType.RESPONSE,key,null);
-			    		//	cmds.add(cmd);
-						//}					
-						from++;
-						if(msg++ > max_response_msg){ break; }
+					for(Entry<String,byte[]> e : db.tailMap(start_key).entrySet()){
+						if(msg++ >= count || (!end_key.isEmpty() && e.getKey().compareTo(end_key) > 0)){ break; }
+			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,e.getKey(),e.getValue());
+			    		cmds.add(cmd);
 					}
 					break;
 				default:
@@ -371,13 +393,9 @@ public class Replica implements Receiver {
 			String[] arg = args[0].split(",");
 			final int nodeID = Integer.parseInt(arg[1]);
 			final int ringID = Integer.parseInt(arg[0]);
-			final int token = Integer.parseInt(arg[2]);
+			final String token = arg[2];
 			try {
-				final PartitionManager partitions = new PartitionManager(zoo_host);
-				final Partition partition = new Partition(ringID,0,token);
-				partitions.init();
-				InetAddress ip = Client.getHostAddress(false);
-				final Replica replica = new Replica(partitions,partitions.register(partition,nodeID,ip),nodeID,snapshot,zoo_host);
+				final Replica replica = new Replica(token,ringID,nodeID,snapshot,zoo_host);
 				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){

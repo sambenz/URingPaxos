@@ -55,12 +55,12 @@ public class BatchSender implements Runnable {
 	
 	private final boolean use_thrift = true;
 	
-	public BatchSender(int ring,Partition p, Client client) throws TTransportException, IOException, KeeperException, InterruptedException {
+	public BatchSender(int ring, Client client) throws TTransportException, IOException, KeeperException, InterruptedException {
 		this.client = client;
 		if(use_thrift){
-			sender = client.getPartitions().getThriftABSender(p,client.getConnectMap().get(ring));
+			sender = client.getPartitions().getThriftABSender(ring,client.getConnectMap().get(ring));
 		}else{
-			sender = client.getPartitions().getRawABSender(p,client.getConnectMap().get(ring));			
+			sender = client.getPartitions().getRawABSender(ring,client.getConnectMap().get(ring));
 		}
 		queue = client.getSendQueues().get(ring);
 	}

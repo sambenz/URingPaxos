@@ -106,7 +106,7 @@ public class YCSB extends DB {
 
 	@Override
 	public int scan(String table, String startkey, int recordcount,	Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
-    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GETRANGE,startkey,Integer.toString(recordcount).getBytes());
+    	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GETRANGE,startkey,("").getBytes(),recordcount);
 		try {
 			Response r = client.send(cmd);
 			if(r != null){
