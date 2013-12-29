@@ -287,26 +287,33 @@ public class PartitionManager implements Watcher {
 		PartitionManager partitions = new PartitionManager("127.0.0.1:2181");
 		partitions.init();
 
-		//partitions.register(replicaID,1,InetAddress.getLocalHost(),"FF");
-		partitions.register(replicaID,2,InetAddress.getLocalHost(),"0");
-		partitions.register(replicaID,3,InetAddress.getLocalHost(),"-FF");
+		// two partitions
+		partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
+		partitions.register(replicaID,2,InetAddress.getLocalHost(),"7FFFFFFF");
 
+		// four partitions
+		partitions.register(replicaID,3,InetAddress.getLocalHost(),"3FFFFFFF");
+		partitions.register(replicaID,4,InetAddress.getLocalHost(),"-3FFFFFFF");		
+
+		List<String> ps = new ArrayList<String>();
 		for(Partition p : partitions.getPartitions()){
-			System.out.println(p);
+			ps.add(p.getID());
+			System.out.println(p + " size:" + (p.getHigh()-p.getLow()));
 		}
-
+		
 		/*Thread.sleep(1000);
-		partitions.deregister(replicaID,"FF");
+		partitions.deregister(replicaID,"0");
 		Thread.sleep(1000);
 		System.out.println("---------------------------------------------");
 		for(Partition p : partitions.getPartitions()){
 			System.out.println(p);
 		}*/
 
-		System.err.println(partitions.getRing(1));
+		//System.err.println(partitions.getRing(1));
 
-		partitions.deregister(replicaID,"0");
-		partitions.deregister(replicaID,"-FF");
+		for(String p : ps){
+			partitions.deregister(replicaID,p);
+		}
 	}
 
 }

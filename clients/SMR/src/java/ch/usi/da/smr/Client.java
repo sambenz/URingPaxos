@@ -184,7 +184,8 @@ public class Client implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		//TODO: how handle GETRANGE responses from different partitions?
+		System.err.println(m);
+		
 		// un-batch response
 		Map<Integer,List<Command>> ml = new HashMap<Integer,List<Command>>();
 		for(Command c : m.getCommands()){
@@ -196,6 +197,7 @@ public class Client implements Receiver {
 		}
 		// set response
 		for(Entry<Integer, List<Command>> e : ml.entrySet()){
+			//TODO: how handle GETRANGE responses from different partitions?
 			if(open_cmd.containsKey(e.getKey())){
 				open_cmd.get(e.getKey()).setResponse(e.getValue());
 				open_cmd.remove(e.getKey());

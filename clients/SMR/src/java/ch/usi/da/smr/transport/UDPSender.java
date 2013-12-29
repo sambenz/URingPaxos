@@ -45,7 +45,7 @@ public class UDPSender {
 	
 	public void send(Message m){
 		try {
-			String[] sender = m.getSender().split(":");
+			String[] sender = m.getTo().split(":");
 			InetAddress address = InetAddress.getByName(sender[0]);
 			int port = Integer.parseInt(sender[1]);
 			byte[] buffer = Message.toByteArray(m);

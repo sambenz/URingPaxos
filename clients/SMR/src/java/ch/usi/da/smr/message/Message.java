@@ -42,8 +42,10 @@ public class Message {
 
 	private final int id;
 	
-	private final String sender;
+	private final String from;
 	
+	private final String to;
+		
 	private final List<Command> commands;
 	
 	private long instance = 0;
@@ -52,9 +54,10 @@ public class Message {
 	
 	private boolean skip = false;
 	
-	public Message(int id,String sender,List<Command> commands){
+	public Message(int id,String from,String to,List<Command> commands){
 		this.id = id;
-		this.sender = sender;
+		this.from = from;
+		this.to = to;
 		this.commands = commands;
 	}
 
@@ -62,8 +65,12 @@ public class Message {
 		return id;
 	}
 	
-	public String getSender(){
-		return sender;
+	public String getFrom(){
+		return from;
+	}
+	
+	public String getTo(){
+		return to;
 	}
 	
 	public List<Command> getCommands(){
@@ -95,7 +102,7 @@ public class Message {
 	}
 	
 	public String toString(){
-		return ("Message id:" + id + " sender:" + sender + " " + commands);
+		return ("Message id:" + id + " from:" + from + " to:" + to + " " + commands);
 	}
 	
 	public boolean equals(Object obj) {
@@ -115,7 +122,8 @@ public class Message {
 		TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message msg = new ch.usi.da.smr.thrift.gen.Message();
 		msg.setId(m.getID());
-		msg.setSender(m.getSender());
+		msg.setFrom(m.getFrom());
+		msg.setTo(m.getTo());
 		List<Cmd> cmds = new ArrayList<Cmd>();
 		for(Command c : m.getCommands()){
 			cmds.add(Command.toCmd(c));
@@ -131,7 +139,7 @@ public class Message {
 	public static Message fromDecision(Decision decision){
 		Message m = null;
 		if(decision.isSetValue() && decision.getValue().isSkip()){
-			m = new Message(0,"",null);
+			m = new Message(0,"","",null);
 			m.setSkip(true);
 		}else{
 			m = fromByteArray(decision.getValue().getCmd());
@@ -146,7 +154,7 @@ public class Message {
 	public static Message fromDecision(ch.usi.da.paxos.storage.Decision decision){
 		Message m = null;
 		if(decision.getValue() != null && decision.getValue().isSkip()){
-			m = new Message(0,"",null);
+			m = new Message(0,"","",null);
 			m.setSkip(true);
 		}else{
 			m = fromByteArray(decision.getValue().getValue());
@@ -163,7 +171,7 @@ public class Message {
 		ch.usi.da.smr.thrift.gen.Message m = new ch.usi.da.smr.thrift.gen.Message();
 		try {
 			deserializer.deserialize(m, b);
-			if(m.sender == null){
+			if(m.to == null){
 				return null;
 			}
 		} catch (TException e) {
@@ -173,6 +181,6 @@ public class Message {
 		for(Cmd c : m.getCommands()){
 			cmds.add(Command.toCommand(c));
 		}
-		return new Message(m.getId(),m.getSender(),cmds);
+		return new Message(m.getId(),m.getFrom(),m.getTo(),cmds);
 	}
 }

@@ -114,11 +114,15 @@ public class Replica implements Receiver {
 		db = new  TreeMap<String,byte[]>();
 		
 		// remote snapshot transfer server
-        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        server.createContext("/state", new SendFile(state_file));        
-        server.createContext("/snapshot", new SendFile(snapshot_file));
-        server.setExecutor(null); // creates a default executor
-        server.start();
+		try {
+			HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+			server.createContext("/state", new SendFile(state_file));        
+			server.createContext("/snapshot", new SendFile(snapshot_file));
+			server.setExecutor(null); // creates a default executor
+			server.start();
+		}catch(Exception e){
+			logger.error("Replica could not start http server: " + e);
+		}
 	}
 
 	public void setPartition(Partition partition){
@@ -330,8 +334,7 @@ public class Replica implements Receiver {
 					if(data != null){
 		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),data);
 		    			cmds.add(cmd);
-					}
-					else{
+					}else{
 		    			Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),null);
 		    			cmds.add(cmd);
 					}
@@ -363,6 +366,10 @@ public class Replica implements Receiver {
 			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,e.getKey(),e.getValue());
 			    		cmds.add(cmd);
 					}
+					if(msg == 0){
+			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),null);
+			    		cmds.add(cmd);						
+					}
 					break;
 				default:
 					System.err.println("Receive RESPONSE as Command!"); break;
@@ -371,7 +378,7 @@ public class Replica implements Receiver {
 		}
 		exec_instance.put(m.getRing(),m.getInstnce());
 		
-		Message msg = new Message(m.getID(),m.getSender(),cmds);
+		Message msg = new Message(m.getID(),token,m.getFrom(),cmds);
 		udp.send(msg);
 	}
 

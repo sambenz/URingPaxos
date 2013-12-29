@@ -48,6 +48,7 @@ struct Cmd {
 
 struct Message {
   1: i32 id,
-  2: string sender,
-  3: list<Cmd> commands
+  2: string from,
+  3: string to,
+  4: list<Cmd> commands
 }

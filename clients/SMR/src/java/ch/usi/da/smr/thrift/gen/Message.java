@@ -34,8 +34,9 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Message");
 
   private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.I32, (short)1);
-  private static final org.apache.thrift.protocol.TField SENDER_FIELD_DESC = new org.apache.thrift.protocol.TField("sender", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField COMMANDS_FIELD_DESC = new org.apache.thrift.protocol.TField("commands", org.apache.thrift.protocol.TType.LIST, (short)3);
+  private static final org.apache.thrift.protocol.TField FROM_FIELD_DESC = new org.apache.thrift.protocol.TField("from", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField TO_FIELD_DESC = new org.apache.thrift.protocol.TField("to", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField COMMANDS_FIELD_DESC = new org.apache.thrift.protocol.TField("commands", org.apache.thrift.protocol.TType.LIST, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -44,14 +45,16 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
   }
 
   public int id; // required
-  public String sender; // required
+  public String from; // required
+  public String to; // required
   public List<Cmd> commands; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
-    SENDER((short)2, "sender"),
-    COMMANDS((short)3, "commands");
+    FROM((short)2, "from"),
+    TO((short)3, "to"),
+    COMMANDS((short)4, "commands");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -68,9 +71,11 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
       switch(fieldId) {
         case 1: // ID
           return ID;
-        case 2: // SENDER
-          return SENDER;
-        case 3: // COMMANDS
+        case 2: // FROM
+          return FROM;
+        case 3: // TO
+          return TO;
+        case 4: // COMMANDS
           return COMMANDS;
         default:
           return null;
@@ -119,7 +124,9 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
-    tmpMap.put(_Fields.SENDER, new org.apache.thrift.meta_data.FieldMetaData("sender", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.FROM, new org.apache.thrift.meta_data.FieldMetaData("from", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.TO, new org.apache.thrift.meta_data.FieldMetaData("to", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.COMMANDS, new org.apache.thrift.meta_data.FieldMetaData("commands", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
@@ -133,13 +140,15 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
 
   public Message(
     int id,
-    String sender,
+    String from,
+    String to,
     List<Cmd> commands)
   {
     this();
     this.id = id;
     setIdIsSet(true);
-    this.sender = sender;
+    this.from = from;
+    this.to = to;
     this.commands = commands;
   }
 
@@ -149,8 +158,11 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
   public Message(Message other) {
     __isset_bitfield = other.__isset_bitfield;
     this.id = other.id;
-    if (other.isSetSender()) {
-      this.sender = other.sender;
+    if (other.isSetFrom()) {
+      this.from = other.from;
+    }
+    if (other.isSetTo()) {
+      this.to = other.to;
     }
     if (other.isSetCommands()) {
       List<Cmd> __this__commands = new ArrayList<Cmd>();
@@ -169,7 +181,8 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
   public void clear() {
     setIdIsSet(false);
     this.id = 0;
-    this.sender = null;
+    this.from = null;
+    this.to = null;
     this.commands = null;
   }
 
@@ -196,27 +209,51 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __ID_ISSET_ID, value);
   }
 
-  public String getSender() {
-    return this.sender;
+  public String getFrom() {
+    return this.from;
   }
 
-  public Message setSender(String sender) {
-    this.sender = sender;
+  public Message setFrom(String from) {
+    this.from = from;
     return this;
   }
 
-  public void unsetSender() {
-    this.sender = null;
+  public void unsetFrom() {
+    this.from = null;
   }
 
-  /** Returns true if field sender is set (has been assigned a value) and false otherwise */
-  public boolean isSetSender() {
-    return this.sender != null;
+  /** Returns true if field from is set (has been assigned a value) and false otherwise */
+  public boolean isSetFrom() {
+    return this.from != null;
   }
 
-  public void setSenderIsSet(boolean value) {
+  public void setFromIsSet(boolean value) {
     if (!value) {
-      this.sender = null;
+      this.from = null;
+    }
+  }
+
+  public String getTo() {
+    return this.to;
+  }
+
+  public Message setTo(String to) {
+    this.to = to;
+    return this;
+  }
+
+  public void unsetTo() {
+    this.to = null;
+  }
+
+  /** Returns true if field to is set (has been assigned a value) and false otherwise */
+  public boolean isSetTo() {
+    return this.to != null;
+  }
+
+  public void setToIsSet(boolean value) {
+    if (!value) {
+      this.to = null;
     }
   }
 
@@ -269,11 +306,19 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
       }
       break;
 
-    case SENDER:
+    case FROM:
       if (value == null) {
-        unsetSender();
+        unsetFrom();
       } else {
-        setSender((String)value);
+        setFrom((String)value);
+      }
+      break;
+
+    case TO:
+      if (value == null) {
+        unsetTo();
+      } else {
+        setTo((String)value);
       }
       break;
 
@@ -293,8 +338,11 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     case ID:
       return Integer.valueOf(getId());
 
-    case SENDER:
-      return getSender();
+    case FROM:
+      return getFrom();
+
+    case TO:
+      return getTo();
 
     case COMMANDS:
       return getCommands();
@@ -312,8 +360,10 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     switch (field) {
     case ID:
       return isSetId();
-    case SENDER:
-      return isSetSender();
+    case FROM:
+      return isSetFrom();
+    case TO:
+      return isSetTo();
     case COMMANDS:
       return isSetCommands();
     }
@@ -342,12 +392,21 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
         return false;
     }
 
-    boolean this_present_sender = true && this.isSetSender();
-    boolean that_present_sender = true && that.isSetSender();
-    if (this_present_sender || that_present_sender) {
-      if (!(this_present_sender && that_present_sender))
+    boolean this_present_from = true && this.isSetFrom();
+    boolean that_present_from = true && that.isSetFrom();
+    if (this_present_from || that_present_from) {
+      if (!(this_present_from && that_present_from))
         return false;
-      if (!this.sender.equals(that.sender))
+      if (!this.from.equals(that.from))
+        return false;
+    }
+
+    boolean this_present_to = true && this.isSetTo();
+    boolean that_present_to = true && that.isSetTo();
+    if (this_present_to || that_present_to) {
+      if (!(this_present_to && that_present_to))
+        return false;
+      if (!this.to.equals(that.to))
         return false;
     }
 
@@ -386,12 +445,22 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetSender()).compareTo(typedOther.isSetSender());
+    lastComparison = Boolean.valueOf(isSetFrom()).compareTo(typedOther.isSetFrom());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSender()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.sender, typedOther.sender);
+    if (isSetFrom()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.from, typedOther.from);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetTo()).compareTo(typedOther.isSetTo());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetTo()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.to, typedOther.to);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -430,11 +499,19 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     sb.append(this.id);
     first = false;
     if (!first) sb.append(", ");
-    sb.append("sender:");
-    if (this.sender == null) {
+    sb.append("from:");
+    if (this.from == null) {
       sb.append("null");
     } else {
-      sb.append(this.sender);
+      sb.append(this.from);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("to:");
+    if (this.to == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.to);
     }
     first = false;
     if (!first) sb.append(", ");
@@ -498,15 +575,23 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // SENDER
+          case 2: // FROM
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.sender = iprot.readString();
-              struct.setSenderIsSet(true);
+              struct.from = iprot.readString();
+              struct.setFromIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // COMMANDS
+          case 3: // TO
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.to = iprot.readString();
+              struct.setToIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 4: // COMMANDS
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
                 org.apache.thrift.protocol.TList _list0 = iprot.readListBegin();
@@ -543,9 +628,14 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
       oprot.writeFieldBegin(ID_FIELD_DESC);
       oprot.writeI32(struct.id);
       oprot.writeFieldEnd();
-      if (struct.sender != null) {
-        oprot.writeFieldBegin(SENDER_FIELD_DESC);
-        oprot.writeString(struct.sender);
+      if (struct.from != null) {
+        oprot.writeFieldBegin(FROM_FIELD_DESC);
+        oprot.writeString(struct.from);
+        oprot.writeFieldEnd();
+      }
+      if (struct.to != null) {
+        oprot.writeFieldBegin(TO_FIELD_DESC);
+        oprot.writeString(struct.to);
         oprot.writeFieldEnd();
       }
       if (struct.commands != null) {
@@ -581,18 +671,24 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
       if (struct.isSetId()) {
         optionals.set(0);
       }
-      if (struct.isSetSender()) {
+      if (struct.isSetFrom()) {
         optionals.set(1);
       }
-      if (struct.isSetCommands()) {
+      if (struct.isSetTo()) {
         optionals.set(2);
       }
-      oprot.writeBitSet(optionals, 3);
+      if (struct.isSetCommands()) {
+        optionals.set(3);
+      }
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetId()) {
         oprot.writeI32(struct.id);
       }
-      if (struct.isSetSender()) {
-        oprot.writeString(struct.sender);
+      if (struct.isSetFrom()) {
+        oprot.writeString(struct.from);
+      }
+      if (struct.isSetTo()) {
+        oprot.writeString(struct.to);
       }
       if (struct.isSetCommands()) {
         {
@@ -608,16 +704,20 @@ public class Message implements org.apache.thrift.TBase<Message, Message._Fields
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, Message struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(3);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.id = iprot.readI32();
         struct.setIdIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.sender = iprot.readString();
-        struct.setSenderIsSet(true);
+        struct.from = iprot.readString();
+        struct.setFromIsSet(true);
       }
       if (incoming.get(2)) {
+        struct.to = iprot.readString();
+        struct.setToIsSet(true);
+      }
+      if (incoming.get(3)) {
         {
           org.apache.thrift.protocol.TList _list5 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
           struct.commands = new ArrayList<Cmd>(_list5.size);
