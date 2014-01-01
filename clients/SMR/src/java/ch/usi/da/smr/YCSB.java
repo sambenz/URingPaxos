@@ -116,8 +116,10 @@ public class YCSB extends DB {
 	    			if(c.getType() == CommandType.RESPONSE){
 	    				HashMap<String, ByteIterator> tuple = new HashMap<String, ByteIterator>();
 	    				tuple.put("key", new StringByteIterator(c.getKey()));
-	    				decode(fields, new String(c.getValue()), tuple);
-	    				result.add(tuple); 
+	    				if(c.getValue() != null && c.getValue().length > 0){
+	    					decode(fields, new String(c.getValue()), tuple);
+	    					result.add(tuple);
+	    				}
 	    			}			    				
     			}
 				return OK;

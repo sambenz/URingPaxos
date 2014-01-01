@@ -61,6 +61,10 @@ public class Client implements Receiver {
 	private final UDPListener udp;
 	
 	private Map<Integer,Response> open_cmd = new HashMap<Integer,Response>();
+
+	private Map<Integer,List<Command>> open_response = new HashMap<Integer,List<Command>>();
+
+	private Map<Integer,List<String>> await_response = new HashMap<Integer,List<String>>();
 	
 	private Map<Integer, BlockingQueue<Response>> send_queues = new HashMap<Integer, BlockingQueue<Response>>();
 	
@@ -168,6 +172,11 @@ public class Client implements Receiver {
 		int ring = -1;
     	if(cmd.getType() == CommandType.GETRANGE){
     		ring  = partitions.getGlobalRing();
+    		List<String> await = new ArrayList<String>();
+    		for(Partition p : partitions.getPartitions()){
+    			await.add(p.getID());
+    		}
+    		await_response.put(cmd.getID(),await);
     	}else{
     		ring = partitions.getRing(cmd.getKey());
     	}
@@ -183,24 +192,31 @@ public class Client implements Receiver {
 	}
 
 	@Override
-	public void receive(Message m) {
-		System.err.println(m);
-		
-		// un-batch response
-		Map<Integer,List<Command>> ml = new HashMap<Integer,List<Command>>();
+	public synchronized void receive(Message m) {
+		// un-batch response (multiple responses per command_id)
 		for(Command c : m.getCommands()){
-			if(!ml.containsKey(c.getID())){
+			if(!open_response.containsKey(c.getID())){
 				List<Command> l = new ArrayList<Command>();
-				ml.put(c.getID(),l);
+				open_response.put(c.getID(),l);
 			}
-			ml.get(c.getID()).add(c);
+			open_response.get(c.getID()).add(c);
 		}
 		// set response
-		for(Entry<Integer, List<Command>> e : ml.entrySet()){
-			//TODO: how handle GETRANGE responses from different partitions?
+		for(Entry<Integer, List<Command>> e : open_response.entrySet()){
 			if(open_cmd.containsKey(e.getKey())){
-				open_cmd.get(e.getKey()).setResponse(e.getValue());
-				open_cmd.remove(e.getKey());
+				if(await_response.containsKey(e.getKey())){ // handle GETRANGE responses from different partitions
+					await_response.get(e.getKey()).remove(m.getFrom());
+					if(await_response.get(e.getKey()).isEmpty()){
+						open_cmd.get(e.getKey()).setResponse(e.getValue());
+						open_cmd.remove(e.getKey());
+						open_response.remove(e.getKey());
+						await_response.remove(e.getKey());
+					}
+				}else{
+					open_cmd.get(e.getKey()).setResponse(e.getValue());
+					open_cmd.remove(e.getKey());
+					open_response.remove(e.getKey());
+				}
 			}
 		}
 	}

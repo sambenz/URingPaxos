@@ -362,9 +362,10 @@ public class Replica implements Receiver {
 					//logger.debug("tailMap:" + db.tailMap(start_key).keySet() + " count:" + count);
 					int msg = 0;
 					for(Entry<String,byte[]> e : db.tailMap(start_key).entrySet()){
-						if(msg++ >= count || (!end_key.isEmpty() && e.getKey().compareTo(end_key) > 0)){ break; }
+						if(msg >= count || (!end_key.isEmpty() && e.getKey().compareTo(end_key) > 0)){ break; }
 			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,e.getKey(),e.getValue());
 			    		cmds.add(cmd);
+			    		msg++;
 					}
 					if(msg == 0){
 			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),null);
@@ -377,7 +378,6 @@ public class Replica implements Receiver {
 			}
 		}
 		exec_instance.put(m.getRing(),m.getInstnce());
-		
 		Message msg = new Message(m.getID(),token,m.getFrom(),cmds);
 		udp.send(msg);
 	}
