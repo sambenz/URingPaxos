@@ -368,7 +368,7 @@ public class Replica implements Receiver {
 			    		msg++;
 					}
 					if(msg == 0){
-			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,c.getKey(),null);
+			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,"",null);
 			    		cmds.add(cmd);						
 					}
 					break;

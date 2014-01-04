@@ -29,6 +29,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -60,9 +61,9 @@ public class Client implements Receiver {
 				
 	private final UDPListener udp;
 	
-	private Map<Integer,Response> open_cmd = new HashMap<Integer,Response>();
+	private Map<Integer,Response> commands = new HashMap<Integer,Response>();
 
-	private Map<Integer,List<Command>> open_response = new HashMap<Integer,List<Command>>();
+	private Map<Integer,List<Command>> responses = new HashMap<Integer,List<Command>>();
 
 	private Map<Integer,List<String>> await_response = new HashMap<Integer,List<String>>();
 	
@@ -168,7 +169,7 @@ public class Client implements Receiver {
 	 */
 	public synchronized Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
-		open_cmd.put(cmd.getID(),r);
+		commands.put(cmd.getID(),r);
 		int ring = -1;
     	if(cmd.getType() == CommandType.GETRANGE){
     		ring  = partitions.getGlobalRing();
@@ -195,27 +196,32 @@ public class Client implements Receiver {
 	public synchronized void receive(Message m) {
 		// un-batch response (multiple responses per command_id)
 		for(Command c : m.getCommands()){
-			if(!open_response.containsKey(c.getID())){
+			if(!responses.containsKey(c.getID())){
 				List<Command> l = new ArrayList<Command>();
-				open_response.put(c.getID(),l);
+				responses.put(c.getID(),l);
 			}
-			open_response.get(c.getID()).add(c);
+			List<Command> l = responses.get(c.getID());
+			if(!c.getKey().isEmpty() && !l.contains(c)){
+				l.add(c);
+			}
 		}
-		// set response
-		for(Entry<Integer, List<Command>> e : open_response.entrySet()){
-			if(open_cmd.containsKey(e.getKey())){
+		// set responses to open commands
+		Iterator<Entry<Integer, List<Command>>> it = responses.entrySet().iterator();
+		while(it.hasNext()){
+			Entry<Integer, List<Command>> e = it.next();
+			if(commands.containsKey(e.getKey())){
 				if(await_response.containsKey(e.getKey())){ // handle GETRANGE responses from different partitions
 					await_response.get(e.getKey()).remove(m.getFrom());
 					if(await_response.get(e.getKey()).isEmpty()){
-						open_cmd.get(e.getKey()).setResponse(e.getValue());
-						open_cmd.remove(e.getKey());
-						open_response.remove(e.getKey());
+						commands.get(e.getKey()).setResponse(e.getValue());
+						commands.remove(e.getKey());
 						await_response.remove(e.getKey());
+						it.remove();
 					}
 				}else{
-					open_cmd.get(e.getKey()).setResponse(e.getValue());
-					open_cmd.remove(e.getKey());
-					open_response.remove(e.getKey());
+					commands.get(e.getKey()).setResponse(e.getValue());
+					commands.remove(e.getKey());
+					it.remove();
 				}
 			}
 		}

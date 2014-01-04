@@ -89,7 +89,7 @@ public class Command {
 	
 	public boolean equals(Object obj) {
 		if(obj instanceof Command){
-            if(this.id == ((Command) obj).getID()){
+            if(this.hashCode() == ((Command) obj).hashCode()){
                     return true;
             }
 		}
@@ -97,7 +97,7 @@ public class Command {
 	}
 	
 	public int hashCode() {
-		return id;
+		return (int) (id + type.ordinal() + key.hashCode());
 	}
 
 	public static Cmd toCmd(Command c){
