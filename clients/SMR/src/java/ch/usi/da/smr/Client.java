@@ -36,8 +36,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import org.apache.thrift.transport.TTransportException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
@@ -119,6 +118,38 @@ public class Client implements Receiver {
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
+		    	}else if(s.startsWith("start")){
+		    		System.out.println("Start load test");
+		    		final int concurrent_cmd = 20; // # of threads
+		    		final int send_per_thread = 50000;
+		    		final int value_size = 15000; // in bytes
+		    		final int key_count = 50000; // 50k * 15k byte memory needed at replica
+		    		final AtomicInteger send_id = new AtomicInteger(0); 
+		    		for(int i=0;i<concurrent_cmd;i++){
+		    			Thread t = new Thread("Command Sender " + i){
+							@Override
+							public void run(){
+								System.out.println("Start sender");
+								int send_count = 0;
+								while(send_count < send_per_thread){
+									Command cmd = new Command(send_id.incrementAndGet(),CommandType.PUT,"user" + (send_id.get() % key_count), new byte[value_size]);
+									Response r = null;
+									try{
+										//long time = System.nanoTime();
+										if((r = send(cmd)) != null){
+											r.getResponse(20000); // wait response
+											//System.out.println("latency: "  + (System.nanoTime() - time) + "ns");
+										}
+									} catch (Exception e){
+										
+									}
+									send_count++;
+								}
+								System.out.println("Quit sender");
+							}
+						};
+						t.start();
+		    		}
 		    	}else{
 		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key <value>");
 		    	}
@@ -165,7 +196,7 @@ public class Client implements Receiver {
 	 * 
 	 * @param cmd The command to send
 	 * @return A Response object on which you can wait
-	 * @throws TTransportException
+	 * @throws Exception
 	 */
 	public synchronized Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
@@ -270,13 +301,7 @@ public class Client implements Receiver {
 					}
 				});
 				client.init();
-
-				//for(int i=0;i<1000000;i++){
-				//	Command cmd = new Command(i,CommandType.PUT,"user" + i,new byte[1000]);
-				//	client.send(cmd);
-				//}
 				client.readStdin();
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);

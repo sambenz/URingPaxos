@@ -222,15 +222,5 @@ public class YCSB extends DB {
             System.err.println("Empty tuple: " + tups);
         }
     }
-
-    public static void main(String[] args) throws Exception {
-    	YCSB y = new YCSB();
-    	y.init();
-    	Client c = y.getClient(); // test performance (batching) asynchronous 
-    	for(int i=0;i<1000000;i++){
-        	c.send(new Command(i,CommandType.PUT,"user" + i,new byte[1000]));
-    	}
-    	y.cleanup();
-    }
     
 }

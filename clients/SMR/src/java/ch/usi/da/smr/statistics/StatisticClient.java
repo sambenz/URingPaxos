@@ -28,7 +28,9 @@ import ch.usi.da.smr.transport.ThriftABSender;
 
 /**
  * Name: StatisticClient<br>
- * Description: <br>
+ * Description: This is a single threaded thrift interface tester.<br>
+ * 
+ * The SMR replica is not involved in this test!
  * 
  * Creation date: Mar 12, 2013<br>
  * $Id$
