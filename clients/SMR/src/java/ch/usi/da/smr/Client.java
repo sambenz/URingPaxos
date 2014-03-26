@@ -27,11 +27,14 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -68,6 +71,14 @@ public class Client implements Receiver {
 	
 	private Map<Integer, BlockingQueue<Response>> send_queues = new HashMap<Integer, BlockingQueue<Response>>();
 	
+	// we need only one response per replica group
+	Set<Integer> delivered = Collections.newSetFromMap(new LinkedHashMap<Integer, Boolean>(){
+		private static final long serialVersionUID = -5674181661800265432L;
+		protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
+	        return size() > 50000;
+	    }
+	});
+
 	private final InetAddress ip;
 	
 	private final int port;
@@ -225,6 +236,13 @@ public class Client implements Receiver {
 
 	@Override
 	public synchronized void receive(Message m) {
+		// filter away already received replica answers
+		if(delivered.contains(m.getID())){
+			return;
+		}else{
+			delivered.add(m.getID());
+		}
+		
 		// un-batch response (multiple responses per command_id)
 		for(Command c : m.getCommands()){
 			if(!responses.containsKey(c.getID())){
@@ -236,6 +254,7 @@ public class Client implements Receiver {
 				l.add(c);
 			}
 		}
+		
 		// set responses to open commands
 		Iterator<Entry<Integer, List<Command>>> it = responses.entrySet().iterator();
 		while(it.hasNext()){

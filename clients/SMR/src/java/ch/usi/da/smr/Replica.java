@@ -378,7 +378,8 @@ public class Replica implements Receiver {
 			}
 		}
 		exec_instance.put(m.getRing(),m.getInstnce());
-		Message msg = new Message(m.getID(),token,m.getFrom(),cmds);
+		int msg_id = MurmurHash.hash32(m.getInstnce() + "-" + token);
+		Message msg = new Message(msg_id,token,m.getFrom(),cmds);
 		udp.send(msg);
 	}
 
