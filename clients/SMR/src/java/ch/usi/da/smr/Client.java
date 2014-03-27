@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,6 +69,8 @@ public class Client implements Receiver {
 	private Map<Integer,List<Command>> responses = new HashMap<Integer,List<Command>>();
 
 	private Map<Integer,List<String>> await_response = new HashMap<Integer,List<String>>();
+	
+	private final List<Long> latency = Collections.synchronizedList(new ArrayList<Long>());
 	
 	private Map<Integer, BlockingQueue<Response>> send_queues = new HashMap<Integer, BlockingQueue<Response>>();
 	
@@ -109,7 +112,53 @@ public class Client implements Receiver {
 		    while((s = in.readLine()) != null && s.length() != 0){
 		    	// read input
 		    	String[] line = s.split("\\s+");
-		    	if(line.length > 3){
+		    	if(s.startsWith("start")){
+		    		final int concurrent_cmd; // # of threads
+		    		final int send_per_thread;
+		    		final int value_size;
+		    		final int key_count = 50000; // 50k * 15k byte memory needed at replica
+		    		String[] sl = s.split(" ");
+		    		if(sl.length > 1){
+			    		concurrent_cmd = Integer.parseInt(sl[1]);
+			    		send_per_thread = Integer.parseInt(sl[2]);
+			    		value_size = Integer.parseInt(sl[3]);		    			
+		    		}else{
+			    		concurrent_cmd = 10;
+			    		send_per_thread = 50000;
+			    		value_size = 200;		    					    			
+		    		}
+		    		final AtomicInteger send_id = new AtomicInteger(0);
+		    		latency.clear();
+		    		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
+		    		System.out.println("Start performance testing with " + concurrent_cmd + " threads.");
+		    		System.out.println("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
+		    		for(int i=0;i<concurrent_cmd;i++){
+		    			Thread t = new Thread("Command Sender " + i){
+							@Override
+							public void run(){
+								int send_count = 0;
+								while(send_count < send_per_thread){
+									Command cmd = new Command(send_id.incrementAndGet(),CommandType.PUT,"user" + (send_id.get() % key_count), new byte[value_size]);
+									Response r = null;
+									try{
+										long time = System.nanoTime();
+										if((r = send(cmd)) != null){
+											r.getResponse(20000); // wait response
+											latency.add(System.nanoTime() - time);
+										}
+									} catch (Exception e){
+										
+									}
+									send_count++;
+								}
+								await.countDown();
+							}
+						};
+						t.start();
+		    		}
+		    		await.await(); // wait until finished
+		    		printHistogram();
+		    	}else if(line.length > 3){
 		    		try{
 		    			String arg2 = line[2];
 		    			if(arg2.equals(".")){ arg2 = ""; } // simulate empty string
@@ -130,37 +179,42 @@ public class Client implements Receiver {
 		    			System.err.println(e.getMessage());
 		    		}
 		    	}else if(s.startsWith("start")){
-		    		System.out.println("Start load test");
-		    		final int concurrent_cmd = 20; // # of threads
+		    		final int concurrent_cmd = 10; // # of threads
 		    		final int send_per_thread = 50000;
-		    		final int value_size = 15000; // in bytes
+		    		final int value_size = 200; // in bytes
 		    		final int key_count = 50000; // 50k * 15k byte memory needed at replica
-		    		final AtomicInteger send_id = new AtomicInteger(0); 
+		    		System.err.println(s);
+		    		final AtomicInteger send_id = new AtomicInteger(0);
+		    		latency.clear();
+		    		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
+		    		System.out.println("Start performance testing with " + concurrent_cmd + " threads.");
+		    		System.out.println("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
 		    		for(int i=0;i<concurrent_cmd;i++){
 		    			Thread t = new Thread("Command Sender " + i){
 							@Override
 							public void run(){
-								System.out.println("Start sender");
 								int send_count = 0;
 								while(send_count < send_per_thread){
 									Command cmd = new Command(send_id.incrementAndGet(),CommandType.PUT,"user" + (send_id.get() % key_count), new byte[value_size]);
 									Response r = null;
 									try{
-										//long time = System.nanoTime();
+										long time = System.nanoTime();
 										if((r = send(cmd)) != null){
 											r.getResponse(20000); // wait response
-											//System.out.println("latency: "  + (System.nanoTime() - time) + "ns");
+											latency.add(System.nanoTime() - time);
 										}
 									} catch (Exception e){
 										
 									}
 									send_count++;
 								}
-								System.out.println("Quit sender");
+								await.countDown();
 							}
 						};
 						t.start();
 		    		}
+		    		await.await(); // wait until finished
+		    		printHistogram();
 		    	}else{
 		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key <value>");
 		    	}
@@ -326,6 +380,41 @@ public class Client implements Receiver {
 				System.exit(1);
 			}
 		}
+	}
+
+	private void printHistogram(){
+		Map<Long,Long> histogram = new HashMap<Long,Long>();
+		int a = 0,b = 0,b2 = 0,c = 0,d = 0,e = 0,f = 0;
+		long sum = 0;
+		for(Long l : latency){
+			sum = sum + l;
+			if(l < 1000000){ // <1ms
+				a++;
+			}else if (l < 10000000){ // <10ms
+				b++;
+			}else if (l < 25000000){ // <25ms
+				b2++;
+			}else if (l < 50000000){ // <50ms
+				c++;
+			}else if (l < 75000000){ // <75ms
+				f++;
+			}else if (l < 100000000){ // <100ms
+				d++;
+			}else{
+				e++;
+			}
+			Long key = new Long(Math.round(l/1000/1000));
+			if(histogram.containsKey(key)){
+				histogram.put(key,histogram.get(key)+1);
+			}else{
+				histogram.put(key,1L);
+			}
+		}
+		float avg = (float)sum/latency.size()/1000/1000;
+		System.out.println("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
+		//for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
+		//	System.out.println(bin.getKey() + "," + bin.getValue());
+		//}
 	}
 
 	public static Map<Integer, Integer> parseConnectMap(String arg) {
