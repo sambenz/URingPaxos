@@ -182,7 +182,7 @@ public class PartitionManager implements Watcher {
 		if(getGlobalRing() > 0){
 			rings.add(new RingDescription(getGlobalRing(),replicaID,role));
 		}
-		logger.info("Create RawABListener " + rings);
+		logger.debug("Create RawABListener " + rings);
 		Thread.sleep(1000); // wait until PartitionManger is ready
 		return new RawABListener(zoo_host,rings);
 	}
@@ -195,14 +195,14 @@ public class PartitionManager implements Watcher {
 			// Sanity check: is replicaID learner in ring(partition) && global_ring
 			if(zoo.exists("/ringpaxos/ring" + ring + "/learners/" + replicaID,false) != null &&
 			   zoo.exists("/ringpaxos/ring" + global_ring + "/learners/" + replicaID,false) != null	){
-				logger.info("ABListener check for ring " + ring + " and " + global_ring + ": OK!");
+				logger.debug("ABListener check for ring " + ring + " and " + global_ring + ": OK!");
 			}else{
 				logger.warn("ABListener check for ring " + ring + " and " + global_ring + ": Fail!");
 			}			
 		} catch (KeeperException | InterruptedException e) {
 			logger.error(e);
 		}
-		logger.info("ThriftABListener host: " + host + ":" + (9090+replicaID));
+		logger.debug("ThriftABListener host: " + host + ":" + (9090+replicaID));
 		return new ThriftABListener(host,9090+replicaID);
 	}
 
@@ -214,7 +214,7 @@ public class PartitionManager implements Watcher {
 			role.add(PaxosRole.Proposer);
 			List<RingDescription> rings = new ArrayList<RingDescription>();
 			rings.add(new RingDescription(ring, clientID, role));
-			logger.info("RawABSender " + rings);
+			logger.debug("RawABSender " + rings);
 			ABSender proposer = new RawABSender(zoo_host, rings);
 			proposers.put(ring + "-" + clientID, proposer);
 			return proposer;
@@ -230,14 +230,14 @@ public class PartitionManager implements Watcher {
 				host = new String(zoo.getData("/ringpaxos/ring" + ring + "/nodes/" + clientID,false, null));
 				host = host.replaceAll("(;.*)","");
 				if(zoo.exists("/ringpaxos/ring" + ring + "/proposers/" + clientID,false) != null){
-					logger.info("ABSender check for ring " + ring + ": OK!");
+					logger.debug("ABSender check for ring " + ring + ": OK!");
 				}else{
 					logger.warn("ABSender check for ring " + ring + ": Fail!");
 				}			
 			} catch (KeeperException | InterruptedException e) {
 				logger.error(e);
 			}
-			logger.info("ThriftABSender host: " + host + ":" + (9080+clientID));
+			logger.debug("ThriftABSender host: " + host + ":" + (9080+clientID));
 			ABSender proposer = new ThriftABSender(host,9080+clientID);
 			proposers.put(ring + "-" + clientID, proposer);
 			return proposer;

@@ -43,6 +43,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.log4j.Logger;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
@@ -81,6 +84,8 @@ public class Client implements Receiver {
 		System.setProperty("logfilename", host + "-" + pid + ".log");
 	}
 	
+	private final static Logger logger = Logger.getLogger(Client.class);
+
 	private final PartitionManager partitions;
 				
 	private final UDPListener udp;
@@ -149,10 +154,38 @@ public class Client implements Receiver {
 			    		value_size = 200;		    					    			
 		    		}
 		    		final AtomicInteger send_id = new AtomicInteger(0);
+		    		final AtomicLong stat_latency = new AtomicLong();
+		    		final AtomicLong stat_command = new AtomicLong();		    		
 		    		latency.clear();
 		    		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
-		    		System.out.println("Start performance testing with " + concurrent_cmd + " threads.");
-		    		System.out.println("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
+		    		final Thread stats = new Thread("ClientStatsWriter"){		    			
+		    			private long last_time = System.nanoTime();
+		    			private long last_sent_count = 0;
+		    			private long last_sent_time = 0;
+		    			@Override
+		    			public void run() {
+		    				while(await.getCount() > 0){
+		    					try {
+		    						long time = System.nanoTime();
+		    						long sent_count = stat_command.get() - last_sent_count;
+		    						long sent_time = stat_latency.get() - last_sent_time;
+		    						float t = (float)(time-last_time)/(1000*1000*1000);
+		    						float count = sent_count/t;
+		    						logger.info(String.format("Client sent %.1f command/s avg. latency %.0f ns",count,sent_time/count));
+		    						last_sent_count += sent_count;
+		    						last_sent_time += sent_time;
+		    						last_time = time;
+		    						Thread.sleep(1000);
+		    					} catch (InterruptedException e) {
+		    						Thread.currentThread().interrupt();
+		    						break;				
+		    					}
+		    				}
+		    			}
+		    		};
+		    		stats.start();
+		    		logger.info("Start performance testing with " + concurrent_cmd + " threads.");
+		    		logger.info("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
 		    		for(int i=0;i<concurrent_cmd;i++){
 		    			Thread t = new Thread("Command Sender " + i){
 							@Override
@@ -165,10 +198,12 @@ public class Client implements Receiver {
 										long time = System.nanoTime();
 										if((r = send(cmd)) != null){
 											r.getResponse(20000); // wait response
-											latency.add(System.nanoTime() - time);
+											long lat = System.nanoTime() - time;
+											stat_latency.addAndGet(lat);
+											stat_command.incrementAndGet();
+											latency.add(lat);
 										}
 									} catch (Exception e){
-										
 									}
 									send_count++;
 								}
@@ -199,43 +234,6 @@ public class Client implements Receiver {
 		    		}catch (IllegalArgumentException e){
 		    			System.err.println(e.getMessage());
 		    		}
-		    	}else if(s.startsWith("start")){
-		    		final int concurrent_cmd = 10; // # of threads
-		    		final int send_per_thread = 50000;
-		    		final int value_size = 200; // in bytes
-		    		final int key_count = 50000; // 50k * 15k byte memory needed at replica
-		    		System.err.println(s);
-		    		final AtomicInteger send_id = new AtomicInteger(0);
-		    		latency.clear();
-		    		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
-		    		System.out.println("Start performance testing with " + concurrent_cmd + " threads.");
-		    		System.out.println("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
-		    		for(int i=0;i<concurrent_cmd;i++){
-		    			Thread t = new Thread("Command Sender " + i){
-							@Override
-							public void run(){
-								int send_count = 0;
-								while(send_count < send_per_thread){
-									Command cmd = new Command(send_id.incrementAndGet(),CommandType.PUT,"user" + (send_id.get() % key_count), new byte[value_size]);
-									Response r = null;
-									try{
-										long time = System.nanoTime();
-										if((r = send(cmd)) != null){
-											r.getResponse(20000); // wait response
-											latency.add(System.nanoTime() - time);
-										}
-									} catch (Exception e){
-										
-									}
-									send_count++;
-								}
-								await.countDown();
-							}
-						};
-						t.start();
-		    		}
-		    		await.await(); // wait until finished
-		    		printHistogram();
 		    	}else{
 		    		System.out.println("Add command: <PUT|GET|GETRANGE|DELETE> key <value>");
 		    	}
@@ -432,10 +430,12 @@ public class Client implements Receiver {
 			}
 		}
 		float avg = (float)sum/latency.size()/1000/1000;
-		System.out.println("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
-		//for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
-		//	System.out.println(bin.getKey() + "," + bin.getValue());
-		//}
+		logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
+		if(logger.isDebugEnabled()){
+			for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
+				logger.debug(bin.getKey() + "," + bin.getValue());
+			}
+		}
 	}
 
 	public static Map<Integer, Integer> parseConnectMap(String arg) {
