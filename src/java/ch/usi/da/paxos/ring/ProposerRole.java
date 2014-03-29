@@ -132,7 +132,7 @@ public class ProposerRole extends Role implements Proposer {
 		t.setName("ProposerResender");
 		t.start();
 		if(batch_size > 0){
-			ByteBuffer buffer = ByteBuffer.allocate(65536);
+			ByteBuffer buffer = ByteBuffer.allocate(524288);
 			while(true){
 				try {
 					buffer.clear();
