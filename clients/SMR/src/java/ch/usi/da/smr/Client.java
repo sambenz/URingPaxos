@@ -18,7 +18,9 @@ package ch.usi.da.smr;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
@@ -59,7 +61,26 @@ import ch.usi.da.smr.transport.UDPListener;
  * @author Samuel Benz <benz@geoid.ch>
  */
 public class Client implements Receiver {
-
+	static {
+		// get hostname and pid for log file name
+		String host = "localhost";
+		try {
+			Process proc = Runtime.getRuntime().exec("hostname");
+			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
+			byte [] b = new byte[in.available()];
+			in.read(b);
+			in.close();
+			host = new String(b).replace("\n","");
+		} catch (IOException e) {
+		}
+		int pid = 0;
+		try {
+			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
+		} catch (NumberFormatException | IOException e) {
+		}
+		System.setProperty("logfilename", host + "-" + pid + ".log");
+	}
+	
 	private final PartitionManager partitions;
 				
 	private final UDPListener udp;
