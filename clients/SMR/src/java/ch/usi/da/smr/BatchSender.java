@@ -51,7 +51,7 @@ public class BatchSender implements Runnable {
 	
 	private final BlockingQueue<Response> queue;
 	
-	private final int batch_size = 8912; // 0: disable
+	private final int batch_size = 12384; // 0: disable
 	
 	private final boolean use_thrift = true;
 	
