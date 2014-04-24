@@ -150,17 +150,17 @@ public class Client implements Receiver {
 		    	String[] line = s.split("\\s+");
 		    	if(s.startsWith("start")){
 		    		final int concurrent_cmd; // # of threads
-		    		final int send_per_thread;
 		    		final int value_size;
+		    		final int send_per_thread = 20000000;
 		    		String[] sl = s.split(" ");
 		    		if(sl.length > 1){
 			    		concurrent_cmd = Integer.parseInt(sl[1]);
-			    		send_per_thread = Integer.parseInt(sl[2]);
-			    		value_size = Integer.parseInt(sl[3]);		    			
+			    		value_size = Integer.parseInt(sl[2]);		    			
+			    		//send_per_thread = Integer.parseInt(sl[3]); // not needed with fixed timeout	    			
 		    		}else{
 			    		concurrent_cmd = 10;
-			    		send_per_thread = 50000;
-			    		value_size = 200;		    					    			
+			    		value_size = 1024;		    			
+			    		//send_per_thread = 20000000;		    			
 		    		}
 		    		final AtomicInteger send_id = new AtomicInteger(0);
 		    		final AtomicLong stat_latency = new AtomicLong();
@@ -221,8 +221,11 @@ public class Client implements Receiver {
 						};
 						t.start();
 		    		}
-		    		await.await(); // wait until finished
+		    		//await.await(); // wait until finished
+		    		Thread.sleep(100000);
 		    		printHistogram();
+		    		stop();
+		    		System.exit(0);
 		    	}else if(s.startsWith("append")){
 		    		try{
 		    			cmd = new Command(id,CommandType.APPEND,-1,line[1].getBytes());
