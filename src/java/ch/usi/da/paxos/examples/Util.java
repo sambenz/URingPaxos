@@ -82,7 +82,7 @@ public class Util {
 			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
 			while (ni.hasMoreElements()){
 				NetworkInterface n = ni.nextElement();
-				if(n.getDisplayName().equals("eth0")){
+				if(n.getDisplayName().equals("eth0") || n.getDisplayName().equals("p8p2")){
 					Enumeration<InetAddress> ia = n.getInetAddresses();
 					while(ia.hasMoreElements()){
 						InetAddress addr = ia.nextElement();
