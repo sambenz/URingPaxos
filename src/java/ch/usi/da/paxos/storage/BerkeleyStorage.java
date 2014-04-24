@@ -193,7 +193,12 @@ public class BerkeleyStorage implements StableStorage {
 
 	@Override
 	public synchronized Long getLastTrimInstance() {
-		return get(-1L).getInstance();
+		Decision d = get(-1L);
+		if(d != null){
+			return get(-1L).getInstance();
+		}else{
+			return 0L;
+		}
 	}
 	
 	@Override
