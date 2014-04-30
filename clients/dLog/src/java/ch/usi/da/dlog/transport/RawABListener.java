@@ -23,10 +23,10 @@ import java.util.List;
 
 import org.apache.zookeeper.KeeperException;
 
+import ch.usi.da.dlog.message.Message;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingDescription;
 import ch.usi.da.paxos.storage.Decision;
-import ch.usi.da.dlog.message.Message;
 
 /**
  * Name: RawABListener<br>
@@ -46,6 +46,12 @@ public class RawABListener implements ABListener, Runnable {
 	public RawABListener(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
 		paxos = new Node(zoo_host, rings);
 		paxos.start();
+		// start thrift proposer
+//TODO?	Proposer p = paxos.getProposer(rings.get(0).getRingID());
+//		if (p != null) {
+//			Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
+//			tp.start();
+//		}
 	}
 
 	@Override

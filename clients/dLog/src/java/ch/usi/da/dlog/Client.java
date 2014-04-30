@@ -123,7 +123,7 @@ public class Client implements Receiver {
 		this.globalID = (int) connectMap.keySet().toArray()[1];
 		this.zoo = zoo;
 		this.connectMap = connectMap;
-		ip = getHostAddress(false);
+		ip = getHostAddress(true);
 		port = 5000 + new Random(System.identityHashCode(this)).nextInt(15000);
 		udp = new UDPListener(port);
 		Thread t = new Thread(udp);
@@ -400,7 +400,7 @@ public class Client implements Receiver {
 		}
 	}
 
-	private void printHistogram(){
+	private synchronized void printHistogram(){
 		Map<Long,Long> histogram = new HashMap<Long,Long>();
 		int a = 0,b = 0,b2 = 0,c = 0,d = 0,e = 0,f = 0;
 		long sum = 0;
@@ -456,7 +456,7 @@ public class Client implements Receiver {
 			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
 			while (ni.hasMoreElements()){
 				NetworkInterface n = ni.nextElement();
-				if(n.getDisplayName().equals("eth0")){
+				if(n.getDisplayName().equals("eth0") || n.getDisplayName().equals("p8p2")){
 					Enumeration<InetAddress> ia = n.getInetAddresses();
 					while(ia.hasMoreElements()){
 						InetAddress addr = ia.nextElement();

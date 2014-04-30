@@ -51,7 +51,7 @@ public class LogParser {
 				float msg = Float.parseFloat(xs[8]);
 				float mbit= Float.parseFloat(xs[10]);
 				float avg = Float.parseFloat(xs[13]);
-				if(avg > 0 && avg < 2000){ // remove first value
+				if(avg > 0 && avg < 4000){ // remove first value
 					msgl.add(msg);
 					mbitl.add(mbit);
 					avgl.add(avg);
@@ -64,7 +64,7 @@ public class LogParser {
 				float nomsg = Float.parseFloat(xs[8].split("/")[1]);
 				float nombit= Float.parseFloat(xs[10].split("/")[1]);
 				float noavg = Float.parseFloat(xs[13].split("/")[1]);
-				if(niavg > 0 && niavg < 2000){ // remove first value
+				if(niavg > 0 && niavg < 4000){ // remove first value
 					nimsgl.add(nimsg);
 					nimbitl.add(nimbit);
 					niavgl.add(niavg);
