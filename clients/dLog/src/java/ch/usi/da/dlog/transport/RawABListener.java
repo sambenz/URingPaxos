@@ -24,9 +24,11 @@ import java.util.List;
 import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.dlog.message.Message;
+import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingDescription;
 import ch.usi.da.paxos.storage.Decision;
+import ch.usi.da.paxos.thrift.ThriftProposer;
 
 /**
  * Name: RawABListener<br>
@@ -47,11 +49,11 @@ public class RawABListener implements ABListener, Runnable {
 		paxos = new Node(zoo_host, rings);
 		paxos.start();
 		// start thrift proposer
-//TODO?	Proposer p = paxos.getProposer(rings.get(0).getRingID());
-//		if (p != null) {
-//			Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
-//			tp.start();
-//		}
+		Proposer p = paxos.getProposer(rings.get(0).getRingID());
+		if (p != null) {
+			Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
+			tp.start();
+		}
 	}
 
 	@Override

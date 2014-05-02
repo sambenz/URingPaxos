@@ -96,6 +96,8 @@ public class Client implements Receiver {
 	
 	private final UDPListener udp;
 	
+	//private final Random rnd = new Random();
+	
 	private Map<Integer,Response> commands = new HashMap<Integer,Response>();
 
 	private Map<Integer,List<Command>> responses = new HashMap<Integer,List<Command>>();
@@ -311,6 +313,7 @@ public class Client implements Receiver {
     		ring  = globalID;
     	}else{
     		ring = logID;
+    		//ring = rnd.nextInt(connectMap.size())+1; // random testing
     	}
     	if(!send_queues.containsKey(ring)){
     		send_queues.put(ring,new LinkedBlockingQueue<Response>());
@@ -404,6 +407,7 @@ public class Client implements Receiver {
 		Map<Long,Long> histogram = new HashMap<Long,Long>();
 		int a = 0,b = 0,b2 = 0,c = 0,d = 0,e = 0,f = 0;
 		long sum = 0;
+		synchronized(latency){
 		for(Long l : latency){
 			sum = sum + l;
 			if(l < 1000000){ // <1ms
@@ -427,6 +431,7 @@ public class Client implements Receiver {
 			}else{
 				histogram.put(key,1L);
 			}
+		}
 		}
 		float avg = (float)sum/latency.size()/1000/1000;
 		logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
