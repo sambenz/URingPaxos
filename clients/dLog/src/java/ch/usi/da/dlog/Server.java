@@ -111,7 +111,12 @@ public class Server implements Receiver {
 		this.rings = rings;
 		udp = new UDPSender();
 		ab = new RawABListener(zoo_host,rings);
-		Path file = Paths.get("/tmp/dlog-0.bin");
+        String path = "/tmp";
+		String db_path = System.getenv("DLOG");
+		if(db_path != null){
+			path = db_path;
+		}
+		Path file = Paths.get(path + "/dlog-0.bin");
 		log = Files.newByteChannel(file, EnumSet.of(CREATE, TRUNCATE_EXISTING, WRITE, READ));
 		for(RingDescription ring : rings){
 			index[ring.getRingID()] = new TreeMap<Long,Long>();
@@ -236,7 +241,7 @@ public class Server implements Receiver {
 	    	}
 		}
 		logger.debug("offset: " + next_position + " buffer_pos: " + buffer.position() + " buffer_offset: " + buffer_offset);
-		int msg_id = new String(m.getInstnce() + "-" + rings.hashCode()).hashCode();
+		int msg_id = new String(m.getInstnce() + "-" +  next_position).hashCode();
 		Message msg = new Message(msg_id,rings.get(0).toString(),m.getFrom(),cmds);
 		udp.send(msg);
 	}

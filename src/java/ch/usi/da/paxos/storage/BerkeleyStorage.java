@@ -82,8 +82,13 @@ public class BerkeleyStorage implements StableStorage {
 	        try {
 				pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
 			} catch (NumberFormatException | IOException e) {
-			}        
-	        file = new File("/tmp/ringpaxos-db/" + pid);
+			}
+	        String path = "/tmp";
+			String db_path = System.getenv("DB");
+			if(db_path != null){
+				path = db_path;
+			}
+	        file = new File(path + "/ringpaxos-db/" + pid);
 	        file.mkdirs();
 		}
         EnvironmentConfig envConfig = new EnvironmentConfig();
