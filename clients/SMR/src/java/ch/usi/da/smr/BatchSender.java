@@ -86,7 +86,7 @@ public class BatchSender implements Runnable {
 					}
 					logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
 				}
-				Message m = new Message(1,client.getIp().getHostAddress() + ":" + client.getPort(),"",cmds);
+				Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
 				sender.abroadcast(m);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

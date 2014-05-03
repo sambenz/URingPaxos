@@ -121,7 +121,7 @@ public class Replica implements Receiver {
 		this.token = token;
 		this.snapshot_modulo = snapshot_modulo;
 		this.partitions = new PartitionManager(zoo_host);
-		final InetAddress ip = Client.getHostAddress(false);
+		final InetAddress ip = Client.getHostAddress(true);
 		partitions.init();
 		setPartition(partitions.register(nodeID, ringID, ip, token));
 		udp = new UDPSender();
