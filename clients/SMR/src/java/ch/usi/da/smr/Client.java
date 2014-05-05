@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,11 +91,11 @@ public class Client implements Receiver {
 				
 	private final UDPListener udp;
 	
-	private Map<Integer,Response> commands = new HashMap<Integer,Response>();
+	private Map<Integer,Response> commands = new ConcurrentHashMap<Integer,Response>();
 
-	private Map<Integer,List<Command>> responses = new HashMap<Integer,List<Command>>();
+	private Map<Integer,List<Command>> responses = new ConcurrentHashMap<Integer,List<Command>>();
 
-	private Map<Integer,List<String>> await_response = new HashMap<Integer,List<String>>();
+	private Map<Integer,List<String>> await_response = new ConcurrentHashMap<Integer,List<String>>();
 	
 	private final List<Long> latency = Collections.synchronizedList(new ArrayList<Long>());
 	
@@ -139,6 +140,7 @@ public class Client implements Receiver {
 		    	// read input
 		    	String[] line = s.split("\\s+");
 		    	if(s.startsWith("start")){
+		    		cmd = null;
 		    		final int concurrent_cmd; // # of threads
 		    		final int send_per_thread;
 		    		final int value_size;
@@ -172,6 +174,7 @@ public class Client implements Receiver {
 		    						float t = (float)(time-last_time)/(1000*1000*1000);
 		    						float count = sent_count/t;
 		    						logger.info(String.format("Client sent %.1f command/s avg. latency %.0f ns",count,sent_time/count));
+		    						logger.debug("commands " + commands.size() + " responses " + responses.size());
 		    						last_sent_count += sent_count;
 		    						last_sent_time += sent_time;
 		    						last_time = time;
@@ -192,12 +195,13 @@ public class Client implements Receiver {
 							public void run(){
 								int send_count = 0;
 								while(send_count < send_per_thread){
-									Command cmd = new Command(send_id.incrementAndGet(),CommandType.PUT,"user" + (send_id.get() % key_count), new byte[value_size]);
+									int id = send_id.incrementAndGet();
+									Command cmd = new Command(id,CommandType.PUT,"user" + (id % key_count), new byte[value_size]);
 									Response r = null;
 									try{
 										long time = System.nanoTime();
 										if((r = send(cmd)) != null){
-											r.getResponse(20000); // wait response
+											r.getResponse(10000); // wait response
 											long lat = System.nanoTime() - time;
 											stat_latency.addAndGet(lat);
 											stat_command.incrementAndGet();
@@ -241,7 +245,7 @@ public class Client implements Receiver {
 		    	if(cmd != null){
 		    		Response r = null;
 		        	if((r = send(cmd)) != null){
-		        		List<Command> response = r.getResponse(20000); // wait response
+		        		List<Command> response = r.getResponse(10000); // wait response
 		        		if(!response.isEmpty()){
 		        			for(Command c : response){
 		    	    			if(c.getType() == CommandType.RESPONSE){
@@ -282,7 +286,7 @@ public class Client implements Receiver {
 	 * @return A Response object on which you can wait
 	 * @throws Exception
 	 */
-	public synchronized Response send(Command cmd) throws Exception {
+	public Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
 		commands.put(cmd.getID(),r);
 		int ring = -1;
@@ -297,12 +301,13 @@ public class Client implements Receiver {
     		ring = partitions.getRing(cmd.getKey());
     	}
 		if(ring < 0){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
-    	if(!send_queues.containsKey(ring)){
+    	synchronized(send_queues){
+		if(!send_queues.containsKey(ring)){
     			send_queues.put(ring,new LinkedBlockingQueue<Response>());
     			Thread t = new Thread(new BatchSender(ring,this));
     			t.setName("BatchSender-" + ring);
     			t.start();
-    	}
+    	}}
     	send_queues.get(ring).add(r);
     	return r;		
 	}

@@ -290,13 +290,18 @@ public class PartitionManager implements Watcher {
 		partitions.init();
 
 		// two partitions
-		partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
-		partitions.register(replicaID,2,InetAddress.getLocalHost(),"7FFFFFFF");
+		//partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
+		//partitions.register(replicaID,2,InetAddress.getLocalHost(),"7FFFFFFF");
 
 		// four partitions
-		partitions.register(replicaID,3,InetAddress.getLocalHost(),"3FFFFFFF");
-		partitions.register(replicaID,4,InetAddress.getLocalHost(),"-3FFFFFFF");		
+		//partitions.register(replicaID,3,InetAddress.getLocalHost(),"3FFFFFFF");
+		//partitions.register(replicaID,4,InetAddress.getLocalHost(),"-3FFFFFFF");		
 
+		// three partitions
+		partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
+		partitions.register(replicaID,2,InetAddress.getLocalHost(),"55555554");
+		partitions.register(replicaID,2,InetAddress.getLocalHost(),"-55555554");
+		
 		List<String> ps = new ArrayList<String>();
 		for(Partition p : partitions.getPartitions()){
 			ps.add(p.getID());

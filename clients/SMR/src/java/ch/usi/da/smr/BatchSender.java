@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.transport.TTransportException;
@@ -51,7 +52,7 @@ public class BatchSender implements Runnable {
 	
 	private final BlockingQueue<Response> queue;
 	
-	private final int batch_size = 12384; // 0: disable
+	private final int batch_size = 8912; // 0: disable
 	
 	private final boolean use_thrift = true;
 	
@@ -74,12 +75,9 @@ public class BatchSender implements Runnable {
 				int size = r.getCommand().getValue().length;
 				cmds.add(r.getCommand());
 				if(batch_size > 0){
-					while(!queue.isEmpty()){
-						r = queue.poll();
-						if(r != null){
-							cmds.add(r.getCommand());
-							size = size + r.getCommand().getValue().length;
-						}
+					while((r = queue.poll(500,TimeUnit.MICROSECONDS)) != null){ 
+						cmds.add(r.getCommand());
+						size = size + r.getCommand().getValue().length;
 						if(size >= batch_size){
 							break;
 						}

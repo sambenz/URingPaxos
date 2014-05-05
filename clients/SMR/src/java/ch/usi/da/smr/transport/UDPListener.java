@@ -57,6 +57,7 @@ public class UDPListener implements Runnable {
 					receiver.receive(m);
 				}
 			} catch (SocketException e) {
+				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

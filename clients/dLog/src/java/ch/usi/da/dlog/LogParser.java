@@ -40,7 +40,7 @@ public class LogParser {
 		int skip = 5;
 		while((l = reader.readLine()) != null){
 			String[] xs = l.split(" ");
-			if(l.contains("Client:183")){ // learner throughput
+			if(l.contains("Client:185")){ // learner throughput
 				float msg = Float.parseFloat(xs[7]);
 				if(skip > 0){
 					skip--;
