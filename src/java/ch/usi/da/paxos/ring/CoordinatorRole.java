@@ -77,7 +77,7 @@ public class CoordinatorRole extends Role {
 
 	public int multi_ring_delta_t = 100;
 	
-	public long value_count = 0;
+	public AtomicLong value_count = new AtomicLong(0);
 	
 	/**
 	 * @param ring
@@ -208,7 +208,7 @@ public class CoordinatorRole extends Role {
 				ring.getNetwork().send(n);
 			}		
 		}else if(m.getType() == MessageType.Value){
-			value_count++;
+			value_count.incrementAndGet();
 			Promise p = null;
 			try {
 				p = promises.poll(1,TimeUnit.SECONDS); // wait for a promise
@@ -225,7 +225,7 @@ public class CoordinatorRole extends Role {
 				}
 			}
 			// send safe message to trim acceptor log after n instances
-			if(trim_modulo > 0 && value_count % trim_modulo == 0){
+			if(trim_modulo > 0 && value_count.get() % trim_modulo == 0){
 				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
 				if(ring.getNetwork().getLearner() != null){
 					ring.getNetwork().getLearner().deliver(ring,n);
