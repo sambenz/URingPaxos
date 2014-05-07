@@ -201,17 +201,19 @@ public class Client implements Receiver {
 									try{
 										long time = System.nanoTime();
 										if((r = send(cmd)) != null){
-											r.getResponse(10000); // wait response
+											r.getResponse(1000); // wait response
 											long lat = System.nanoTime() - time;
 											stat_latency.addAndGet(lat);
 											stat_command.incrementAndGet();
 											latency.add(lat);
 										}
 									} catch (Exception e){
+										logger.error("Error in send thread!",e);
 									}
 									send_count++;
 								}
 								await.countDown();
+								logger.debug("Thread terminated.");
 							}
 						};
 						t.start();
@@ -245,7 +247,7 @@ public class Client implements Receiver {
 		    	if(cmd != null){
 		    		Response r = null;
 		        	if((r = send(cmd)) != null){
-		        		List<Command> response = r.getResponse(10000); // wait response
+		        		List<Command> response = r.getResponse(1000); // wait response
 		        		if(!response.isEmpty()){
 		        			for(Command c : response){
 		    	    			if(c.getType() == CommandType.RESPONSE){
@@ -314,6 +316,8 @@ public class Client implements Receiver {
 
 	@Override
 	public synchronized void receive(Message m) {
+		logger.debug("Client received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
+		
 		// filter away already received replica answers
 		if(delivered.contains(m.getID())){
 			return;

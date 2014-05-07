@@ -22,6 +22,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -168,7 +169,7 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
-		partitions.deregister(nodeID,token);
+		//TODO: FIXME: partitions.deregister(nodeID,token);
 	}
 	
 	public boolean checkpoint(){
@@ -218,44 +219,56 @@ public class Replica implements Receiver {
 		Map<Integer,Long> instances = new HashMap<Integer,Long>();
 		try {
 			String host = null;
-			// local
-			InputStreamReader isr = new InputStreamReader(new FileInputStream(state_file));
-			BufferedReader bin = new BufferedReader(isr);
+			InputStreamReader isr;
 			String line;
-			Map<Integer, Long> state = new HashMap<Integer, Long>();		
-			while ((line = bin.readLine()) != null){
-				String[] s = line.split("=");
-				state.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
+			Map<Integer, Long> state = new HashMap<Integer, Long>();	
+			// local
+			try{
+				isr = new InputStreamReader(new FileInputStream(state_file));
+				BufferedReader bin = new BufferedReader(isr);	
+				while ((line = bin.readLine()) != null){
+					String[] s = line.split("=");
+					state.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
+				}
+				logger.info("Replica found local snapshot: " + state);
+				bin.close();
+			}catch (FileNotFoundException e){
+				logger.info("No local snapshot present.");
 			}
-			logger.info("Replica found local snapshot: " + state);
-			bin.close();
 			// remote
 			for(String h : partitions.getReplicas(token)){
-				URL url = new URL("http://" + h + ":8080/state"); //TODO: must only ask GSQ replicas
-				HttpURLConnection con = (HttpURLConnection)url.openConnection();
-				isr = new InputStreamReader(con.getInputStream());
-				BufferedReader in = new BufferedReader(isr);
-				Map<Integer, Long> nstate = new HashMap<Integer, Long>();
-				while ((line = in.readLine()) != null){
-					String[] s = line.split("=");
-					nstate.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
+				if(h.contains(":")){
+					h = "[" + h + "]";
 				}
-				logger.info("Replica found remote snapshot: " + nstate + " (" + h + ")");
-				in.close();
-				if(newerState(nstate,state)){
-					state = nstate;
-					host = h;
+				URL url = new URL("http://" + h + ":8080/state"); //TODO: must only ask GSQ replicas
+				try{
+					HttpURLConnection con = (HttpURLConnection)url.openConnection();
+					isr = new InputStreamReader(con.getInputStream());
+					BufferedReader in = new BufferedReader(isr);
+					Map<Integer, Long> nstate = new HashMap<Integer, Long>();
+					while ((line = in.readLine()) != null){
+						String[] s = line.split("=");
+						nstate.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
+					}
+					if(state.isEmpty()){
+						state = nstate;
+						host = h;
+					}else if(newerState(nstate,state)){
+						state = nstate;
+						host = h;
+					}
+					logger.info("Replica found remote snapshot: " + nstate + " (" + h + ")");
+					in.close();
+				}catch(Exception e){
+					logger.debug("Error getting state from " + h,e);
 				}
 			}
+			logger.info("Use remote snapshot from host " + host);
 			synchronized(db){
 				InputStream in;
-				if(host != null){
-					URL url = new URL(host + "/state");
-					HttpURLConnection con = (HttpURLConnection)url.openConnection();
-					in = con.getInputStream();
-				}else{
-					in = new FileInputStream(snapshot_file);					
-				}
+				URL url = new URL("http://" + host + ":8080/snapshot");
+				HttpURLConnection con = (HttpURLConnection)url.openConnection();
+				in = con.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
 				@SuppressWarnings("unchecked")
 				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
@@ -298,6 +311,7 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
+		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
@@ -306,8 +320,6 @@ public class Replica implements Receiver {
 			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
-
-		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 
 		List<Command> cmds = new ArrayList<Command>();
 
@@ -319,10 +331,12 @@ public class Replica implements Receiver {
 			}
 		}
 		
-		// snapshot
+		// write snapshot
+		// we could write this asynchronous; but different snapshot_modulo per replica
+		// does the same
 		exec_cmd++;
 		if(snapshot_modulo > 0 && exec_cmd % snapshot_modulo == 0){
-			checkpoint(); //TODO: can we write this asynchronous?
+			checkpoint(); 
 		}
 		
 		synchronized(db){
@@ -377,12 +391,15 @@ public class Replica implements Receiver {
 					String start_key = c.getKey();
 					String end_key = new String(c.getValue());
 					int count = c.getCount();
-					//logger.debug("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
+					logger.debug("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
 					//logger.debug("tailMap:" + db.tailMap(start_key).keySet() + " count:" + count);
 					int msg = 0;
+					int msg_size = 0;
 					for(Entry<String,byte[]> e : db.tailMap(start_key).entrySet()){
 						if(msg >= count || (!end_key.isEmpty() && e.getKey().compareTo(end_key) > 0)){ break; }
+						if(msg_size >= 50000){ break; } // send by UDP						
 			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,e.getKey(),e.getValue());
+			    		msg_size += e.getValue().length;
 			    		cmds.add(cmd);
 			    		msg++;
 					}
@@ -399,6 +416,7 @@ public class Replica implements Receiver {
 		exec_instance.put(m.getRing(),m.getInstnce());
 		int msg_id = MurmurHash.hash32(m.getInstnce() + "-" + token);
 		Message msg = new Message(msg_id,token,m.getFrom(),cmds);
+		//logger.debug("Send UDP: " + msg);
 		udp.send(msg);
 	}
 
@@ -453,7 +471,7 @@ public class Replica implements Receiver {
             BufferedInputStream bis = new BufferedInputStream(fis);
 
         	byte[] b = new byte[(int)file.length()];
-            bis.read(b, 0, b.length); //FIXME: keeps file in mem!
+            bis.read(b, 0, b.length); //TODO: FIXME: keeps file in mem!
             bis.close();
             fis.close();
 
