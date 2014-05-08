@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.usi.da.paxos.storage.Decision;
 
@@ -41,9 +42,9 @@ public class LearnerWriter implements Runnable {
 	
 	private final LinkedList<Decision> list = new LinkedList<Decision>();
 	
-	private long next_instance = 1;
+	private AtomicLong next_instance = new AtomicLong(1);
 	
-	private long max_seen_instance = 0;
+	private AtomicLong max_seen_instance = new AtomicLong(0);
 	
 	private Set<Long> requested = new HashSet<Long>();
 	
@@ -70,18 +71,18 @@ public class LearnerWriter implements Runnable {
 					if(requested.contains(d.getInstance())){
 						requested.remove(d.getInstance());
 					}
-					if(d.getInstance().longValue() > max_seen_instance){
-						max_seen_instance = d.getInstance().longValue();
+					if(d.getInstance().longValue() > max_seen_instance.get()){
+						max_seen_instance.set(d.getInstance().longValue());
 					}
-					if(d.getInstance() == next_instance){
+					if(d.getInstance() == next_instance.get()){
 						list.add(d);
-						next_instance++;
+						next_instance.incrementAndGet();
 					}else{
 						int pos = findPos(d.getInstance());
 						if(pos >= 0){
 							list.add(pos,d);
 							if(pos == list.size()-1){
-								next_instance = d.getInstance().longValue()+1;
+								next_instance.set(d.getInstance().longValue()+1);
 							}
 						}
 					}
@@ -90,8 +91,8 @@ public class LearnerWriter implements Runnable {
 			}
 
 			// request missing
-			if((max_seen_instance - learner.getInstance().get()) > 20){
-				long first = max_seen_instance;
+			if((max_seen_instance.get() - learner.getInstance().get()) > 20){
+				long first = max_seen_instance.get();
 				int max = 10;
 				if(!list.isEmpty()){
 					first = list.get(0).getInstance().longValue();
@@ -136,7 +137,7 @@ public class LearnerWriter implements Runnable {
 		}
 	}
 
-	private int findPos(long instance) {
+	private int findPos(Long instance) {
 		int pos = 0;
 		Iterator<Decision> i = list.iterator();
 		// ok, this would be possible in log(n) and not n ...
