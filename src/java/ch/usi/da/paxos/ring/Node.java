@@ -80,7 +80,7 @@ public class Node implements PaxosNode {
 		} catch (NumberFormatException | IOException e) {
 		}
 		// node address
-		final InetAddress ip = Util.getHostAddress(true);
+		final InetAddress ip = Util.getHostAddress(false);
 		boolean start_multi_learner = isMultiLearner(rings);
 		for(RingDescription ring : rings){
 			// ring socket port

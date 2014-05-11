@@ -28,6 +28,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -118,7 +119,7 @@ public class Client implements Receiver {
 	public Client(PartitionManager partitions,Map<Integer,Integer> connectMap) throws IOException {
 		this.partitions = partitions;
 		this.connectMap = connectMap;
-		ip = getHostAddress(true);
+		ip = getHostAddress(false);
 		port = 5000 + new Random(Thread.currentThread().getId()).nextInt(15000);
 		udp = new UDPListener(port);
 		Thread t = new Thread(udp);
@@ -301,6 +302,11 @@ public class Client implements Receiver {
     		await_response.put(cmd.getID(),await);
     	}else{
     		ring = partitions.getRing(cmd.getKey());
+			// special case for EC2 inter-region app;
+			String single_part = System.getenv("PART");
+			if(single_part != null){
+				ring = Integer.parseInt(single_part);
+			}
     	}
 		if(ring < 0){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
     	synchronized(send_queues){
@@ -463,6 +469,16 @@ public class Client implements Receiver {
 	 */
 	public static InetAddress getHostAddress(boolean ipv6){
 		try {
+			// special case for EC2 inter-region app; publish public IP
+			String public_ip = System.getenv("IP");
+			if(public_ip != null){
+				try {
+					InetAddress addr = InetAddress.getByName(public_ip);
+					logger.warn("Use env(IP) : " + addr);
+					return addr;
+				} catch (UnknownHostException e) {
+				}
+			}
 			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
 			while (ni.hasMoreElements()){
 				NetworkInterface n = ni.nextElement();

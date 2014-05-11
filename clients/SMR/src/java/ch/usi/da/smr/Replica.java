@@ -122,7 +122,7 @@ public class Replica implements Receiver {
 		this.token = token;
 		this.snapshot_modulo = snapshot_modulo;
 		this.partitions = new PartitionManager(zoo_host);
-		final InetAddress ip = Client.getHostAddress(true);
+		final InetAddress ip = Client.getHostAddress(false);
 		partitions.init();
 		setPartition(partitions.register(nodeID, ringID, ip, token));
 		udp = new UDPSender();
@@ -169,7 +169,7 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
-		//TODO: FIXME: partitions.deregister(nodeID,token);
+		partitions.deregister(nodeID,token);
 	}
 	
 	public boolean checkpoint(){
@@ -235,12 +235,12 @@ public class Replica implements Receiver {
 			}catch (FileNotFoundException e){
 				logger.info("No local snapshot present.");
 			}
-			// remote
+			// remote TODO: must ask min. GSQ replicas
 			for(String h : partitions.getReplicas(token)){
 				if(h.contains(":")){
 					h = "[" + h + "]";
 				}
-				URL url = new URL("http://" + h + ":8080/state"); //TODO: must only ask GSQ replicas
+				URL url = new URL("http://" + h + ":8080/state");
 				try{
 					HttpURLConnection con = (HttpURLConnection)url.openConnection();
 					isr = new InputStreamReader(con.getInputStream());
