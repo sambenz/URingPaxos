@@ -129,16 +129,16 @@ public class LearnerRole extends Role implements Learner {
 		}
 		while(recovery){
 			try{
+				Decision head = delivery.peek();
 				// init recovering by getting highest available instance
-				if(!recovered && !delivery.isEmpty()){
+				if(!recovered && head != null){
 					Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Safe,0,new Value("","0".getBytes()));
 					m.setVoteCount(1);
 					logger.debug("Send safe message to recover highest_online_instance. (" + recovered + "," + delivery.isEmpty() + ")");
 					ring.getNetwork().send(m);
 				}
 				// re-request missing decisions
-				else if(!delivery.isEmpty() && delivery.peek().getInstance() > delivered_instance){
-					Decision head = delivery.peek();
+				else if(head != null && head.getInstance() > delivered_instance){
 					for(long i=delivered_instance+1;i<head.getInstance();i++){
 						if(highest_online_instance == 0 || i >= highest_online_instance){
 							Message m = new Message(i,ring.getNodeID(),PaxosRole.Leader,MessageType.Relearn,0,null);
@@ -206,8 +206,9 @@ public class LearnerRole extends Role implements Learner {
 					}
 				}
 				// deliver sorted instances
-				while(!delivery.isEmpty() && delivery.peek().getInstance()-1 <= delivered_instance){
-					if(delivery.peek().getInstance()-1 == delivered_instance){
+				Decision head = null;
+				while((head = delivery.peek()) != null && head.getInstance()-1 <= delivered_instance){
+					if(head.getInstance()-1 == delivered_instance){
 						recovered = true;
 						Decision de = delivery.poll();
 						delivered_instance = de.getInstance();
