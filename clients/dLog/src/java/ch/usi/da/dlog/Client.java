@@ -28,6 +28,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -458,6 +459,16 @@ public class Client implements Receiver {
 	 */
 	public static InetAddress getHostAddress(boolean ipv6){
 		try {
+			// special case for EC2 inter-region app; publish public IP
+			String public_ip = System.getenv("IP");
+			if(public_ip != null){
+				try {
+					InetAddress addr = InetAddress.getByName(public_ip);
+					logger.warn("Use env(IP) : " + addr);
+					return addr;
+				} catch (UnknownHostException e) {
+				}
+			}
 			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
 			while (ni.hasMoreElements()){
 				NetworkInterface n = ni.nextElement();
