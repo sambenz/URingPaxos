@@ -120,7 +120,7 @@ public class Client implements Receiver {
 		this.partitions = partitions;
 		this.connectMap = connectMap;
 		ip = getHostAddress();
-		port = 5000 + new Random(Thread.currentThread().getId()).nextInt(15000);
+		port = 5000 + new Random().nextInt(15000);
 		udp = new UDPListener(port);
 		Thread t = new Thread(udp);
 		t.setName("UDPListener");

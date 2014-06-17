@@ -87,7 +87,7 @@ public class NetworkManager {
 
 	public final long[] messages_size = new long[MessageType.values().length];
 
-	//private final Random random = new Random(System.currentTimeMillis());
+	//private final Random random = new Random();
 	
 	/**
 	 * @param ring the ring manager
