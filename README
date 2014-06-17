@@ -1,4 +1,4 @@
-URingPaxos : A high throughput atomic broadcast protocol
+URingPaxos : A high throughput atomic multicast protocol
 --------------------------------------------------------
 
 To build:
@@ -19,7 +19,7 @@ The project specific config is in: paxos.conf
 The implementation specific config is in
 lib/paxos.properties
 
-The start scripts are accepor.sh/learner.sh/proposer.sh
+The start scripts are acceptor.sh/learner.sh/proposer.sh
 
 
 Ring Paxos / Multi-Ring Paxos (Unicast TCP)
@@ -29,13 +29,71 @@ You need no configuration files; everything is on zookeeper!
 Start a Node with "ringpaxos.sh 1,1:PAL [zookeeper.host:port]" 
      (ringID,nodeID:roles;ringID,nodeID:roles;...)
 
+Environment Config
+----------------
+$IFACE: prefer a specific inerface (e.g. "eth0")
+$IP: use this IP (e.g. EC2 public IP)
+use java.net.preferIPv6Stack=true to prefer IPv6
+
+Zookeeper Config
+----------------
+p1_preexecution_number: Phase 1 pre exceution (5000)
+p1_resend_time: Phase 1 message resend time (1000ms)
+value_resend_time: Proposer timeout (3000ms)
+value_batch_size: Batch size at the proposers (0: disabled) 
+  !! Every batch is decided in a single Paxos instance. Be careful with SMR !!
+learner_recovery: A starting learner recovers from instance 1 (1: enabled)
+quorum_size: Quroum of acceptors whic hmust be alive (2)
+stable_storage: Stable storage implementation at the acceptors:
+  ch.usi.da.paxos.storage.CyclicArray (default: requires JNI)
+  ch.usi.da.paxos.storage.BerkeleyStorage (/tmp or env(DB))
+  ch.usi.da.paxos.storage.SyncBerkeleyStorage (/tmp or env(DB))
+  ch.usi.da.paxos.storage.InMemory
+  ch.usi.da.paxos.storage.MemcachedStorage
+  ch.usi.da.paxos.storage.NoStorage
+  You can specify everything which implements ch.usi.da.paxos.api.StableStorage.
+trim_quorum: Quroum for the acceptor log trimming (2) 
+trim_modulo: Every n instance the coordinator checkes if it is possible to trim 
+  the acceptor logs (0: disabled)
+
+value_size: Value size for the in-system benchmark (32768)
+value_count: How many values to send after typing "start" (900000)
+concurrent_values: How many undecided values are allowed (20)
+
+buffer_size: TCP buffer size (2097152)
+tcp_crc: Additional CRC32 of the TCP framing / serialization (0)
+tcp_nodelay: TCP no delay (1)
+
+multi_ring_lambda: Multi Ring Paxos lambda, set 1.5 of the maximum exptectd 
+  decisions per second. 0: disabled (9000)
+multi_ring_delta_t: Delta t between the coordinator samples the ring troughput 
+  in (100ms). Hint: Set it as high a possible but smaller than your application
+  latency. E.g. EC2 SMR: from cmd send until the replica replies = 80 ms. Choose
+  a delta_t below 80 ms. Do not set it too low: Without traffic in the ring you 
+  will require one Paxos instance per every delta_t!
+multi_ring_m: How many round-robin messages per ring (1) 
+multi_ring_start_time: The virtual start time every coordinator agrees on. Set:
+  echo "set /ringpaxos/config/multi_ring_start_time `date +%s`000" | zkCli.sh
+  before you run the code.
+deliver_skip_messages: Expose the skip messages to the application. (0)
+  Enable this for SMR; so the replica see's all Paxos instances.
+
+Output Control (log4j)
+----------------
+ch.usi.da.paxos.Stats:
+  >error to enable 5s troughput statistics
+ch.usi.da.paxos.message.Value:
+  error/info/debug to print out decided values
+ch.usi.da.paxos.storage.Proposal:
+  error/info/debug to print out proposals
 
 Ring Paxos with Thrift Interface
 ---------------------------
 Like "ringpaxos.sh"; but "thriftnode.sh"
 
 
-
+Packages Overview
+---------------------------
 ch.usi.da.paxos.api
 ch.usi.da.paxos.examples
 	Where you want to start as developer
@@ -60,4 +118,4 @@ ch.usi.da.paxos.thrift
 
 
 ---------------------------
-Copyright (c) 2013 Università della Svizzera italiana (USI)
+Copyright (c) 2013-14 Università della Svizzera italiana (USI)
