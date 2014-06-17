@@ -23,6 +23,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -74,15 +75,33 @@ public class Util {
 	/**
 	 * Get the host IP address
 	 * 
-	 * @param ipv6 include IPv6 addresses in search
-	 * @return return the host IP address or null
+	 * Use env(IFACE) to select an interface or
+	 * env(IP) to select a specific address
+	 * 
+	 * to prefer IPv6 use: java.net.preferIPv6Stack=true
+	 * 
+	 * @return return the host IP address or 127.0.0.1 (::1)
 	 */
-	public static InetAddress getHostAddress(boolean ipv6){
+	public static InetAddress getHostAddress(){
+		boolean ipv6 = false;
+		String pv4 = System.getProperty("java.net.preferIPv4Stack");
+		String pv6 = System.getProperty("java.net.preferIPv6Stack");
+		if(pv4 != null && pv4.equals("false")){
+			ipv6 = true;
+		}		
+		if(pv6 != null && pv6.equals("true")){
+			ipv6 = true;
+		}
 		try {
+			String iface = System.getenv("IFACE");			
+			String public_ip = System.getenv("IP");
+			if(public_ip != null){
+				return InetAddress.getByName(public_ip);
+			}
 			Enumeration<NetworkInterface> ni = NetworkInterface.getNetworkInterfaces();
 			while (ni.hasMoreElements()){
 				NetworkInterface n = ni.nextElement();
-				if(n.getDisplayName().equals("eth0") || n.getDisplayName().equals("p8p2")){
+				if(iface == null || n.getDisplayName().equals(iface)){
 					Enumeration<InetAddress> ia = n.getInetAddresses();
 					while(ia.hasMoreElements()){
 						InetAddress addr = ia.nextElement();
@@ -97,7 +116,7 @@ public class Util {
 				}
 			}
 			return InetAddress.getLoopbackAddress();
-		} catch (SocketException e) {
+		} catch (SocketException | UnknownHostException e) {
 			return InetAddress.getLoopbackAddress();
 		}
 	}
