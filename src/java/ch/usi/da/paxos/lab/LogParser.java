@@ -51,7 +51,7 @@ public class LogParser {
 				float msg = Float.parseFloat(xs[8]);
 				float mbit= Float.parseFloat(xs[10]);
 				float avg = Float.parseFloat(xs[13]);
-				if(avg > 0 && avg < 4000){ // remove first value
+				if(msg > 0 && avg > 0 && avg < 4000){ // remove first value
 					msgl.add(msg);
 					mbitl.add(mbit);
 					avgl.add(avg);
