@@ -127,11 +127,11 @@ public class LearnerRole extends Role implements Learner {
 		if(latch != null){
 			latch.countDown();
 		}
-		while(recovery){
+		while(true){
 			try{
 				Decision head = delivery.peek();
-				// init recovering by getting highest available instance
-				if(!recovered && head != null){
+				// initial recovering
+				if(!recovered && recovery && head != null){
 					Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Safe,0,new Value("","0".getBytes()));
 					m.setVoteCount(1);
 					logger.debug("Send safe message to recover highest_online_instance. (" + recovered + "," + delivery.isEmpty() + ")");
@@ -171,37 +171,20 @@ public class LearnerRole extends Role implements Learner {
 				d = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),m.getValue());
 			}
 			if(d != null && d.getValue().getValue().length > 0){
-				if(!recovery){
-					if(auto_trim) { safe_instance = d.getInstance(); }
-					deliver_bytes = deliver_bytes + d.getValue().getValue().length;
-					if(d.getValue().isBatch()){
-						batch_count++;
-						ByteBuffer buffer = ByteBuffer.wrap(d.getValue().getValue());
-						while(buffer.remaining() > 0){
-							try {
-								Message n = Message.fromBuffer(buffer);
-								Decision bd = new Decision(fromRing.getRingID(),m.getInstance(),m.getBallot(),n.getValue());
-								deliver_count++;
-								values.add(bd);
-							} catch (Exception e) {
-								logger.error("Learner could not de-serialize batch message!" + e);
-							}
-						}
-					}else{
-						deliver_count++;
-						values.add(d);
-					}
+				if(!recovered && !recovery){
+					next_instance = d.getInstance();
+					delivered_instance = d.getInstance()-1;
+					logger.info("Learner start from instance " + d.getInstance() + " without recovery");
+				}
+				if(d.getInstance() == next_instance){
+					delivery.add(d);
+					next_instance++;
 				}else{
-					if(d.getInstance() == next_instance){
-						delivery.add(d);
-						next_instance++;
-					}else{
-						int pos = findPos(d.getInstance());
-						if(pos >= 0){
-							delivery.add(pos,d);
-							if(pos == delivery.size()-1){
-								next_instance = d.getInstance().longValue()+1;
-							}
+					int pos = findPos(d.getInstance());
+					if(pos >= 0){
+						delivery.add(pos,d);
+						if(pos == delivery.size()-1){
+							next_instance = d.getInstance().longValue()+1;
 						}
 					}
 				}
