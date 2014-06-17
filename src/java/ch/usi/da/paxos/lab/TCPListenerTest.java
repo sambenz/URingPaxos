@@ -68,8 +68,8 @@ public class TCPListenerTest implements Runnable {
 		Thread t = new Thread(new TCPListenerTest());
 		t.setName("TCPListener");
 	    t.start();
-		Thread t2 = new Thread(new TCPSenderTest());
-		t2.setName("TCPSender");
-	    t2.start();	
+		//Thread t2 = new Thread(new TCPSenderTest());
+		//t2.setName("TCPSender");
+	    //t2.start();	
 	}
 }

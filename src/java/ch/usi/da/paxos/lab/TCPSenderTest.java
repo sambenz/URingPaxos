@@ -48,8 +48,8 @@ public class TCPSenderTest implements Runnable {
 	/**
 	 * @throws IOException 
 	 */
-	public TCPSenderTest() throws IOException{
-		socket = new Socket("127.0.0.1", 2020);
+	public TCPSenderTest(String ip) throws IOException{
+		socket = new Socket(ip, 2020);
 		socket.setTcpNoDelay(true);
 	}
 	
@@ -82,6 +82,19 @@ public class TCPSenderTest implements Runnable {
 		}	
 	}
 	
+	/**
+	 * @param args
+	 * @throws IOException
+	 */
+	public static void main(String[] args) throws IOException{
+		Thread t = new Thread(new TCPSenderTest(args[0]));
+		t.setName("TCPSender");
+	    t.start();
+		//Thread t2 = new Thread(new TCPSenderTest());
+		//t2.setName("TCPSender");
+	    //t2.start();	
+	}
+
 	/**
 	 * @param value
 	 * @return a byte[]
