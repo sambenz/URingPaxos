@@ -509,4 +509,9 @@ public class Client implements Receiver {
 			return InetAddress.getLoopbackAddress();
 		}
 	}
+
+	@Override
+	public boolean is_ready(Integer ring, Long instance) {
+		return true;
+	}
 }

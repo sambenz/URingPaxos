@@ -103,19 +103,21 @@ public class Replica implements Receiver {
 
 	private final SortedMap<String,byte[]> db;
 
-	private final String snapshot_file = "/tmp/snapshot.ser";
+	public static final String snapshot_file = "/tmp/snapshot.ser";
 
-	private final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
+	public static final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
 	
 	private final int max_ring = 20;
 	
-	private Map<Integer,Long> exec_instance = new HashMap<Integer,Long>();
+	private volatile Map<Integer,Long> exec_instance = new HashMap<Integer,Long>();
 	
 	private long exec_cmd = 0;
 	
 	private int snapshot_modulo = 0; // disabled
 	
 	private final boolean use_thrift = false;
+	
+	private Thread recovery = null;
 	
 	public Replica(String token, int ringID, int nodeID, int snapshot_modulo, String zoo_host) throws Exception {
 		this.nodeID = nodeID;
@@ -263,12 +265,16 @@ public class Replica implements Receiver {
 					logger.debug("Error getting state from " + h,e);
 				}
 			}
-			logger.info("Use remote snapshot from host " + host);
 			synchronized(db){
 				InputStream in;
-				URL url = new URL("http://" + host + ":8080/snapshot");
-				HttpURLConnection con = (HttpURLConnection)url.openConnection();
-				in = con.getInputStream();
+				if(host != null){
+					logger.info("Use remote snapshot from host " + host);
+					URL url = new URL("http://" + host + ":8080/snapshot");
+					HttpURLConnection con = (HttpURLConnection)url.openConnection();
+					in = con.getInputStream();
+				}else{
+					in = new FileInputStream(new File(snapshot_file));
+				}
 				ObjectInputStream ois = new ObjectInputStream(in);
 				@SuppressWarnings("unchecked")
 				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
@@ -284,6 +290,7 @@ public class Replica implements Receiver {
 				}
 			}
 		} catch (IOException | ClassNotFoundException e) {
+			logger.error(e);
 			if(!exec_instance.isEmpty()){
 				return exec_instance;
 			}else{ // init to 0
@@ -292,7 +299,6 @@ public class Replica implements Receiver {
 					instances.put(p.getRing(),0L);
 				}				
 			}
-			logger.error(e);
 		}
 		logger.info("Replica installed snapshot instance: " + instances);
 		return instances;
@@ -312,7 +318,7 @@ public class Replica implements Receiver {
 	@Override
 	public void receive(Message m) {
 		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
-
+		
 		// skip already executed commands
 		if(m.getInstnce() <= exec_instance.get(m.getRing())){
 			return;
@@ -418,6 +424,43 @@ public class Replica implements Receiver {
 		Message msg = new Message(msg_id,token,m.getFrom(),cmds);
 		//logger.debug("Send UDP: " + msg);
 		udp.send(msg);
+	}
+
+	/**
+	 * Do not accept commands until you know you have recovered!
+	 * 
+	 * The commands are queued in the learner itself.
+	 * 
+	 */
+	@Override
+	public boolean is_ready(Integer ring, Long instance) {
+		if(instance <= exec_instance.get(ring)+1){
+			if(recovery != null){
+				recovery.interrupt();
+			}
+			return true;
+		}
+		if(recovery == null){
+			recovery = new Thread(){
+				@Override
+				public void run() {
+					logger.info("Replica starts recovery thread.");
+					while(!Thread.interrupted()){
+						exec_instance = installState();
+						try {
+							Thread.sleep(10000);
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							break;
+						}
+					}
+					logger.info("Recovery thread stopped.");
+				}
+			};
+			recovery.setName("Recovery");
+			recovery.start();
+		}
+		return false;
 	}
 
 	/**

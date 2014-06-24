@@ -32,5 +32,7 @@ import ch.usi.da.smr.message.Message;
 public interface Receiver {
 
 	public void receive(Message message);
+
+	public boolean is_ready(Integer ring, Long instance);
 	
 }
