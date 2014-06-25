@@ -44,6 +44,7 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.examples.Util;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
@@ -124,7 +125,7 @@ public class Replica implements Receiver {
 		this.token = token;
 		this.snapshot_modulo = snapshot_modulo;
 		this.partitions = new PartitionManager(zoo_host);
-		final InetAddress ip = Client.getHostAddress();
+		final InetAddress ip = Util.getHostAddress();
 		partitions.init();
 		setPartition(partitions.register(nodeID, ringID, ip, token));
 		udp = new UDPSender();
@@ -171,7 +172,7 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
-		partitions.deregister(nodeID,token);
+		//partitions.deregister(nodeID,token);
 	}
 	
 	public boolean checkpoint(){
@@ -307,9 +308,11 @@ public class Replica implements Receiver {
 	private boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
 		for(Entry<Integer, Long> e : state.entrySet()){
 			long i = e.getValue();
-			long ni = nstate.get(e.getKey());
-			if(ni > i){
-				return true;
+			if(i > 0){
+				long ni = nstate.get(e.getKey());
+				if(ni > i){
+					return true;
+				}
 			}
 		}
 		return false;
