@@ -4,14 +4,19 @@ package ch.usi.da.smr;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.sun.net.httpserver.HttpServer;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
@@ -90,7 +95,7 @@ public class ReplicaTest implements Receiver {
 	}
 
 	@Test
-	public void recovery() throws Exception {
+	public void localRecovery() throws Exception {
 		Replica replica2 = new Replica("0",1,2,0,"localhost:2181");
 		replica2.start();
 		
@@ -113,7 +118,92 @@ public class ReplicaTest implements Receiver {
 		assertEquals(false,replica2.is_ready(1,12L));		
 		replica2.close();
 	}
+	
+	@Test
+	public void remoteRecovery() throws Exception {
+		
+		// set state and checkpoint
+		for(int i=1;i<11;i++){
+			List<Command> cmd = new ArrayList<Command>();
+			cmd.add(new Command(i, CommandType.PUT, "test" + i, "Value".getBytes()));
+			Message m = new Message(1,"127.0.0.1;1234","", cmd);
+			m.setRing(1);
+			m.setInstance(i);
+			replica.receive(m);
+		}
+		replica.checkpoint();
+		replica.close();
+		
+		//Thread.sleep(2000); // wait until port 8080 is free
+		
+		// mv checkpoint
+		File state = new File(Replica.state_file + "J");
+		new File(Replica.state_file).renameTo(state);
+		File data = new File(Replica.snapshot_file + "J");
+		new File(Replica.snapshot_file).renameTo(data);
+				
+		// remote snapshot transfer server
+		try {
+			HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+			server.createContext("/state", new Replica.SendFile(Replica.state_file + "J"));        
+			server.createContext("/snapshot", new Replica.SendFile(Replica.snapshot_file + "J"));
+			server.setExecutor(null); // creates a default executor
+			server.start();
+		}catch(Exception e){
+			logger.error("remoteRecovery test could not start http server: " + e);
+		}
+		
+		// recover
+		Replica replica2 = new Replica("0",1,2,0,"localhost:2181");
+		replica2.start();
+		assertEquals(true,replica2.is_ready(1,11L));
+		replica2.close();
+		
+		state.delete();
+		data.delete();
+	}
 
+	@Test
+	public void newerState() throws Exception {
+		Map<Integer,Long> state = new HashMap<Integer,Long>();
+		Map<Integer,Long> nstate = new HashMap<Integer,Long>();
+
+		state.put(1,1L);
+		nstate.put(1,1L);
+		assertEquals(false,replica.newerState(nstate, state));
+		
+		state.put(1,1L);
+		nstate.put(1,2L);
+		assertEquals(true,replica.newerState(nstate, state));
+
+		state.put(1,1L);
+		nstate.put(1,1L);
+		state.put(16,2L);
+		nstate.put(16,3L);
+		assertEquals(true,replica.newerState(nstate, state));
+
+		state.put(1,1L);
+		nstate.put(1,1L);
+		state.put(16,3L);
+		nstate.put(16,2L);
+		assertEquals(false,replica.newerState(nstate, state));
+
+		state.put(1,1L);
+		nstate.put(1,2L);
+		state.put(16,3L); // should not happen, since round-robin start in lowest ring
+		nstate.put(16,2L);
+		assertEquals(true,replica.newerState(nstate, state));
+
+		state.clear();
+		nstate.clear();
+		assertEquals(false,replica.newerState(nstate, state));
+		
+		state.put(0,0L); // special case: ring 0 means not global ring	
+		state.put(1,1L);
+		nstate.put(1,2L);
+		assertEquals(true,replica.newerState(nstate, state));
+	}
+	
 	@Override
 	public void receive(Message m) {
 		received.add(m);

@@ -101,6 +101,8 @@ public class Replica implements Receiver {
 	private final UDPSender udp;
 
 	private final ABListener ab;
+	
+	private HttpServer httpd;
 
 	private final SortedMap<String,byte[]> db;
 
@@ -138,11 +140,11 @@ public class Replica implements Receiver {
 		
 		// remote snapshot transfer server
 		try {
-			HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-			server.createContext("/state", new SendFile(state_file));        
-			server.createContext("/snapshot", new SendFile(snapshot_file));
-			server.setExecutor(null); // creates a default executor
-			server.start();
+			httpd = HttpServer.create(new InetSocketAddress(8080), 0);
+			httpd.createContext("/state", new SendFile(state_file));        
+			httpd.createContext("/snapshot", new SendFile(snapshot_file));
+			httpd.setExecutor(null); // creates a default executor
+			httpd.start();
 		}catch(Exception e){
 			logger.error("Replica could not start http server: " + e);
 		}
@@ -172,6 +174,9 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
+		if(httpd != null){
+			httpd.stop(1);
+		}
 		//partitions.deregister(nodeID,token);
 	}
 	
@@ -243,8 +248,8 @@ public class Replica implements Receiver {
 				if(h.contains(":")){
 					h = "[" + h + "]";
 				}
-				URL url = new URL("http://" + h + ":8080/state");
 				try{
+					URL url = new URL("http://" + h + ":8080/state");
 					HttpURLConnection con = (HttpURLConnection)url.openConnection();
 					isr = new InputStreamReader(con.getInputStream());
 					BufferedReader in = new BufferedReader(isr);
@@ -263,7 +268,7 @@ public class Replica implements Receiver {
 					logger.info("Replica found remote snapshot: " + nstate + " (" + h + ")");
 					in.close();
 				}catch(Exception e){
-					logger.debug("Error getting state from " + h,e);
+					logger.error("Error getting state from " + h,e);
 				}
 			}
 			synchronized(db){
@@ -305,7 +310,7 @@ public class Replica implements Receiver {
 		return instances;
 	}
 
-	private boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
+	public boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
 		for(Entry<Integer, Long> e : state.entrySet()){
 			long i = e.getValue();
 			if(i > 0){
