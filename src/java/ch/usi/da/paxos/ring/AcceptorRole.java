@@ -194,8 +194,11 @@ public class AcceptorRole extends Role {
 		}else if(m.getType() == MessageType.Value){
 			learned.put(m.getValue().getID(),m.getValue());
 		}else if(m.getType() == MessageType.Decision){
-			if(value != null && learned.containsKey(value.getID())){
-				Decision d = new Decision(fromRing.getRingID(),instance,m.getBallot(),learned.get(value.getID()));
+			if(value != null){
+				Decision d = new Decision(fromRing.getRingID(),instance,m.getBallot(),value);
+				if(learned.containsKey(value.getID())){
+					d = new Decision(fromRing.getRingID(),instance,m.getBallot(),learned.get(value.getID()));
+				}
 				storage.put(instance,d);
 				if(instance>highest_accepted_instance){
 					highest_accepted_instance=instance;
