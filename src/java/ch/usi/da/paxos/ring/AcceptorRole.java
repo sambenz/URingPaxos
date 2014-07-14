@@ -46,10 +46,19 @@ public class AcceptorRole extends Role {
 
 	private final RingManager ring;
 	
+	/*
+	 * Phase 2 storage
+	 */
 	private StableStorage storage;
 	
+	/* 
+	 * Phase 1 storage (TODO: only in-memory; should follow stable storage semantics)
+	 */
 	private final Map<Long,Integer> promised = new ConcurrentHashMap<Long,Integer>();
 
+	/*
+	 * Temporary Value storage to allow indirect consensus.
+	 */
 	private final Map<String,Value> learned = new ConcurrentHashMap<String,Value>();
 
 	private long highest_seen_instance = 0;
@@ -91,10 +100,13 @@ public class AcceptorRole extends Role {
 		int ballot = 0;
 		Value value = null;
 
-		if(m.getValue() != null && learned.containsKey(m.getValue().getID())){
+		if(m.getValue() != null && !learned.containsKey(m.getValue().getID())){
+			learned.put(m.getValue().getID(),m.getValue());
+			value = m.getValue();
+		}else if(m.getValue() != null && learned.containsKey(m.getValue().getID())){
 			value = learned.get(m.getValue().getID());
 		}
-
+		
 		// read stable storage/ promised ballots
 		if(instance <= highest_accepted_instance && storage.contains(instance)){ 
 			Decision d = storage.get(instance);
@@ -153,7 +165,7 @@ public class AcceptorRole extends Role {
 				if(value != null && value.getValue().length > 0){ // 2b
 					m.incrementVoteCount(); // always increment vote count (even value is not equal!) otherwise you risk undecided instances when |coord| > 1 & one process fails
 					Value send_value = null;
-					if(m.getBallot() > 9000 || (m.getValue() != null && m.getValue().isSkip())){
+					if(m.getBallot() > 99 || (m.getValue() != null && m.getValue().isSkip())){
 						send_value = value; // safe mode (don't remove value byte[])
 					}else{
 						send_value = new Value(value.getID(),new byte[0]); // fast mode
@@ -205,6 +217,8 @@ public class AcceptorRole extends Role {
 				}
 				learned.remove(value.getID());
 				promised.remove(instance);
+			}else{
+				logger.error("Acceptor recevied Decisoin for value NULL!");
 			}
 		}else if(m.getType() == MessageType.Trim){
 			if(storage.trim(instance)){

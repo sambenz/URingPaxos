@@ -19,6 +19,7 @@ import ch.usi.da.paxos.examples.Util;
 import ch.usi.da.paxos.lab.DummyWatcher;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
+import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.ring.AcceptorRole;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingManager;
@@ -198,7 +199,6 @@ public class TestAcceptor {
 		assertEquals(50,(int)a1.getStableStorage().get(1L).getBallot());
 		assertEquals(50,(int)a2.getStableStorage().get(1L).getBallot());
 		assertEquals(50,(int)a3.getStableStorage().get(1L).getBallot());
-		
 	}
 	
 	@Test
@@ -207,11 +207,56 @@ public class TestAcceptor {
 		AcceptorRole a2 = (AcceptorRole) n2.getRings().get(0).getRingManager().getNetwork().getAcceptor();
 		AcceptorRole a3 = (AcceptorRole) n3.getRings().get(0).getRingManager().getNetwork().getAcceptor();
 		RingManager ring1 = n1.getRings().get(0).getRingManager();
-		RingManager ring2 = n2.getRings().get(0).getRingManager();
-		RingManager ring3 = n3.getRings().get(0).getRingManager();
+		//RingManager ring2 = n2.getRings().get(0).getRingManager();
+		//RingManager ring3 = n3.getRings().get(0).getRingManager();
 		
 		// pahse1range (executed during start-up)
-		assertEquals(5000,a1.getPromised().size());		
+		assertEquals(5000,a1.getPromised().size());
+
+		/* 
+		 * To send Phase2 messages to the acceptors without a previous Value message
+		 * requires a ballot >= 100 or a Skip values.
+		 * 
+		 * This is due the ring management which will prevent sending Values twice the ring.
+		 */
+		
+		// send phase 2 for undecided instance with smaller ballot
+		String s = "Test Phase 2";
+		Value v = new Value(Value.getSkipID(), s.getBytes());
+		Message m = new Message(1L,ring1.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2, 1, v);
+		a1.deliver(ring1, m);
+		Thread.sleep(1000);		
+		assertEquals(null,a1.getStableStorage().get(1L));
+		assertEquals(null,a2.getStableStorage().get(1L));
+		assertEquals(null,a3.getStableStorage().get(1L));
+
+		// send phase 2 for undecided instance with exact ballot
+		v = new Value(Value.getSkipID(), s.getBytes());
+		m = new Message(1L,ring1.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2, 11, v);
+		a1.deliver(ring1, m);
+		Thread.sleep(1000);
+		assertEquals(s,new String(a1.getStableStorage().get(1L).getValue().getValue()));
+		assertEquals(s,new String(a2.getStableStorage().get(1L).getValue().getValue()));
+		assertEquals(s,new String(a3.getStableStorage().get(1L).getValue().getValue()));
+
+		// send phase 2 for decided instance with higher ballot
+		Value v2 = new Value(Value.getSkipID(), "Should no be decided!".getBytes());
+		m = new Message(1L,ring1.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2, 100, v2);
+		a1.deliver(ring1, m);
+		Thread.sleep(1000);
+		assertEquals(s,new String(a1.getStableStorage().get(1L).getValue().getValue()));
+		assertEquals(s,new String(a2.getStableStorage().get(1L).getValue().getValue()));
+		assertEquals(s,new String(a3.getStableStorage().get(1L).getValue().getValue()));
+
+		// send phase 2 for undecided instance with higher ballot
+		v = new Value("Key 3", s.getBytes());
+		m = new Message(2L,ring1.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2, 100, v);
+		a1.deliver(ring1, m);
+		Thread.sleep(1000);		
+		assertEquals(s,new String(a1.getStableStorage().get(2L).getValue().getValue()));
+		assertEquals(s,new String(a2.getStableStorage().get(2L).getValue().getValue()));
+		assertEquals(s,new String(a3.getStableStorage().get(2L).getValue().getValue()));
+		
 	}
 
 }
