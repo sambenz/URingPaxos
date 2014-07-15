@@ -39,7 +39,7 @@ public class Decision implements Serializable {
 	
 	private final Long instance;
 	
-	private Integer ballot;
+	private final Integer ballot;
 	
 	private final Value value;
 	
@@ -51,23 +51,9 @@ public class Decision implements Serializable {
 	 */
 	public Decision(Integer ring,Long instance,Integer ballot,Value value){
 		this.ring = ring;
-		this.ballot = ballot;
 		this.instance = instance;
-		this.value = value;
-	}
-	
-	/**
-	 * @return the ballot
-	 */
-	public synchronized Integer getBallot() {
-		return ballot;
-	}
-
-	/**
-	 * @param ballot the ballot to set
-	 */
-	public synchronized void setBallot(Integer ballot) {
 		this.ballot = ballot;
+		this.value = value;
 	}
 
 	/**
@@ -82,6 +68,13 @@ public class Decision implements Serializable {
 	 */
 	public Long getInstance() {
 		return instance;
+	}
+
+	/**
+	 * @return the ballot
+	 */
+	public Integer getBallot() {
+		return ballot;
 	}
 
 	/**
