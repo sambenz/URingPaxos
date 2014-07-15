@@ -63,8 +63,6 @@ public class AcceptorRole extends Role {
 
 	private long highest_seen_instance = 0;
 	
-	private long highest_accepted_instance = 0;
-	
 	private long last_trimmed_instance = 0;
 	
 	/**
@@ -108,7 +106,7 @@ public class AcceptorRole extends Role {
 		}
 		
 		// read stable storage/ promised ballots
-		if(instance <= highest_accepted_instance && storage.contains(instance)){ 
+		if(storage.contains(instance)){ 
 			Decision d = storage.get(instance);
 			if(d != null){
 				ballot = d.getBallot();
@@ -174,9 +172,6 @@ public class AcceptorRole extends Role {
 						if(m.getVoteCount() >= ring.getQuorum()){
 							Decision d = new Decision(fromRing.getRingID(),instance,ballot,value);
 							storage.put(instance,d);
-							if(instance>highest_accepted_instance){
-								highest_accepted_instance=instance;
-							}
 							learned.remove(value.getID());
 							promised.remove(instance);
 							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,send_value);
@@ -212,9 +207,6 @@ public class AcceptorRole extends Role {
 					d = new Decision(fromRing.getRingID(),instance,m.getBallot(),learned.get(value.getID()));
 				}
 				storage.put(instance,d);
-				if(instance>highest_accepted_instance){
-					highest_accepted_instance=instance;
-				}
 				learned.remove(value.getID());
 				promised.remove(instance);
 			}else{
