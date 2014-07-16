@@ -32,7 +32,8 @@ Start a Node with "ringpaxos.sh 1,1:PAL [zookeeper.host:port]"
 Environment Config
 ----------------
 $IFACE: prefer a specific inerface (e.g. "eth0")
-$IP: use this IP (e.g. EC2 public IP)
+$IP: bind to this IP 
+$EC2: publish this IP in Zookeeper (e.g. EC2 public IP)
 use java.net.preferIPv6Stack=true to prefer IPv6
 
 Zookeeper Config
