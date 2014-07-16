@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.StableStorage;
-import ch.usi.da.paxos.message.Value;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.bind.serial.SerialBinding;
@@ -71,7 +70,11 @@ public class BerkeleyStorage implements StableStorage {
 	private final DatabaseEntry data = new DatabaseEntry();
     
 	private final EntryBinding<Decision> dataBinding;
-	
+
+	private final DatabaseEntry ballot_data = new DatabaseEntry();
+    
+	private final EntryBinding<Integer> ballotBinding;
+
 	public BerkeleyStorage(){
 		this(null,false,true);
 	}
@@ -118,6 +121,7 @@ public class BerkeleyStorage implements StableStorage {
         classCatalog = new StoredClassCatalog(classCatalogDb);
         keyBinding = TupleBinding.getPrimitiveBinding(Long.class);
         dataBinding = new SerialBinding<Decision>(classCatalog,Decision.class);
+        ballotBinding = TupleBinding.getPrimitiveBinding(Integer.class);
 
         logger.info("BerkeleyStorage cache size: " + env.getMutableConfig().getCacheSize());
         logger.info("BerkeleyStorage durability: " + env.getMutableConfig().getDurability().getLocalSync());
@@ -126,20 +130,40 @@ public class BerkeleyStorage implements StableStorage {
 
 	@Override
 	public synchronized void putBallot(Long instance, int ballot) {
-		//TODO: Auto-generated method stub
-		
+        keyBinding.objectToEntry(instance,key);
+        ballotBinding.objectToEntry(ballot,ballot_data);
+        OperationStatus status = db.put(null,key,ballot_data);
+        if(logger.isDebugEnabled()){
+        	logger.debug("DB put ballot " + ballot + " for instance " + instance + " " + status.name());
+        }
 	}
 
 	@Override
 	public synchronized int getBallot(Long instance) {
-		//TODO: Auto-generated method stub
-		return 0;
+	    keyBinding.objectToEntry(instance,key);
+	    Integer ballot = null;
+	    OperationStatus status = db.get(null,key,ballot_data,LockMode.DEFAULT);
+	    if (status == OperationStatus.SUCCESS) {
+	        ballot = ballotBinding.entryToObject(ballot_data);
+	    }
+	    if(logger.isDebugEnabled()){
+	    	logger.debug("DB get ballot " + ballot + " for instance " + instance + " " + status.name());
+	    }
+		return ballot.intValue();
 	}
 
 	@Override
 	public synchronized boolean containsBallot(Long instance) {
-		//TODO: Auto-generated method stub
-		return false;
+		boolean found = false;
+		keyBinding.objectToEntry(instance,key);
+	    OperationStatus status = db.get(null,key,ballot_data,LockMode.DEFAULT);
+	    if(status == OperationStatus.SUCCESS){
+	    	found = true;
+	    }
+		if(logger.isDebugEnabled()){
+			logger.debug("DB contains " + instance + " " + found + " (" + status.name() + ")");
+		}
+		return found;
 	}
 
 	@Override
@@ -159,9 +183,6 @@ public class BerkeleyStorage implements StableStorage {
 	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
 	    if (status == OperationStatus.SUCCESS) {
 	        decision = dataBinding.entryToObject(data);
-	    }
-	    if(decision == null){
-	    	logger.error("Error getting Decsion from DB! (" + status + ")");
 	    }
 	    if(logger.isDebugEnabled()){
 	    	logger.debug("DB get " + decision + " " + status.name());
@@ -247,41 +268,6 @@ public class BerkeleyStorage implements StableStorage {
             System.out.println("instance " +  instance + " -> " + decision + "");
 	    }
 	    cursor.close();
-	}
-	
-	/**
-	 * Debug method
-	 */
-	public static void main(String[] args){
-		File file = new File("/tmp/ringpaxos-db/0");
-		file.mkdirs();
-		BerkeleyStorage db = new BerkeleyStorage(file,false,false);
-		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
-		db.containsDecision(1L);
-		db.putDecision(1L,d);
-		db.putDecision(1L,d2);
-		db.containsDecision(1L);
-		System.out.println(db.getDecision(1L));
-		
-		db.putDecision(2L,d);
-		db.putDecision(3L,d);
-		db.putDecision(4L,d);
-		db.putDecision(5L,d);
-		db.putDecision(6L,d);
-		db.putDecision(7L,d);
-		db.putDecision(8L,d);
-		db.putDecision(9L,d);
-		db.putDecision(10L,d);
-		System.out.println(db.trim(7L));
-		
-		db.listAll();
-		db.close();
-		/*
-		BerkeleyStorage db = new BerkeleyStorage(new File("/home/benz/download/db/24306"),true);
-		db.listAll();
-		db.close();
-		*/
 	}
 	
 }

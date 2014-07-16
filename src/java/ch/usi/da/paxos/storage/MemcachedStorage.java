@@ -29,7 +29,6 @@ import net.spy.memcached.MemcachedClient;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.StableStorage;
-import ch.usi.da.paxos.message.Value;
 
 
 /**
@@ -118,21 +117,6 @@ public class MemcachedStorage implements StableStorage {
 	@Override
 	public void close(){
 		cache.shutdown();
-	}
-	
-	/**
-	 * Debug method
-	 */
-	public static void main(String[] args){
-		MemcachedStorage db = new MemcachedStorage();
-		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
-		System.out.println(db.containsDecision(1L));
-		db.putDecision(1L,d);
-		db.putDecision(15001L,d2);		
-		System.out.println(db.containsDecision(1L));
-		System.out.println(db.getDecision(1L));
-		db.close();
 	}
 
 }
