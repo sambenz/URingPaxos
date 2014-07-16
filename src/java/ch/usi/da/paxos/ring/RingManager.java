@@ -223,6 +223,12 @@ public class RingManager implements Watcher {
 		}
 		l = zoo.getChildren(path + "/" + id_path, true); // start watching
 		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
+		// special case for EC2 inter-region ring; publish public IP
+		String public_ip = System.getenv("EC2");
+		if(public_ip != null){
+			b = (public_ip + ";" + addr.getPort()).getBytes(); // store the SocketAddress
+			logger.warn("Publish env(EC2) in zookeeper: " + new String(b) + "!");
+		}
 		try {
 			zoo.create(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
 		} catch (NodeExistsException e){
