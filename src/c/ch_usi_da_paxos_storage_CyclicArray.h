@@ -33,10 +33,10 @@ JNIEXPORT jbyteArray JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nget
 
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
- * Method:    contains
+ * Method:    containsDecision
  * Signature: (Ljava/lang/Long;)Z
  */
-JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_contains
+JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_containsDecision
   (JNIEnv *, jobject, jobject);
 
 #ifdef __cplusplus

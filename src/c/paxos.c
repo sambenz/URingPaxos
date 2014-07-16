@@ -83,10 +83,10 @@ JNIEXPORT jbyteArray JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_nget
 
 /*
  * Class:     ch_usi_da_paxos_storage_CyclicArray
- * Method:    contains
+ * Method:    containsDecision
  * Signature: (Ljava/lang/Long;)Z
  */
-JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_contains
+JNIEXPORT jboolean JNICALL Java_ch_usi_da_paxos_storage_CyclicArray_containsDecision
   (JNIEnv *env, jobject object, jobject instance){
    jclass Long = (*env)->GetObjectClass(env,instance);
    long i = (long)(*env)->GetIntField(env,instance,(*env)->GetFieldID(env,Long,"value","J"));
