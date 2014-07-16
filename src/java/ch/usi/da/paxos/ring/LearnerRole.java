@@ -132,7 +132,7 @@ public class LearnerRole extends Role implements Learner {
 				Decision head = delivery.peek();
 				// initial recovering
 				if(!recovered && recovery && head != null){
-					Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Safe,0,new Value("","0".getBytes()));
+					Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Safe,0,0,new Value("","0".getBytes()));
 					m.setVoteCount(1);
 					logger.debug("Send safe message to recover highest_online_instance. (" + recovered + "," + delivery.isEmpty() + ")");
 					ring.getNetwork().send(m);
@@ -141,7 +141,7 @@ public class LearnerRole extends Role implements Learner {
 				else if(head != null && head.getInstance() > delivered_instance){
 					for(long i=delivered_instance+1;i<head.getInstance();i++){
 						if(highest_online_instance == 0 || i >= highest_online_instance){
-							Message m = new Message(i,ring.getNodeID(),PaxosRole.Leader,MessageType.Relearn,0,null);
+							Message m = new Message(i,ring.getNodeID(),PaxosRole.Leader,MessageType.Relearn,0,0,null);
 							logger.debug("Learner re-request missing instance " + i);
 							ring.getNetwork().receive(m);
 						}else{
@@ -234,7 +234,7 @@ public class LearnerRole extends Role implements Learner {
 				String s = new String(m.getValue().getValue());
 				v = new Value(m.getValue().getID(),(s + ";" + String.valueOf(safe_instance)).getBytes());
 			}
-			Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),m.getBallot(),v);
+			Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),m.getBallot(),m.getBallot(),v);
 			n.setVoteCount(m.getVoteCount()+1);
 			ring.getNetwork().send(n);
 		}else if(m.getType() == MessageType.Trim){

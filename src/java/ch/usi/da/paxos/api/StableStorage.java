@@ -31,11 +31,17 @@ import ch.usi.da.paxos.storage.Decision;
  */
 public interface StableStorage {
 
-	public void put(Long instance, Decision decision);
+	public void putBallot(Long instance, int ballot);
 	
-	public Decision get(Long instance);
+	public int getBallot(Long instance);
 	
-	public boolean contains(Long instance);
+	public boolean containsBallot(Long instance);
+	
+	public void putDecision(Long instance, Decision decision);
+	
+	public Decision getDecision(Long instance);
+	
+	public boolean containsDecision(Long instance);
 	
 	public boolean trim(Long instance);
 	

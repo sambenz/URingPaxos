@@ -68,7 +68,7 @@ public class ProposerResender implements Runnable {
 					if(time-e.getValue().getDate()>resend_time){
 						i.remove();
 						logger.error("Proposer timeout in proposing value: " + e.getValue().getValue());
-						proposer.send(new Message(0,proposer.getRingManager().getNodeID(),PaxosRole.Leader,MessageType.Value,0,e.getValue().getValue()));
+						proposer.send(new Message(0,proposer.getRingManager().getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,e.getValue().getValue()));
 					}
 				}
 			} catch (InterruptedException e) {

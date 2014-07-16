@@ -35,8 +35,8 @@ public class BufferTest {
 		ByteBuffer buffer = ByteBuffer.allocate(500);
 
 		Value v    = new Value("ID","Value".getBytes());
-		Message m  = new Message(1, 2, PaxosRole.Acceptor, MessageType.Phase1, 0, v);
-		Message m2 = new Message(2, 3, PaxosRole.Learner, MessageType.Value, 0, v);
+		Message m  = new Message(1, 2, PaxosRole.Acceptor, MessageType.Phase1, 0, 0, v);
+		Message m2 = new Message(2, 3, PaxosRole.Learner, MessageType.Value, 0, 0, v);
 		
 		//System.err.println(Message.getCRC32(m));
 		//System.err.println(Message.getCRC32(Message.fromWire(Message.toWire(m))));

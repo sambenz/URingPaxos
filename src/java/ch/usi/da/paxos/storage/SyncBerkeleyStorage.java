@@ -41,19 +41,34 @@ public class SyncBerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public void put(Long instance, Decision decision) {
-		storage.put(instance, decision);
+	public void putBallot(Long instance, int ballot) {
+		storage.putBallot(instance, ballot);		
+	}
+
+	@Override
+	public int getBallot(Long instance) {
+		return storage.getBallot(instance);
+	}
+
+	@Override
+	public synchronized boolean containsBallot(Long instance) {
+		return storage.containsBallot(instance);
+	}
+	
+	@Override
+	public void putDecision(Long instance, Decision decision) {
+		storage.putDecision(instance, decision);
 		
 	}
 
 	@Override
-	public Decision get(Long instance) {
-		return storage.get(instance);
+	public Decision getDecision(Long instance) {
+		return storage.getDecision(instance);
 	}
 
 	@Override
-	public boolean contains(Long instance) {
-		return storage.contains(instance);
+	public boolean containsDecision(Long instance) {
+		return storage.containsDecision(instance);
 	}
 
 	@Override

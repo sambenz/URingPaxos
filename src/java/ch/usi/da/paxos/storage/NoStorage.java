@@ -1,5 +1,8 @@
 package ch.usi.da.paxos.storage;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import ch.usi.da.paxos.api.StableStorage;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
@@ -33,22 +36,43 @@ public class NoStorage implements StableStorage {
 
 	//private final static Logger logger = Logger.getLogger(NoStorage.class);
 
+	private final Map<Long, Integer> promised = new LinkedHashMap<Long,Integer>(10000,0.75F,false){
+		private static final long serialVersionUID = -2704400128020327063L;
+			protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {  
+				return size() > 15000; // hold only 15'000 values in memory !                                 
+	}};
+	
 	private long last_trimmed_instance = 0;
 	
 	@Override
-	public void put(Long instance, Decision decision) {
+	public void putBallot(Long instance, int ballot) {
+		promised.put(instance, ballot);
+	}
+
+	@Override
+	public int getBallot(Long instance) {
+		return promised.get(instance);
+	}
+	
+	@Override
+	public synchronized boolean containsBallot(Long instance) {
+		return promised.containsKey(instance);
+	}
+
+	@Override
+	public void putDecision(Long instance, Decision decision) {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("add " + decision + " to stable storage");
 		}*/
 	}
 
 	@Override
-	public Decision get(Long instance) {
+	public Decision getDecision(Long instance) {
 		return null;
 	}
 
 	@Override
-	public boolean contains(Long instance) {
+	public boolean containsDecision(Long instance) {
 		/*if(logger.isDebugEnabled()){
 			logger.debug("check if " + instance + " exists in stable storage");
 		}*/
@@ -70,4 +94,5 @@ public class NoStorage implements StableStorage {
 	public void close(){
 		
 	}
+
 }

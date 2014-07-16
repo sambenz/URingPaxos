@@ -48,10 +48,12 @@ public class Message implements Serializable {
 	
 	private final int ballot;
 	
+	private final int value_ballot; // version of the value 
+	
 	private final Value value;
 	
 	private int vote_count = 0;
-	
+
 	/**
 	 * Public constructor
 	 * 
@@ -63,11 +65,27 @@ public class Message implements Serializable {
 	 * @param value the value (can be null)
 	 */
 	public Message(long instance,int sender,PaxosRole receiver,MessageType type,int ballot,Value value){
+		this(instance,sender,receiver,type,ballot,-1,value);
+	}
+
+	/**
+	 * Public constructor
+	 * 
+	 * @param instance the instance number
+	 * @param sender the sender id
+	 * @param receiver the receiver id
+	 * @param type the message type
+	 * @param ballot the ballot number
+	 * @param value_ballot the ballot corresponding to the value
+	 * @param value the value (can be null)
+	 */
+	public Message(long instance,int sender,PaxosRole receiver,MessageType type,int ballot,int value_ballot,Value value){
 		this.instance = instance;
 		this.sender = sender;
 		this.receiver = receiver;
 		this.type = type;
 		this.ballot = ballot;
+		this.value_ballot = value_ballot;
 		this.value = value;
 	}
 
@@ -107,6 +125,13 @@ public class Message implements Serializable {
 	}
 
 	/**
+	 * @return the value_ballot
+	 */
+	public int getValueBallot() {
+		return value_ballot;
+	}
+
+	/**
 	 * @return the value
 	 */
 	public Value getValue() {
@@ -134,11 +159,28 @@ public class Message implements Serializable {
 		vote_count = vote_count + 1;
 	}
 	
+	public boolean equals(Object obj) {
+		if(obj instanceof Message){
+			Message m = (Message)obj;
+            if(this.instance == m.instance &&
+               this.ballot == m.ballot &&
+               this.receiver == m.receiver &&
+               this.sender == m.sender &&
+               this.type == m.type &&
+               (this.value != null ? this.value.equals(m.value) : true) &&
+               this.value_ballot == m.value_ballot &&
+               this.vote_count == m.vote_count){
+                    return true;
+            }
+		}
+		return false;
+	}
+	
 	public String toString(){
 		if(vote_count > 0){
-			return (this.getType() + " from:" + this.getSender() + " to:" + this.getReceiver() + " instance:" + this.instance + " ballot:" + this.getBallot() + " value:" + this.getValue() + " votes:" + vote_count);
+			return (this.getType() + " from:" + this.getSender() + " to:" + this.getReceiver() + " instance:" + this.instance + " ballot:" + this.getBallot() + " v_ballot:" + this.getValueBallot() + " value:" + this.getValue() + " votes:" + vote_count);
 		}else{
-			return (this.getType() + " from:" + this.getSender() + " to:" + this.getReceiver() + " instance:" + this.instance + " ballot:" + this.getBallot() + " value:" + this.getValue());
+			return (this.getType() + " from:" + this.getSender() + " to:" + this.getReceiver() + " instance:" + this.instance + " ballot:" + this.getBallot() + " v_ballot:" + this.getValueBallot() + " value:" + this.getValue());
 		}
 	}
 	
@@ -219,7 +261,7 @@ public class Message implements Serializable {
 	 * @return length of the message on the wire (without length prefix)
 	 */
 	public static int length(Message m){
-		int length = 28;
+		int length = 32;
 		if(m.getValue() != null){
 			length = length + m.getValue().getByteID().length + 4 + m.getValue().getValue().length + 1;
 		}
@@ -240,6 +282,7 @@ public class Message implements Serializable {
 		crc.update(m.getReceiver().getId());
 		crc.update(m.getType().getId());
 		crc.update(m.getBallot());
+		crc.update(m.getValueBallot());		
 		crc.update(m.getVoteCount());
 		return crc.getValue();
 	}
@@ -251,11 +294,12 @@ public class Message implements Serializable {
 	 * @param m
 	 */
 	public static void toBuffer(ByteBuffer b,Message m){
-		// long   instance
+		// long  instance
 		// int   sender
 		// short role
 		// short type
 		// int   ballot
+		// int   value_ballot
 		// int   vote count
 		// int   ID length (or -1)
 		//   byte[]ID
@@ -266,6 +310,7 @@ public class Message implements Serializable {
 		b.putShort((short)m.getReceiver().getId());
 		b.putShort((short)m.getType().getId());
 		b.putInt(m.getBallot());
+		b.putInt(m.getValueBallot());		
 		b.putInt(m.getVoteCount());
 		if(m.getValue() != null){
 			b.putInt(m.getValue().getByteID().length);
@@ -294,6 +339,7 @@ public class Message implements Serializable {
 		PaxosRole role = PaxosRole.fromId(buffer.getShort());
 		MessageType type = MessageType.fromId(buffer.getShort());
 		int ballot = buffer.getInt();
+		int value_ballot = buffer.getInt();
 		int vote_count = buffer.getInt();
 		int id_length = buffer.getInt();
 		Value value = null;
@@ -312,7 +358,7 @@ public class Message implements Serializable {
 				value = new Value(id,vb,false);
 			}
 		}
-		Message msg = new Message(instance,sender,role,type,ballot,value);
+		Message msg = new Message(instance,sender,role,type,ballot,value_ballot,value);
 		msg.setVoteCount(vote_count);
 		return msg;
 	}

@@ -38,6 +38,12 @@ import ch.usi.da.paxos.api.StableStorage;
 public class InMemory implements StableStorage {
 
 	private final static Logger logger = Logger.getLogger(StableStorage.class);
+	
+	private final Map<Long, Integer> promised = new LinkedHashMap<Long,Integer>(10000,0.75F,false){
+		private static final long serialVersionUID = -2704400128020327063L;
+			protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {  
+				return size() > 15000; // hold only 15'000 values in memory !                                 
+	}};
 
 	private long last_trimmed_instance = 0;
 	
@@ -48,18 +54,33 @@ public class InMemory implements StableStorage {
 	}};
 	
 	@Override
-	public void put(Long instance, Decision decision) {
+	public void putBallot(Long instance, int ballot) {
+		promised.put(instance, ballot);
+	}
+
+	@Override
+	public int getBallot(Long instance) {
+		return promised.get(instance);
+	}
+
+	@Override
+	public synchronized boolean containsBallot(Long instance) {
+		return promised.containsKey(instance);
+	}
+
+	@Override
+	public void putDecision(Long instance, Decision decision) {
 		decided.put(instance, decision);
 		logger.debug("InMemory stored " + decision);
 	}
 
 	@Override
-	public Decision get(Long instance) {
+	public Decision getDecision(Long instance) {
 		return decided.get(instance);
 	}
 
 	@Override
-	public boolean contains(Long instance) {
+	public boolean containsDecision(Long instance) {
 		return decided.containsKey(instance);
 	}
 
@@ -78,4 +99,5 @@ public class InMemory implements StableStorage {
 	public void close(){
 		
 	}
+	
 }

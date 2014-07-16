@@ -92,7 +92,7 @@ public class LeaderSender implements Runnable {
 				if(v != null){
 					boolean accepted = false;
 					while(!accepted){
-						Message m = new Message(-1,proposer.getID(),PaxosRole.Leader,MessageType.Value,-1,v);
+						Message m = new Message(-1,proposer.getID(),PaxosRole.Leader,MessageType.Value,-1,-1,v);
 						byte[] b = Message.toWire(m);
 						DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
 						out.add(packet);

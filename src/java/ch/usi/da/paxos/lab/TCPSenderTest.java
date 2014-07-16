@@ -60,7 +60,7 @@ public class TCPSenderTest implements Runnable {
 			OutputStream out = socket.getOutputStream();
 			while(send < 500000){
 				Long t = System.nanoTime();
-				Message m = new Message(0,0,PaxosRole.Leader,MessageType.Value,0,new Value(t.toString(),new byte[8912]));
+				Message m = new Message(0,0,PaxosRole.Leader,MessageType.Value,0,0,new Value(t.toString(),new byte[8912]));
 				byte[] b = Message.toWire(m);
 				
 //				out.write(intToByte(0x00)); // insert something useless (simulates an error)

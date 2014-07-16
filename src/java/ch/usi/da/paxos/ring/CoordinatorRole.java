@@ -127,7 +127,7 @@ public class CoordinatorRole extends Role {
 		t.start();
 		
 		// send safe message to learner to recover last_trim_instance
-		Message recover = new Message(0,ring.getNodeID(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
+		Message recover = new Message(0,ring.getNodeID(),PaxosRole.Learner,MessageType.Safe,0,0,new Value("SAFE!",new byte[0]));
 		if(ring.getNetwork().getLearner() != null){
 			ring.getNetwork().getLearner().deliver(ring,recover);
 		}else{
@@ -141,7 +141,7 @@ public class CoordinatorRole extends Role {
 					while(promises.size() < (reserved/2) && phase1range_in_transit.isEmpty()){
 						final int ballot = 10+ring.getNodeID();
 						Value v = new Value("",NetworkManager.intToByte(reserved));
-						Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1Range, ballot, v);
+						Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1Range,ballot,0,v);
 						instance.addAndGet(reserved-1);
 						phase1range_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));
 						if(ring.getNetwork().getAcceptor() != null){
@@ -163,7 +163,7 @@ public class CoordinatorRole extends Role {
 					while(promises.size() < (reserved/2) && phase1_in_transit.size() < reserved){
 						final int ballot = 10+ring.getNodeID();
 						for(int i=0;i<reserved;i++){
-							Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1, ballot, null);
+							Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1,ballot,0,null);
 							phase1_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));
 							if(ring.getNetwork().getAcceptor() != null){
 								ring.getNetwork().getAcceptor().deliver(ring,m);
@@ -175,7 +175,7 @@ public class CoordinatorRole extends Role {
 					long time = System.currentTimeMillis();
 					for(Entry<Long, Promise> e : phase1_in_transit.entrySet()){
 						if(time-e.getValue().getDate()>resend_time){ 
-							Message m = new Message(e.getKey(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1,e.getValue().getBallot()+10, null);
+							Message m = new Message(e.getKey(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1,e.getValue().getBallot()+10,0,null);
 							phase1_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));
 							if(ring.getNetwork().getAcceptor() != null){
 								ring.getNetwork().getAcceptor().deliver(ring,m);
@@ -201,7 +201,7 @@ public class CoordinatorRole extends Role {
 			logger.debug("coordinator " + ring.getNodeID() + " received " + m);
 		}*/
 		if(m.getType() == MessageType.Relearn){
-			Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),new Value(Value.getSkipID(),Long.toString(1).getBytes()));
+			Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,new Integer(9999),0,new Value(Value.getSkipID(),Long.toString(1).getBytes()));
 			if(ring.getNetwork().getAcceptor() != null){
 				ring.getNetwork().getAcceptor().deliver(ring,n);
 			}else{ // else should never happen, since there is no coordinator without acceptor!
@@ -217,7 +217,7 @@ public class CoordinatorRole extends Role {
 			if(p != null){
 				long instance = p.getInstance();
 				PaxosRole rcv = PaxosRole.Acceptor;
-				Message n = new Message(instance,m.getSender(),rcv,MessageType.Phase2,p.getBallot(),new Value(m.getValue().getID(),new byte[0]));
+				Message n = new Message(instance,m.getSender(),rcv,MessageType.Phase2,p.getBallot(),0,new Value(m.getValue().getID(),new byte[0]));
 				if(ring.getNetwork().getAcceptor() != null){
 					ring.getNetwork().getAcceptor().deliver(ring,n);
 				}else{ // else should never happen, since there is no coordinator without acceptor!
@@ -226,7 +226,7 @@ public class CoordinatorRole extends Role {
 			}
 			// send safe message to trim acceptor log after n instances
 			if(trim_modulo > 0 && value_count.get() % trim_modulo == 0){
-				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,new Value("SAFE!",new byte[0]));
+				Message n = new Message(0,m.getSender(),PaxosRole.Learner,MessageType.Safe,0,0,new Value("SAFE!",new byte[0]));
 				if(ring.getNetwork().getLearner() != null){
 					ring.getNetwork().getLearner().deliver(ring,n);
 				}else{
@@ -236,7 +236,7 @@ public class CoordinatorRole extends Role {
 		}else if(m.getType() == MessageType.Safe){
 			String s = new String(m.getValue().getValue());
 			logger.debug("Coordinator received safe response from learners: " + s);
-			Message n = new Message(getTrimInstance(s),m.getSender(),PaxosRole.Acceptor,MessageType.Trim,0,null);
+			Message n = new Message(getTrimInstance(s),m.getSender(),PaxosRole.Acceptor,MessageType.Trim,0,0,null);
 			if(ring.getNetwork().getAcceptor() != null){
 				ring.getNetwork().getAcceptor().deliver(ring,n);
 			}else{
@@ -255,7 +255,7 @@ public class CoordinatorRole extends Role {
 		}else if(m.getType() == MessageType.Phase1 && m.getSender() == ring.getNodeID()){
 			if(m.getValue() != null){ // instance already decided -> resend 2b
 				phase1_in_transit.remove(m.getInstance());
-				Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,m.getBallot(),m.getValue());
+				Message n = new Message(m.getInstance(),m.getSender(),PaxosRole.Acceptor,MessageType.Phase2,m.getBallot(),m.getValueBallot(),m.getValue());
 				if(ring.getNetwork().getAcceptor() != null){
 					ring.getNetwork().getAcceptor().deliver(ring,n);
 				}else{ // else should never happen, since there is no coordinator without acceptor!

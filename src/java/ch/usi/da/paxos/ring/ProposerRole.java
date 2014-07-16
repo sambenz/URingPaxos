@@ -150,7 +150,7 @@ public class ProposerRole extends Role implements Proposer {
 						byte[] b = new byte[buffer.limit()];
 						buffer.get(b);
 						Value batch = new Value(System.nanoTime() + "" + ring.getNodeID(),b,true);
-						m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,batch);
+						m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,batch);
 						logger.debug("Proposer sent Value batch of size " + buffer.limit());
 					}
 					send(m);
@@ -178,7 +178,7 @@ public class ProposerRole extends Role implements Proposer {
 		}
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
-		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,v);
+		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,v);
 		if(batch_size > 0){
 			send_queue.add(m);
 		}else{

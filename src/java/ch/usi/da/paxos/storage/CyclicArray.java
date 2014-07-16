@@ -18,6 +18,9 @@ package ch.usi.da.paxos.storage;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.PaxosRole;
@@ -47,6 +50,12 @@ public class CyclicArray implements StableStorage {
 	
 	private native byte[] nget(long i);
 	
+	private final Map<Long, Integer> promised = new LinkedHashMap<Long,Integer>(10000,0.75F,false){
+		private static final long serialVersionUID = -2704400128020327063L;
+			protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {  
+				return size() > 15000; // hold only 15'000 values in memory !                                 
+	}};
+
 	public CyclicArray(){
 		try{
 			System.loadLibrary("paxos");
@@ -59,14 +68,29 @@ public class CyclicArray implements StableStorage {
 	}
 
 	@Override
-	public void put(Long instance, Decision decision) {
+	public void putBallot(Long instance, int ballot) {
+		promised.put(instance, ballot);
+	}
+
+	@Override
+	public int getBallot(Long instance) {
+		return promised.get(instance);
+	}
+
+	@Override
+	public synchronized boolean containsBallot(Long instance) {
+		return promised.containsKey(instance);
+	}
+	
+	@Override
+	public void putDecision(Long instance, Decision decision) {
 		// not optimal with this kind of serialization; but still fast ...
-		Message m = new Message(instance, decision.getRing(), PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getValue());
+		Message m = new Message(instance, decision.getRing(), PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getBallot(), decision.getValue());
 		nput(instance.longValue(),Message.toWire(m));
 	}
 
 	@Override
-	public Decision get(Long instance) {
+	public Decision getDecision(Long instance) {
 		byte[] b = nget(instance.longValue());
 		if(b.length > 0){
 			Message m = Message.fromWire(b);
@@ -81,7 +105,7 @@ public class CyclicArray implements StableStorage {
 	}
 
 	@Override
-	public native boolean contains(Long instance);
+	public native boolean containsDecision(Long instance);
 
 	@Override
 	public boolean trim(Long instance) {
@@ -110,16 +134,16 @@ public class CyclicArray implements StableStorage {
 		Decision d = new Decision(0,Long.MAX_VALUE,42,new Value("id","value".getBytes()));
 		Decision d2 = new Decision(0,15001L,43,new Value("id","value".getBytes()));
 
-		db.put(d.getInstance(),d);
-		db2.put(d2.getInstance(),d2);
+		db.putDecision(d.getInstance(),d);
+		db2.putDecision(d2.getInstance(),d2);
 		
 		d = null;
 		d2 = null;		
 		System.gc();
 
-		System.out.println(db.get(Long.MAX_VALUE));
-		System.out.println(db2.get(15001L));
+		System.out.println(db.getDecision(Long.MAX_VALUE));
+		System.out.println(db2.getDecision(15001L));
 
 	}
-
+	
 }

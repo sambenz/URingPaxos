@@ -123,9 +123,27 @@ public class BerkeleyStorage implements StableStorage {
         logger.info("BerkeleyStorage durability: " + env.getMutableConfig().getDurability().getLocalSync());
         logger.info("BerkeleyStorage deferred write: " + db.getConfig().getDeferredWrite());
 	}
-	
+
 	@Override
-	public synchronized void put(Long instance, Decision decision) {
+	public synchronized void putBallot(Long instance, int ballot) {
+		//TODO: Auto-generated method stub
+		
+	}
+
+	@Override
+	public synchronized int getBallot(Long instance) {
+		//TODO: Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public synchronized boolean containsBallot(Long instance) {
+		//TODO: Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public synchronized void putDecision(Long instance, Decision decision) {
         keyBinding.objectToEntry(instance,key);
         dataBinding.objectToEntry(decision,data);
         OperationStatus status = db.put(null,key,data);
@@ -135,7 +153,7 @@ public class BerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public synchronized Decision get(Long instance) {
+	public synchronized Decision getDecision(Long instance) {
 	    keyBinding.objectToEntry(instance,key);
 	    Decision decision = null;
 	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
@@ -152,7 +170,7 @@ public class BerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public synchronized boolean contains(Long instance) {
+	public synchronized boolean containsDecision(Long instance) {
 		boolean found = false;
 		keyBinding.objectToEntry(instance,key);
 	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
@@ -191,16 +209,16 @@ public class BerkeleyStorage implements StableStorage {
 				return false;
 			}
 		}
-		put(-1L,new Decision(0,instance,0,null));
+		putDecision(-1L,new Decision(0,instance,0,null));
 		logger.debug("DB deltete up to instance " + instance);
 		return true;
 	}
 
 	@Override
 	public synchronized Long getLastTrimInstance() {
-		Decision d = get(-1L);
+		Decision d = getDecision(-1L);
 		if(d != null){
-			return get(-1L).getInstance();
+			return getDecision(-1L).getInstance();
 		}else{
 			return 0L;
 		}
@@ -240,21 +258,21 @@ public class BerkeleyStorage implements StableStorage {
 		BerkeleyStorage db = new BerkeleyStorage(file,false,false);
 		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
 		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
-		db.contains(1L);
-		db.put(1L,d);
-		db.put(1L,d2);
-		db.contains(1L);
-		System.out.println(db.get(1L));
+		db.containsDecision(1L);
+		db.putDecision(1L,d);
+		db.putDecision(1L,d2);
+		db.containsDecision(1L);
+		System.out.println(db.getDecision(1L));
 		
-		db.put(2L,d);
-		db.put(3L,d);
-		db.put(4L,d);
-		db.put(5L,d);
-		db.put(6L,d);
-		db.put(7L,d);
-		db.put(8L,d);
-		db.put(9L,d);
-		db.put(10L,d);
+		db.putDecision(2L,d);
+		db.putDecision(3L,d);
+		db.putDecision(4L,d);
+		db.putDecision(5L,d);
+		db.putDecision(6L,d);
+		db.putDecision(7L,d);
+		db.putDecision(8L,d);
+		db.putDecision(9L,d);
+		db.putDecision(10L,d);
 		System.out.println(db.trim(7L));
 		
 		db.listAll();

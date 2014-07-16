@@ -47,15 +47,10 @@ public class AcceptorRole extends Role {
 	private final RingManager ring;
 	
 	/*
-	 * Phase 2 storage
+	 * Phase 1/2 storage
 	 */
 	private StableStorage storage;
 	
-	/* 
-	 * Phase 1 storage (TODO: only in-memory; should follow stable storage semantics)
-	 */
-	private final Map<Long,Integer> promised = new ConcurrentHashMap<Long,Integer>();
-
 	/*
 	 * Temporary Value storage to allow indirect consensus.
 	 */
@@ -97,6 +92,7 @@ public class AcceptorRole extends Role {
 		long instance = m.getInstance();
 		int ballot = 0;
 		Value value = null;
+		int value_ballot = 0;
 
 		if(m.getValue() != null && !learned.containsKey(m.getValue().getID())){
 			learned.put(m.getValue().getID(),m.getValue());
@@ -106,28 +102,39 @@ public class AcceptorRole extends Role {
 		}
 		
 		// read stable storage/ promised ballots
-		if(storage.contains(instance)){ 
-			Decision d = storage.get(instance);
+		if(storage.containsDecision(instance)){ 
+			Decision d = storage.getDecision(instance);
 			if(d != null){
-				ballot = d.getBallot();
+				value_ballot = d.getBallot();
 				value = d.getValue();
 			}
-		}else if(promised.containsKey(instance)){
-			ballot = promised.get(instance);
+		}
+		if(storage.containsBallot(instance)){
+			ballot = storage.getBallot(instance);
 		}
 		
 		// process messages
 		if(m.getType() == MessageType.Phase1){
-			if(instance > last_trimmed_instance && m.getBallot() > ballot){ // 1b
-				ballot = m.getBallot();
-				m.incrementVoteCount();
-				promised.put(instance,ballot);
+			Value send_value = m.getValue();
+			int send_value_ballot = m.getValueBallot();
+			if(instance > last_trimmed_instance){ // 1b
+				if(value != null && (m.getValue() == null || value_ballot > m.getValueBallot())){ // attach Value if already decided and/or replace with the highest ballot
+					send_value = value;
+					send_value_ballot = value_ballot;
+					ballot = Math.max(ballot,m.getBallot());
+					m.incrementVoteCount();
+					storage.putBallot(instance,ballot);
+				}else if(m.getBallot() > ballot){
+					ballot = m.getBallot();
+					m.incrementVoteCount();
+					storage.putBallot(instance,ballot);
+				}
 				if(ring.getNodeID() == ring.getLastAcceptor()){
-					Message n = new Message(instance,m.getSender(),PaxosRole.Leader,MessageType.Phase1,ballot,value);
+					Message n = new Message(instance,m.getSender(),PaxosRole.Leader,MessageType.Phase1,ballot,send_value_ballot,send_value);
 					n.setVoteCount(m.getVoteCount());
 					ring.getNetwork().send(n);
 				}else{
-					Message n = new Message(instance,m.getSender(),PaxosRole.Acceptor,MessageType.Phase1,ballot,value);
+					Message n = new Message(instance,m.getSender(),PaxosRole.Acceptor,MessageType.Phase1,ballot,send_value_ballot,send_value);
 					n.setVoteCount(m.getVoteCount());
 					ring.getNetwork().send(n); // send directly to the network					
 				}
@@ -139,30 +146,36 @@ public class AcceptorRole extends Role {
 				m.incrementVoteCount();
 				int p1_range = NetworkManager.byteToInt(value.getValue());
 				for(long i=m.getInstance();i<p1_range+m.getInstance();i++){
-					promised.put(i,ballot);
+					storage.putBallot(i,ballot);
 					if(i>highest_seen_instance){
 						highest_seen_instance=i;
 					}
 				}
 				if(ring.getNodeID() == ring.getLastAcceptor()){
-					Message n = new Message(instance,m.getSender(),PaxosRole.Leader,MessageType.Phase1Range,ballot,value);
+					Message n = new Message(instance,m.getSender(),PaxosRole.Leader,MessageType.Phase1Range,ballot,value_ballot,value);
 					n.setVoteCount(m.getVoteCount());
 					ring.getNetwork().send(n);
 				}else{
-					Message n = new Message(instance,m.getSender(),PaxosRole.Acceptor,MessageType.Phase1Range,ballot,value);
+					Message n = new Message(instance,m.getSender(),PaxosRole.Acceptor,MessageType.Phase1Range,ballot,value_ballot,value);
 					n.setVoteCount(m.getVoteCount());
 					ring.getNetwork().send(n); // send directly to the network					
 				}
 			}			
 		}else if(m.getType() == MessageType.Phase2){
-			if(instance > last_trimmed_instance && m.getBallot() >= ballot){ // >= see P1a 
+			if(instance > last_trimmed_instance && m.getBallot() >= ballot){ // >= see P1a
 				ballot = m.getBallot();
-				if(value == null){ // you can increase the ballot, but never change the value
+				storage.putBallot(instance,ballot);
+				if(value == null){
 					value = m.getValue();
+				}else if(m.getValueBallot() > value_ballot){
+					value = m.getValue();
+					value_ballot = m.getValueBallot();
 				}
 				if(value != null && value.getValue().length > 0){ // 2b
 					m.incrementVoteCount(); // always increment vote count (even value is not equal!) otherwise you risk undecided instances when |coord| > 1 & one process fails
 					Value send_value = null;
+					Decision d = new Decision(fromRing.getRingID(),instance,ballot,value);
+					storage.putDecision(instance,d);
 					if(m.getBallot() > 99 || (m.getValue() != null && m.getValue().isSkip())){
 						send_value = value; // safe mode (don't remove value byte[])
 					}else{
@@ -170,11 +183,8 @@ public class AcceptorRole extends Role {
 					}
 					if(ring.getNodeID() == ring.getLastAcceptor()){
 						if(m.getVoteCount() >= ring.getQuorum()){
-							Decision d = new Decision(fromRing.getRingID(),instance,ballot,value);
-							storage.put(instance,d);
 							learned.remove(value.getID());
-							promised.remove(instance);
-							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,send_value);
+							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,value_ballot,send_value);
 							if(ring.getNetwork().getLeader() != null){
 								ring.getNetwork().getLeader().deliver(ring,n);
 							}
@@ -192,7 +202,7 @@ public class AcceptorRole extends Role {
 							logger.error("Not decided at end of the ring!");
 						}
 					}else{
-						Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),ballot,send_value);
+						Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),ballot,value_ballot,send_value);
 						n.setVoteCount(m.getVoteCount());
 						ring.getNetwork().send(n);
 					}
@@ -201,16 +211,14 @@ public class AcceptorRole extends Role {
 		}else if(m.getType() == MessageType.Value){
 			learned.put(m.getValue().getID(),m.getValue());
 		}else if(m.getType() == MessageType.Decision){
+			value = m.getValue(); // insert/update stable storage for 2b
 			if(value != null){
-				Decision d = new Decision(fromRing.getRingID(),instance,m.getBallot(),value);
+				Decision d = new Decision(fromRing.getRingID(),instance,m.getValueBallot(),value);
 				if(learned.containsKey(value.getID())){
 					d = new Decision(fromRing.getRingID(),instance,m.getBallot(),learned.get(value.getID()));
 				}
-				storage.put(instance,d);
+				storage.putDecision(instance,d);
 				learned.remove(value.getID());
-				promised.remove(instance);
-			}else{
-				logger.error("Acceptor recevied Decisoin for value NULL!");
 			}
 		}else if(m.getType() == MessageType.Trim){
 			if(storage.trim(instance)){
@@ -226,13 +234,6 @@ public class AcceptorRole extends Role {
 		if(instance>highest_seen_instance){
 			highest_seen_instance=instance;
 		}
-	}
-
-	/**
-	 * @return the promised
-	 */
-	public Map<Long, Integer> getPromised() {
-		return promised;
 	}
 
 	/**
