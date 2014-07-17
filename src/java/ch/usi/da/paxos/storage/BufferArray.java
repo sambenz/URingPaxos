@@ -1,6 +1,6 @@
 package ch.usi.da.paxos.storage;
 /* 
- * Copyright (c) 2013 Università della Svizzera italiana (USI)
+ * Copyright (c) 2014 Università della Svizzera italiana (USI)
  * 
  * This file is part of URingPaxos.
  *
@@ -18,6 +18,7 @@ package ch.usi.da.paxos.storage;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -27,45 +28,44 @@ import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.Value;
+
 
 /**
- * Name: CyclicArray<br>
+ * Name: BufferArray<br>
  * Description: <br>
  * 
- * Creation date: Apr 23, 2013<br>
+ * Creation date: Jul 17, 2014<br>
  * $Id$
  * 
  * @author Samuel Benz <benz@geoid.ch>
  */
-public class CyclicArray implements StableStorage {
+public class BufferArray implements StableStorage {
 
-	private final static Logger logger = Logger.getLogger(CyclicArray.class);
+	private final static Logger logger = Logger.getLogger(StableStorage.class);
 	
-	private long last_trimmed_instance = 0;
+	private final int size = 64*1024;
 	
-	private native int init();
-	
-	private native void nput(long i,byte[] b);
-	
-	private native byte[] nget(long i);
+	private final int max = 15000;
 	
 	private final Map<Long, Integer> promised = new LinkedHashMap<Long,Integer>(10000,0.75F,false){
-		private static final long serialVersionUID = -2704400128020327063L;
+		private static final long serialVersionUID = -2714400128020327063L;
 			protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {  
-				return size() > 15000; // hold only 15'000 values in memory !                                 
+				return size() > max;
 	}};
 
-	public CyclicArray(){
-		try{
-			System.loadLibrary("paxos");
-			this.init(); // native calloc
-			logger.info("CyclicArray JNI native array enabled!");
-		}catch(UnsatisfiedLinkError e){
-			logger.error("CyclicArray init error:",e);
+	private long last_trimmed_instance = 0;
+	
+	private final ByteBuffer[] buffer = new ByteBuffer[max];
+	
+	private final Long[] instances = new Long[max];
+	
+	public BufferArray(){
+		logger.info("BufferArray storage allocates " + ((max*size)/(1024*1024)) + " MB memory");
+		for(int i=0;i<max;i++){
+			buffer[i] = ByteBuffer.allocateDirect(size);
 		}
 	}
-
+	
 	@Override
 	public void putBallot(Long instance, int ballot) {
 		promised.put(instance, ballot);
@@ -77,34 +77,46 @@ public class CyclicArray implements StableStorage {
 	}
 
 	@Override
-	public synchronized boolean containsBallot(Long instance) {
+	public boolean containsBallot(Long instance) {
 		return promised.containsKey(instance);
 	}
-	
+
 	@Override
 	public void putDecision(Long instance, Decision decision) {
-		// not optimal with this kind of serialization; but still fast ...
 		Message m = new Message(instance, decision.getRing(), PaxosRole.Proposer, MessageType.Value, decision.getBallot(), decision.getBallot(), decision.getValue());
-		nput(instance.longValue(),Message.toWire(m));
+		buffer[(int)(instance % max)].clear();
+		Message.toBuffer(buffer[(int)(instance % max)],m);
+		instances[(int)(instance % max)] = instance;
 	}
 
 	@Override
 	public Decision getDecision(Long instance) {
-		byte[] b = nget(instance.longValue());
-		if(b.length > 0){
-			Message m = Message.fromWire(b);
+		try {
+			buffer[(int)(instance % max)].rewind();
+			Message m = Message.fromBuffer(buffer[(int)(instance % max)]);
 			if(m.getInstance() == instance){
 				Decision d = new Decision(m.getSender(),m.getInstance(),m.getBallot(),m.getValue());
 				return d;
 			}else{
 				return null;
 			}
+		} catch (Exception e) {
+			logger.error("CyclicBuffer error:",e);
+			return null;
 		}
-		return null;
 	}
 
 	@Override
-	public native boolean containsDecision(Long instance);
+	public boolean containsDecision(Long instance) {
+		if(instances[(int)(instance % max)] == null){
+			return false;
+		}else{
+			if(instances[(int)(instance % max)].equals(instance)){
+				return true;
+			}
+		}
+		return false;
+	}
 
 	@Override
 	public boolean trim(Long instance) {
@@ -119,30 +131,7 @@ public class CyclicArray implements StableStorage {
 
 	@Override
 	public void close(){
-	
-	}
-	
-	/**
-	 * Debug method
-	 */
-	public static void main(String[] args){
-		//FIXME: TODO: use it only once !!!!!
-		CyclicArray db = new CyclicArray();
-		CyclicArray db2 = new CyclicArray();
-
-		Decision d = new Decision(0,Long.MAX_VALUE,42,new Value("id","value".getBytes()));
-		Decision d2 = new Decision(0,15001L,43,new Value("id","value".getBytes()));
-
-		db.putDecision(d.getInstance(),d);
-		db2.putDecision(d2.getInstance(),d2);
 		
-		d = null;
-		d2 = null;		
-		System.gc();
-
-		System.out.println(db.getDecision(Long.MAX_VALUE));
-		System.out.println(db2.getDecision(15001L));
-
 	}
 	
 }

@@ -14,6 +14,7 @@ import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.BerkeleyStorage;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.InMemory;
+import ch.usi.da.paxos.storage.BufferArray;
 
 public class TestStorage {
 
@@ -23,7 +24,32 @@ public class TestStorage {
 	public void initialize() throws Exception {
 		logger.setLevel(Level.ERROR);
 	}
-	
+
+	@Test
+	public void BufferArray() throws Exception {
+		StableStorage db = new BufferArray();
+		
+		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));		
+		assertEquals(false,db.containsDecision(1L));
+		
+		db.putDecision(1L,d);		
+		assertEquals(true,db.containsDecision(1L));
+		assertEquals(d,db.getDecision(1L));
+
+		assertEquals(false,db.containsBallot(1L));		
+		db.putBallot(1L,100);
+		assertEquals(true,db.containsBallot(1L));
+		assertEquals(100,db.getBallot(1L));
+		
+		Decision d2 = new Decision(0,15001L,43,new Value("id","value".getBytes()));
+		db.putDecision(15001L,d2);		
+		assertEquals(false,db.containsDecision(1L));
+		assertEquals(true,db.containsDecision(15001L));
+		assertEquals(d2,db.getDecision(15001L));
+		
+		db.close();
+	}
+
 	@Test
 	public void InMemory() throws Exception {
 		StableStorage db = new InMemory();
