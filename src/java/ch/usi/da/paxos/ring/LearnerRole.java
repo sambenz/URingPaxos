@@ -90,6 +90,8 @@ public class LearnerRole extends Role implements Learner {
 	
 	public long deliver_bytes = 0;
 	
+	public volatile int latency_to_coordinator = 0;
+	
 	/**
 	 * @param ring
 	 */
@@ -197,6 +199,12 @@ public class LearnerRole extends Role implements Learner {
 						delivered_instance = de.getInstance();
 						if(auto_trim) { safe_instance = delivered_instance; }
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
+						if(de.getValue().isSkip()){
+							try {
+								latency_to_coordinator = (int)(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1]));
+							}catch(NumberFormatException e){
+							}
+						}
 						if(de.getValue().isBatch()){
 							batch_count++;
 							ByteBuffer buffer = ByteBuffer.wrap(de.getValue().getValue());

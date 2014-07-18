@@ -117,6 +117,11 @@ abstract class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */	
+	public static final String reference_ring = "reference_ring";
+	
+	/**
+	 * see RingManager for default
+	 */	
 	public static final String deliver_skip_messages = "deliver_skip_messages";
 
 	/**

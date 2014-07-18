@@ -163,7 +163,7 @@ public class NetworkManager {
 		}
 		
 		// network forwarding
-		if(m.getType() == MessageType.Relearn){
+		if(m.getType() == MessageType.Relearn || m.getType() == MessageType.Latency){
 			if(leader == null){
 				send(m);
 			}
@@ -201,7 +201,7 @@ public class NetworkManager {
 		}
 
 		// local delivery
-		if(m.getType() == MessageType.Relearn){
+		if(m.getType() == MessageType.Relearn || m.getType() == MessageType.Latency){
 			if(leader != null){
 				leader.deliver(ring,m);
 			}

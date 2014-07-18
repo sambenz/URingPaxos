@@ -210,6 +210,7 @@ public class RingManager implements Watcher {
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
