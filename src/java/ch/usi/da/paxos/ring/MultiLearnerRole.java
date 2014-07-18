@@ -60,8 +60,12 @@ public class MultiLearnerRole extends Role implements Learner {
 	private int M = 1;
 		
 	private int deliverRing;
+	
+	private int referenceRing = 0;
 
 	private final long[] skip_count = new long[maxRing];
+	
+	private final long[] latency = new long[maxRing];
 	
 	private boolean deliver_skip_messages = false;
 
@@ -83,13 +87,17 @@ public class MultiLearnerRole extends Role implements Learner {
 		logger.debug("MultiRingLearner initial deliverRing=" + deliverRing);
 		if(firstRing.getConfiguration().containsKey(ConfigKey.multi_ring_m)){
 			M = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.multi_ring_m));
-			logger.debug("MultiRingLearner M=" + M);
+			logger.info("MultiRingLearner M=" + M);
 		}
 		if(firstRing.getConfiguration().containsKey(ConfigKey.deliver_skip_messages)){
 			if(firstRing.getConfiguration().get(ConfigKey.deliver_skip_messages).contains("1")){
 				deliver_skip_messages = true;
 			}
-			logger.debug("MultiRingLearner deliver_skip_messages: " + (deliver_skip_messages ? "enabled" : "disabled"));
+			logger.info("MultiRingLearner deliver_skip_messages: " + (deliver_skip_messages ? "enabled" : "disabled"));
+		}
+		if(firstRing.getConfiguration().containsKey(ConfigKey.reference_ring)){
+			referenceRing = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.reference_ring));
+			logger.info("MultiRingLearner reference ring=" + referenceRing);
 		}
 	}
 
@@ -114,6 +122,7 @@ public class MultiLearnerRole extends Role implements Learner {
 			Thread.currentThread().interrupt();
 		}
 		int count = 0;
+		int hearbeat = 0;
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
@@ -126,9 +135,21 @@ public class MultiLearnerRole extends Role implements Learner {
 						// skip message
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
+							if(learner[referenceRing] != null && deliverRing != referenceRing){
+								int ref_lat = learner[referenceRing].latency_to_coordinator;
+								int lat = learner[deliverRing].latency_to_coordinator;
+								int diff = ref_lat - lat;
+								hearbeat++;
+								if(Math.abs(lat - latency[deliverRing]) > 5 || hearbeat > 50){
+									hearbeat = 0;
+									//TODO: notify diff to deliverRing coordinator
+									logger.info("MultiRingLearner latency between coordinator/coordinator in ring " + referenceRing + "/" + deliverRing + " is " + diff + " ms");
+								}
+							}
+							latency[deliverRing] = learner[deliverRing].latency_to_coordinator;
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
 						}catch (NumberFormatException e) {
-							logger.error("MultiRingLrearner received incomplete SKIP message! -> " + d,e);
+							logger.error("MultiRingLearner received incomplete SKIP message! -> " + d,e);
 						}
 						if(deliver_skip_messages){
 							values.add(d);

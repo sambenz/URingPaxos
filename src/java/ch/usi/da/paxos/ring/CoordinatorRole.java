@@ -76,6 +76,8 @@ public class CoordinatorRole extends Role {
 	public int multi_ring_lambda = 9000; 
 
 	public int multi_ring_delta_t = 100;
+
+	public volatile int latency_compensation = 0;
 	
 	public AtomicLong value_count = new AtomicLong(0);
 	

@@ -141,6 +141,6 @@ public class Value implements Serializable {
 	}
 
 	public static String getSkipID(){
-		return skipID + "" + System.nanoTime();
+		return skipID + "" + System.currentTimeMillis();
 	}
 }

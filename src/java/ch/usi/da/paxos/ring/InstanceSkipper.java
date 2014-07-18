@@ -59,20 +59,12 @@ public class InstanceSkipper implements Runnable {
 	@Override
 	public void run() {
 		if(coordinator.multi_ring_lambda>0){
-			String env_latency = System.getenv("LAT");
-			int latency = 0;
-			if(env_latency != null){
-				try {
-					latency = Integer.parseInt(env_latency); 
-					logger.warn("Use static latecny offset of " + latency + " ms.");
-				} catch (NumberFormatException e) {
-				}
-			}
 		while(true){
 				try {
 					long time = System.currentTimeMillis();
+					int latency_compensation = coordinator.latency_compensation;
 					long valueSent = coordinator.value_count.get();
-					float executionTime = ((float)(time-boot_time-latency)) / 1000.0f;
+					float executionTime = ((float)(time-boot_time-latency_compensation)) / 1000.0f;
 					long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
 					long skip = expectedValues - valueSent;
 					if(skip > 0) {
