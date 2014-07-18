@@ -208,7 +208,10 @@ public class CoordinatorRole extends Role {
 				ring.getNetwork().getAcceptor().deliver(ring,n);
 			}else{ // else should never happen, since there is no coordinator without acceptor!
 				ring.getNetwork().send(n);
-			}		
+			}
+		}else if(m.getType() == MessageType.Latency){
+			latency_compensation = Integer.parseInt(new String(m.getValue().getValue()));
+			System.err.println(latency_compensation);
 		}else if(m.getType() == MessageType.Value){
 			value_count.incrementAndGet();
 			Promise p = null;

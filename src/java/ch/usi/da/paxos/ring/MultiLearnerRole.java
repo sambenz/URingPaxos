@@ -32,6 +32,9 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.message.Message;
+import ch.usi.da.paxos.message.MessageType;
+import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Decision;
 
 /**
@@ -142,7 +145,13 @@ public class MultiLearnerRole extends Role implements Learner {
 								hearbeat++;
 								if(Math.abs(lat - latency[deliverRing]) > 5 || hearbeat > 50){
 									hearbeat = 0;
-									//TODO: notify diff to deliverRing coordinator
+									RingManager rm = ringmap.get(deliverRing).getRingManager();
+									Message m = new Message(0,rm.getNodeID(),PaxosRole.Leader,MessageType.Latency,0,0,new Value("LAT",Integer.toString(diff).getBytes()));
+									if(rm.isNodeCoordinator()){
+										rm.getNetwork().getLeader().deliver(rm, m);
+									}else{
+										rm.getNetwork().send(m);
+									}
 									logger.info("MultiRingLearner latency between coordinator/coordinator in ring " + referenceRing + "/" + deliverRing + " is " + diff + " ms");
 								}
 							}
