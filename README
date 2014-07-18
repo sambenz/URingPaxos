@@ -46,7 +46,8 @@ value_batch_size: Batch size at the proposers (0: disabled)
 learner_recovery: A starting learner recovers from instance 1 (1: enabled)
 quorum_size: Quroum of acceptors whic hmust be alive (2)
 stable_storage: Stable storage implementation at the acceptors:
-  ch.usi.da.paxos.storage.CyclicArray (default: requires JNI)
+  ch.usi.da.paxos.storage.BufferArray (default: allocates 940 Mbytes!)
+  ch.usi.da.paxos.storage.CyclicArray (requires JNI)
   ch.usi.da.paxos.storage.BerkeleyStorage (/tmp or env(DB))
   ch.usi.da.paxos.storage.SyncBerkeleyStorage (/tmp or env(DB))
   ch.usi.da.paxos.storage.InMemory
@@ -65,9 +66,9 @@ buffer_size: TCP buffer size (2097152)
 tcp_crc: Additional CRC32 of the TCP framing / serialization (0)
 tcp_nodelay: TCP no delay (1)
 
-multi_ring_lambda: Multi Ring Paxos lambda, set 1.5 of the maximum exptectd 
+multi_ring_lambda: Multi Ring Paxos lambda, set 1.5 of the maximum expected 
   decisions per second. 0: disabled (9000)
-multi_ring_delta_t: Delta t between the coordinator samples the ring troughput 
+multi_ring_delta_t: Delta t between the coordinator samples the ring throughput 
   in (100ms). Hint: Set it as high a possible but smaller than your application
   latency. E.g. EC2 SMR: from cmd send until the replica replies = 80 ms. Choose
   a delta_t below 80 ms. Do not set it too low: Without traffic in the ring you 
@@ -82,7 +83,7 @@ deliver_skip_messages: Expose the skip messages to the application. (0)
 Output Control (log4j)
 ----------------
 ch.usi.da.paxos.Stats:
-  >error to enable 5s troughput statistics
+  >error to enable 5s throughput statistics
 ch.usi.da.paxos.message.Value:
   error/info/debug to print out decided values
 ch.usi.da.paxos.storage.Proposal:
