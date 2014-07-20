@@ -39,6 +39,9 @@ public class TestAcceptor {
 		String path = "/ringpaxos/ring1/config/stable_storage";
 		String data = "ch.usi.da.paxos.storage.InMemory";
 		zoo.setData(path,data.getBytes(),-1);
+		path = "/ringpaxos/config/multi_ring_lambda";
+		data = "0";
+		zoo.setData(path,data.getBytes(),-1);
 		zoo.close();
 	}
 	
@@ -198,15 +201,15 @@ public class TestAcceptor {
 		a2.getStableStorage().putBallot(2L,80);				
 		a3.getStableStorage().putBallot(2L,80);				
 		s = "Decided 1";
-		Value v = new Value(Value.getSkipID(), s.getBytes());
+		Value v = new Value(Value.getSkipID() + "1", s.getBytes());
 		a1.getStableStorage().putDecision(2L,new Decision(1, 2L, 70, v));
 		s = "Decided 2";
-		v = new Value(Value.getSkipID(), s.getBytes());
+		v = new Value(Value.getSkipID() + "2", s.getBytes());
 		a2.getStableStorage().putDecision(2L,new Decision(1, 2L, 80, v));
 		a3.getStableStorage().putDecision(2L,new Decision(1, 2L, 80, v));
 		m = new Message(2L,ring1.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1, 110, null);
 		a1.deliver(ring1, m);
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 		assertEquals(110,(int)a1.getStableStorage().getDecision(2L).getBallot());
 		assertEquals(110,(int)a2.getStableStorage().getDecision(2L).getBallot());
 		assertEquals(110,(int)a3.getStableStorage().getDecision(2L).getBallot());
