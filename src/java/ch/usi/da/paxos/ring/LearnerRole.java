@@ -202,7 +202,7 @@ public class LearnerRole extends Role implements Learner {
 						if(de.getValue().isSkip()){
 							try {
 								latency_to_coordinator = (int)(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1]));
-							}catch(NumberFormatException e){
+							}catch(Exception e){
 							}
 						}
 						if(de.getValue().isBatch()){

@@ -143,7 +143,7 @@ public class MultiLearnerRole extends Role implements Learner {
 								int lat = learner[deliverRing].latency_to_coordinator;
 								int diff = ref_lat - lat;
 								hearbeat++;
-								if(Math.abs(lat - latency[deliverRing]) > 5 || hearbeat > 50){
+								if(Math.abs(lat - latency[deliverRing]) > 20 || hearbeat > 500){
 									hearbeat = 0;
 									RingManager rm = ringmap.get(deliverRing).getRingManager();
 									Message m = new Message(0,rm.getNodeID(),PaxosRole.Leader,MessageType.Latency,0,0,new Value("LAT",Integer.toString(diff).getBytes()));
