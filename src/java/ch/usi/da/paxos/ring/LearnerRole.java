@@ -19,12 +19,10 @@ package ch.usi.da.paxos.ring;
  */
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -32,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.Learner;
@@ -93,9 +92,11 @@ public class LearnerRole extends Role implements Learner {
 	public long deliver_bytes = 0;
 	
 	public volatile int latency_to_coordinator = 0;
-	
-	private List<Integer> latencies = new ArrayList<Integer>();
-	
+
+	private final int median_window = 1000;
+
+	private DescriptiveStatistics latencies = new DescriptiveStatistics(median_window);
+
 	/**
 	 * @param ring
 	 */
@@ -205,12 +206,9 @@ public class LearnerRole extends Role implements Learner {
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
 						if(de.getValue().isSkip()){
 							try {
-								latencies.add((int)(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1])));
-								if(latencies.size() > 20){
-									latency_to_coordinator = avg(latencies);
-								}
-								if(latencies.size() > 120){
-									latencies = latencies.subList(100,latencies.size());
+								latencies.addValue(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1]));
+								if(latencies.getN() >= median_window){
+									latency_to_coordinator = (int) latencies.getPercentile(50);
 								}
 							}catch(Exception e){
 							}
@@ -296,13 +294,5 @@ public class LearnerRole extends Role implements Learner {
 			pos++;
 		}
 		return pos;
-	}
-
-	private int avg(List<Integer> l){
-		int a = 0;
-		for(int i : l){
-			a = a + i;
-		}
-		return (int)a/l.size();
 	}
 }
