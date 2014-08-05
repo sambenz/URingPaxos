@@ -168,7 +168,7 @@ public class ProposerRole extends Role implements Proposer {
 	 * @param b A byte array which will proposed in a paxos instance
 	 * @return A FutureDecision object on which you can wait until the value is proposed
 	 */
-	public FutureDecision propose(byte[] b){
+	public synchronized FutureDecision propose(byte[] b){
 		send_count++;
 		Value v = new Value(System.nanoTime() + "" + ring.getNodeID(),b);
 		if(proposallogger.isDebugEnabled()){
