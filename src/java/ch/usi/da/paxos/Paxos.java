@@ -135,7 +135,7 @@ public class Paxos {
 			byte[] b = Message.toWire(m);
 			DatagramPacket p = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
 			l.add(p);
-		} catch (SocketException e) {
+		} catch (Exception e) {
 		}
 	}
 
