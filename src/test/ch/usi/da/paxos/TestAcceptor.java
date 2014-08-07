@@ -192,10 +192,20 @@ public class TestAcceptor {
 		assertEquals(50,(int)a1.getStableStorage().getDecision(1L).getBallot());
 		assertEquals(50,(int)a2.getStableStorage().getDecision(1L).getBallot());
 		assertEquals(50,(int)a3.getStableStorage().getDecision(1L).getBallot());
-		assertEquals(s,new String(a1.getStableStorage().getDecision(1L).getValue().getValue()));
-		assertEquals(s,new String(a2.getStableStorage().getDecision(1L).getValue().getValue()));
-		assertEquals(s,new String(a3.getStableStorage().getDecision(1L).getValue().getValue()));
 		
+		if(a1.getStableStorage().getDecision(1L).getValue().isBatch()){
+			Message m1 = Message.fromWire(a1.getStableStorage().getDecision(1L).getValue().getValue());
+			Message m2 = Message.fromWire(a2.getStableStorage().getDecision(1L).getValue().getValue());
+			Message m3 = Message.fromWire(a3.getStableStorage().getDecision(1L).getValue().getValue());
+			assertEquals(s,new String(m1.getValue().getValue()));
+			assertEquals(s,new String(m2.getValue().getValue()));
+			assertEquals(s,new String(m3.getValue().getValue()));
+		}else{
+			assertEquals(s,new String(a1.getStableStorage().getDecision(1L).getValue().getValue()));
+			assertEquals(s,new String(a2.getStableStorage().getDecision(1L).getValue().getValue()));
+			assertEquals(s,new String(a3.getStableStorage().getDecision(1L).getValue().getValue()));
+		}
+				
 		// create two decisions with different ballot and test that highest get resent
 		a1.getStableStorage().putBallot(2L,70); // set ballots				
 		a2.getStableStorage().putBallot(2L,80);				

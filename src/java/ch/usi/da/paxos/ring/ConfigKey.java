@@ -57,7 +57,7 @@ abstract class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */	
-	public static final String batch_size = "value_batch_size";
+	public static final String batch_policy = "proposer_batch_policy";
 
 	/**
 	 * see RingManager for default

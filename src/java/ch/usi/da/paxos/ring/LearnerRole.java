@@ -272,6 +272,10 @@ public class LearnerRole extends Role implements Learner {
 		return values;
 	}
 	
+	public Map<String, Value> getLearned(){
+		return Collections.unmodifiableMap(learned);
+	}
+	
 	@Override
 	public void setSafeInstance(Integer ring,Long instance){
 		if(instance <= delivered_instance){
