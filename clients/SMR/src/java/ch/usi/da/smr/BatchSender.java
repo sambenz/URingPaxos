@@ -40,7 +40,7 @@ import ch.usi.da.smr.transport.Response;
  * Creation date: Nov 29, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class BatchSender implements Runnable {
 	

@@ -36,7 +36,7 @@ import ch.usi.da.paxos.ring.NetworkManager;
  * Creation date: Sep 12, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class TcpConnectionHandler implements Runnable {
 

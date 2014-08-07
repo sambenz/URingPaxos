@@ -37,7 +37,7 @@ import ch.usi.da.paxos.thrift.gen.Value;
  * Creation date: Feb 7, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class PaxosLearnerServiceImpl implements PaxosLearnerService.Iface {
 

@@ -39,7 +39,7 @@ import ch.usi.da.smr.thrift.gen.Value;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class ThriftABSender implements ABSender {
 

@@ -25,7 +25,7 @@ package ch.usi.da.paxos.storage;
  * Creation date: Apr 10, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Promise {
 	

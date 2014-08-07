@@ -33,7 +33,7 @@ import ch.usi.da.paxos.api.StableStorage;
  * Creation date: Mar 31, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class InMemory implements StableStorage {
 

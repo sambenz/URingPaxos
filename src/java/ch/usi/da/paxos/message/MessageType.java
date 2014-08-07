@@ -25,7 +25,7 @@ package ch.usi.da.paxos.message;
  * Creation date: Mar 31, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public enum MessageType {
 	/**

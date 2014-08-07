@@ -36,7 +36,7 @@ import ch.usi.da.smr.thrift.gen.Decision;
  * Creation date: Mar 13, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Message {
 

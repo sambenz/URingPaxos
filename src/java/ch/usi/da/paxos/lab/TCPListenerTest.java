@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
  * Creation date: Aug 15, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class TCPListenerTest implements Runnable {
 

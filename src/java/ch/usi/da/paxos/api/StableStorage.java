@@ -27,7 +27,7 @@ import ch.usi.da.paxos.storage.Decision;
  * Creation date: Feb 7, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public interface StableStorage {
 

@@ -47,7 +47,7 @@ import ch.usi.da.paxos.storage.Promise;
  * Creation date: Apr 1, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class ProposerListener implements Runnable {
 

@@ -30,7 +30,7 @@ import ch.usi.da.paxos.api.StableStorage;
  * Creation date: Apr 20, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class SyncBerkeleyStorage implements StableStorage {
 

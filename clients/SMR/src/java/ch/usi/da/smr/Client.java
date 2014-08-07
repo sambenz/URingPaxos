@@ -58,7 +58,7 @@ import ch.usi.da.smr.transport.UDPListener;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Client implements Receiver {
 	static {

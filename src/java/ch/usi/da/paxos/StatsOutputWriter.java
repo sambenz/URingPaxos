@@ -25,7 +25,7 @@ package ch.usi.da.paxos;
  * Creation date: Aug 19, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class StatsOutputWriter implements Runnable {
 

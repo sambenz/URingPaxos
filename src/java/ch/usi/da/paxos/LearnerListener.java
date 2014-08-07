@@ -42,7 +42,7 @@ import ch.usi.da.paxos.message.Value;
  * Creation date: Apr 9, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class LearnerListener implements Runnable {
 

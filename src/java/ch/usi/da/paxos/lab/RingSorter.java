@@ -40,7 +40,7 @@ import ch.usi.da.paxos.ring.RingDescription;
  * Creation date: Aug 14, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class RingSorter implements Comparator<Integer> {
 

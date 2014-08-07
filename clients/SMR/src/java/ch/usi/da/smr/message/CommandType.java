@@ -25,7 +25,7 @@ package ch.usi.da.smr.message;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public enum CommandType {
 	GET,

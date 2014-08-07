@@ -38,7 +38,7 @@ import ch.usi.da.paxos.storage.NoStorage;
  * Creation date: Aug 12, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class AcceptorRole extends Role {
 	

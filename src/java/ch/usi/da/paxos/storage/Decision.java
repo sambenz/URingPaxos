@@ -29,7 +29,7 @@ import ch.usi.da.paxos.message.Value;
  * Creation date: Apr 2, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Decision implements Serializable {
 	

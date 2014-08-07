@@ -27,7 +27,7 @@ import org.apache.log4j.Logger;
  * Creation date: Mar 09, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class LearnerStatsWriter implements Runnable {
 

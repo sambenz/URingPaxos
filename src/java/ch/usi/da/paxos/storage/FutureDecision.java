@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * Creation date: Mar 20, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class FutureDecision {
 

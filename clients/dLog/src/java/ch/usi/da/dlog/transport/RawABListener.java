@@ -37,7 +37,7 @@ import ch.usi.da.paxos.thrift.ThriftProposer;
  * Creation date: Apr 07, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class RawABListener implements ABListener, Runnable {
 	

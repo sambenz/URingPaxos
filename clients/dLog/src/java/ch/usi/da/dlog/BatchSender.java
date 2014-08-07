@@ -41,7 +41,7 @@ import ch.usi.da.dlog.transport.ThriftABSender;
  * Creation date: Apr 07, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class BatchSender implements Runnable {
 	

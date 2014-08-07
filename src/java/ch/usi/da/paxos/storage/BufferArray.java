@@ -37,7 +37,7 @@ import ch.usi.da.paxos.message.MessageType;
  * Creation date: Jul 17, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class BufferArray implements StableStorage {
 

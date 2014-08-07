@@ -55,7 +55,7 @@ import ch.usi.da.smr.transport.ThriftABSender;
  * Creation date: Aug 28, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class PartitionManager implements Watcher {
 	

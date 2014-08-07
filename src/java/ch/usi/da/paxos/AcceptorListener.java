@@ -39,7 +39,7 @@ import ch.usi.da.paxos.message.Message;
  * Creation date: Apr 1, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class AcceptorListener implements Runnable {
 

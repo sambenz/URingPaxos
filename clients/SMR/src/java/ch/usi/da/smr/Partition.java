@@ -26,7 +26,7 @@ package ch.usi.da.smr;
  * Creation date: Aug 28, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Partition {
 

@@ -33,7 +33,7 @@ import ch.usi.da.paxos.storage.Promise;
  * Creation date: Mar 08, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class InstanceSkipper implements Runnable {
 

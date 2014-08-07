@@ -35,7 +35,7 @@ import ch.usi.da.smr.message.Message;
  * Creation date: Dec 06, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class RawABListener implements ABListener, Runnable {
 	

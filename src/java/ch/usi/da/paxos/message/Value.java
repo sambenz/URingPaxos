@@ -27,7 +27,7 @@ import java.io.Serializable;
  * Creation date: Apr 11, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Value implements Serializable {
 

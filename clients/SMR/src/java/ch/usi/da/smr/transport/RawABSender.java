@@ -34,7 +34,7 @@ import ch.usi.da.smr.message.Message;
  * Creation date: Dec 13, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class RawABSender implements ABSender {
 

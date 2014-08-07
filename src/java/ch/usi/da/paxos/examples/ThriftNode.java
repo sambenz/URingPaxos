@@ -40,7 +40,7 @@ import ch.usi.da.paxos.thrift.ThriftProposer;
  * Creation date: Mar 19, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class ThriftNode {
 	static {
@@ -67,7 +67,6 @@ public class ThriftNode {
 
 	/**
 	 * @param args
-	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) {
 		String zoo_host = "127.0.0.1:2181";

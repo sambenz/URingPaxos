@@ -35,7 +35,7 @@ import ch.usi.da.paxos.message.Message;
  * Creation date: Apr 02, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class SessionHandler {
 	

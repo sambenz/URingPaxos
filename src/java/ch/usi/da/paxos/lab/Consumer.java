@@ -27,7 +27,7 @@ import java.util.concurrent.TransferQueue;
  * Creation date: Sep 5, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Consumer implements Runnable {
 	

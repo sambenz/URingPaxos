@@ -38,7 +38,7 @@ import ch.usi.da.paxos.api.StableStorage;
  * Creation date: Apr 07, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class MemcachedStorage implements StableStorage {
 

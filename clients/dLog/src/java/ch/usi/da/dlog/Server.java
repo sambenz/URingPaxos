@@ -59,7 +59,7 @@ import ch.usi.da.paxos.ring.RingDescription;
  * Creation date: Apr 07, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Server implements Receiver {
 	static {

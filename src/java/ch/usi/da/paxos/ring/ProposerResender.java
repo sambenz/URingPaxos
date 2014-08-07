@@ -35,7 +35,7 @@ import ch.usi.da.paxos.storage.Proposal;
  * Creation date: Sep 14, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class ProposerResender implements Runnable {
 	

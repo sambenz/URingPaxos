@@ -45,7 +45,7 @@ import com.yahoo.ycsb.workloads.CoreWorkload;
  * Creation date: Nov 15, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class YCSB extends DB {
 

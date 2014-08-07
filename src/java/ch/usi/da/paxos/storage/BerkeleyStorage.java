@@ -49,7 +49,7 @@ import com.sleepycat.je.Transaction;
  * Creation date: Feb 7, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class BerkeleyStorage implements StableStorage {
 

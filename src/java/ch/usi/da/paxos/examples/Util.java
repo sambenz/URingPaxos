@@ -34,14 +34,14 @@ import ch.usi.da.paxos.ring.RingDescription;
 public class Util {
 	
 	/**
-	 * Parse argument describing the ring into a List<RingDescription>. 
+	 * Parse argument describing the ring into a List of RingDescription . 
 	 * The argument has the format:
 	 * ringid,id:PAL (P/A/L are the roles in the ring). 
 	 * 
 	 * More than one ring can be specified:
 	 * ring1id,id1:PAL;ring2id,id2:PAL
 	 *  
-	 * @param ringsArg
+	 * @param ringsArg String of ring properties to parse
 	 * @return list of ring descriptions that can be used to initialize a Node
 	 */
 	public static List<RingDescription> parseRingsArgument(String ringsArg) {

@@ -33,7 +33,7 @@ import ch.usi.da.smr.message.Command;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Response {
 

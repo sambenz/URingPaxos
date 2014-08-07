@@ -45,7 +45,7 @@ import ch.usi.da.paxos.examples.Util;
  * Creation date: Aug 12, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Node implements PaxosNode {
 

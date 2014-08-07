@@ -25,7 +25,7 @@ package ch.usi.da.paxos.ring;
  * Creation date: Sep 16, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 abstract class ConfigKey {
 

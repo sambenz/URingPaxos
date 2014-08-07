@@ -36,7 +36,7 @@ import ch.usi.da.paxos.message.Value;
  * Creation date: Apr 23, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class CyclicArray implements StableStorage {
 

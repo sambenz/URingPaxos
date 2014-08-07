@@ -63,7 +63,7 @@ import com.sun.net.httpserver.HttpServer;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Replica implements Receiver {
 	static {

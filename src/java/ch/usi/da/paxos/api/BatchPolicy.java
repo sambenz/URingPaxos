@@ -28,7 +28,7 @@ import ch.usi.da.paxos.ring.ProposerRole;
  * Creation date: Aug 06, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public interface BatchPolicy extends Runnable {
 	

@@ -35,7 +35,7 @@ import ch.usi.da.smr.transport.ThriftABSender;
  * Creation date: Mar 12, 2013<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class StatisticClient implements Runnable {
 

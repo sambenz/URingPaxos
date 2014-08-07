@@ -33,7 +33,7 @@ import ch.usi.da.dlog.thrift.gen.CmdType;
  * Creation date: Apr 07, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class Command {
 

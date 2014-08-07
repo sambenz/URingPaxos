@@ -47,7 +47,7 @@ import ch.usi.da.paxos.storage.Decision;
  * Creation date: Aug 12, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class LearnerRole extends Role implements Learner {
 

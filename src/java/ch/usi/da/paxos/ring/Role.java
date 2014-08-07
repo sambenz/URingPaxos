@@ -27,7 +27,7 @@ import ch.usi.da.paxos.message.Message;
  * Creation date: Aug 12, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public abstract class Role implements Runnable {
 

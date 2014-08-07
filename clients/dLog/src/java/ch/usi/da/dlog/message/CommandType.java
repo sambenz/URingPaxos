@@ -25,7 +25,7 @@ package ch.usi.da.dlog.message;
  * Creation date: Apr 07, 2014<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public enum CommandType {
 	APPEND,

@@ -37,7 +37,7 @@ import ch.usi.da.paxos.ring.NetworkManager;
  * Creation date: Aug 15, 2012<br>
  * $Id$
  * 
- * @author Samuel Benz <benz@geoid.ch>
+ * @author Samuel Benz benz@geoid.ch
  */
 public class TCPSenderTest implements Runnable {
 
