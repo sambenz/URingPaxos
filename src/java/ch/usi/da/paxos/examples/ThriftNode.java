@@ -21,7 +21,6 @@ package ch.usi.da.paxos.examples;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import org.apache.zookeeper.KeeperException;

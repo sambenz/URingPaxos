@@ -19,7 +19,6 @@ package ch.usi.da.paxos;
  */
 
 import java.net.DatagramPacket;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 

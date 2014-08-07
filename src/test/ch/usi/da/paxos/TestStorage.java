@@ -12,9 +12,9 @@ import org.junit.Test;
 import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.BerkeleyStorage;
+import ch.usi.da.paxos.storage.BufferArray;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.InMemory;
-import ch.usi.da.paxos.storage.BufferArray;
 
 public class TestStorage {
 
