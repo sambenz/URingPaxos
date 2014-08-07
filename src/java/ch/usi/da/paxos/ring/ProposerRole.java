@@ -27,11 +27,11 @@ import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.BatchPolicy;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.message.Message;
@@ -74,7 +74,7 @@ public class ProposerRole extends Role implements Proposer {
 
 	private final Map<String,FutureDecision> futures = new ConcurrentHashMap<String,FutureDecision>();
 	
-	private int batch_size = 0; // 0: disabled
+	private BatchPolicy batcher;
 	
 	private final BlockingQueue<Message> send_queue = new LinkedBlockingQueue<Message>();
 	
@@ -94,9 +94,21 @@ public class ProposerRole extends Role implements Proposer {
 			concurrent_values = Integer.parseInt(ring.getConfiguration().get(ConfigKey.concurrent_values));
 			logger.info("Proposer concurrent_values: " + concurrent_values);
 		}
-		if(ring.getConfiguration().containsKey(ConfigKey.batch_size)){
-			batch_size = Integer.parseInt(ring.getConfiguration().get(ConfigKey.batch_size));
-			logger.info("Proposer value_batch_size: " + batch_size);
+		String batcher_class = "none";
+		if(ring.getConfiguration().containsKey(ConfigKey.batch_policy)){
+			batcher_class = ring.getConfiguration().get(ConfigKey.batch_policy);
+		}
+		try {
+			if(!batcher_class.equals("none")){
+				Class<?> policy = Class.forName(batcher_class);
+				batcher = (BatchPolicy) policy.newInstance();
+			}else{
+				batcher = null;
+			}
+			logger.info("Proposer batch policy: " + batcher);
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			batcher = null;
+			logger.error("Could not initilaize the batch policy!", e);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_size)){
 			String v = ring.getConfiguration().get(ConfigKey.value_size);
@@ -131,34 +143,11 @@ public class ProposerRole extends Role implements Proposer {
 		Thread t = new Thread(new ProposerResender(this));
 		t.setName("ProposerResender");
 		t.start();
-		if(batch_size > 0){
-			ByteBuffer buffer = ByteBuffer.allocate(524288);
-			while(true){
-				try {
-					buffer.clear();
-					Message m = send_queue.take();
-					if(Message.length(m) < batch_size){
-						Message.toBuffer(buffer, m);
-						Message bm = null;
-						while((bm = send_queue.poll(500,TimeUnit.MICROSECONDS)) != null){ // do-batching if possible
-							Message.toBuffer(buffer, bm);
-							if(buffer.position() >= batch_size){
-								break;
-							}
-						}
-						buffer.flip();
-						byte[] b = new byte[buffer.limit()];
-						buffer.get(b);
-						Value batch = new Value(System.nanoTime() + "" + ring.getNodeID(),b,true);
-						m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,batch);
-						logger.debug("Proposer sent Value batch of size " + buffer.limit());
-					}
-					send(m);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
+		if(batcher != null){
+			batcher.setProposer(this);
+			Thread b = new Thread(batcher);
+			b.setName("BatchPolicy");
+			b.start();
 		}
 	}
 
@@ -179,7 +168,7 @@ public class ProposerRole extends Role implements Proposer {
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
 		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,v);
-		if(batch_size > 0){
+		if(batcher != null){
 			send_queue.add(m);
 		}else{
 			send(m);
@@ -274,6 +263,13 @@ public class ProposerRole extends Role implements Proposer {
 	 */
 	public RingManager getRingManager(){
 		return ring;
+	}
+	
+	/**
+	 * @return the send (batch) queue
+	 */
+	public BlockingQueue<Message> getSendQueue(){
+		return send_queue;
 	}
 	
 	public void setTestMode(){
