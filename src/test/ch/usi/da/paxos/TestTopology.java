@@ -12,9 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import ch.usi.da.paxos.api.PaxosRole;
-import ch.usi.da.paxos.examples.Util;
 import ch.usi.da.paxos.ring.RingManager;
-import ch.usi.da.paxos.ring.TopologyManager;
 
 public class TestTopology {
 

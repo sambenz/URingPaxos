@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;

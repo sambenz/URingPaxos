@@ -32,11 +32,11 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 
+import ch.usi.da.paxos.Util;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.Proposer;
-import ch.usi.da.paxos.examples.Util;
 
 /**
  * Name: Node<br>

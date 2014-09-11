@@ -15,7 +15,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ch.usi.da.paxos.api.PaxosRole;
-import ch.usi.da.paxos.examples.Util;
 import ch.usi.da.paxos.lab.DummyWatcher;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;

@@ -1,4 +1,4 @@
-package ch.usi.da.paxos;
+package ch.usi.da.paxos.old;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -32,24 +32,23 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.storage.Promise;
 
+
 /**
- * Name: ProposerListener<br>
+ * Name: ProposerReserver<br>
  * Description: <br>
  * 
- * Creation date: Apr 1, 2012<br>
+ * Creation date: Apr 10, 2012<br>
  * $Id$
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class ProposerListener implements Runnable {
+public class ProposerReserver implements Runnable {
 
 	private final Proposer proposer;
 	
@@ -61,21 +60,23 @@ public class ProposerListener implements Runnable {
 	
 	private final Selector selector;
 	
-	private Value v;
-	
 	private Majority majority;
 	
 	private long instance;
 	
-	private long start;
+	private int ballot;
 	
+	private int bcounter;
+	
+	private long start;
+			
 	/**
 	 * Public constructor
 	 * 
 	 * @param proposer
 	 * @throws IOException 
 	 */
-	public ProposerListener(Proposer proposer) throws IOException{
+	public ProposerReserver(Proposer proposer) throws IOException{
 		this.proposer = proposer;
 		NetworkInterface i = NetworkInterface.getByName(Configuration.getInterface());
 	    this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
@@ -91,60 +92,50 @@ public class ProposerListener implements Runnable {
 	public void run() {
 		while(proposer.isLeader()){
 			try {
-				v = proposer.getValueQueue().poll(5,TimeUnit.SECONDS); // wait for value
-				if(v != null){
-					proposer.getSendCount().incrementAndGet();
-					boolean accepted = false;
-					while(!accepted){
-						Promise p = proposer.getPromiseQueue().poll(5,TimeUnit.SECONDS); // wait for a decision
-						if(p == null){
-							if(!proposer.isLeader()){ // this handles the state transition from leader to proposer
-								proposer.getValueQueue().put(v);
-								break;
-							}
-						}else{
-						instance = p.getInstance().longValue();
-						Message m = new Message(p.getInstance(),proposer.getID(),PaxosRole.Acceptor,MessageType.Accept,p.getBallot(),v);
-						byte[] b = Message.toWire(m);
-						DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
-						out.add(packet);
-						channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-						
-						// wait 2b majority
-						majority = new Majority();
-						start = System.currentTimeMillis();
-						while (!majority.isQuorum() && (System.currentTimeMillis() - start < 2000)){ // timeout and take new decision
-							selector.select(1000);
-							Set<SelectionKey> keys = selector.selectedKeys();
-							synchronized (keys){
-								Iterator<SelectionKey> it = keys.iterator();
-								while (it.hasNext()){
-									SelectionKey key = (SelectionKey)it.next();
-									it.remove();
-									if (!key.isValid())
-										continue;
-									if (key.isWritable()){
-										write(key);
-									}
-									if (key.isReadable()){
-										read(key);
-									}
+				instance = proposer.getInstance().incrementAndGet();
+				ballot = 0;
+				bcounter = 0;
+				boolean promise = false;
+				while(!promise){
+					// new ballot = 'ballot counter' + 'ID'
+					ballot = 10*bcounter+proposer.getID();
+
+					// send 1a
+					Message m = new Message(instance,proposer.getID(),PaxosRole.Acceptor,MessageType.Prepare,ballot,null);
+					byte[] b = Message.toWire(m);
+					DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
+					out.add(packet);
+					channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
+					
+					// wait 1b majority
+					majority = new Majority();
+					start = System.currentTimeMillis();
+					while (!majority.isQuorum() && (System.currentTimeMillis() - start < 2000)){
+						selector.select(1000);
+						Set<SelectionKey> keys = selector.selectedKeys();
+						synchronized (keys){
+							Iterator<SelectionKey> it = keys.iterator();
+							while (it.hasNext()){
+								SelectionKey key = (SelectionKey)it.next();
+								it.remove();
+								if (!key.isValid())
+									continue;
+								if (key.isWritable()){
+									write(key);
+								}
+								if (key.isReadable()){
+									read(key);
 								}
 							}
 						}
-						accepted = majority.isQuorum();
-						}
 					}
-					proposer.getRecvCount().incrementAndGet();
-					proposer.getRecvBytes().addAndGet(v.getValue().length);
-					if(proposer.isPerfTest()){
-						if(proposer.getSendCount().get() < 50000){
-							proposer.getValueQueue().put(new Value(System.currentTimeMillis()+ "" + proposer.getID(),new byte[6000]));
-						}
-					}else{
-						System.out.println("value " + v + " accepted in instance " + instance);
-					}
+					bcounter++;
+					promise = majority.isQuorum();
 				}
+				if(!proposer.isPerfTest()){
+					System.out.println("reserve ballot " + ballot + " in instance " + instance);
+				}
+				proposer.getPromiseQueue().put(new Promise(new Long(instance),new Integer(ballot)));
 			} catch (InterruptedException e) {
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -163,9 +154,8 @@ public class ProposerListener implements Runnable {
 		try{
 			buffer.clear();
 			SocketAddress address = channel.receive(buffer);
-			if (address == null){
+			if (address == null)
 				return;
-			}
 			buffer.flip();
 			int	count = buffer.remaining();
 			if (count > 0){
@@ -173,9 +163,25 @@ public class ProposerListener implements Runnable {
 				buffer.get(bytes);
 				DatagramPacket in = new DatagramPacket(bytes, count, address);
 				Message m = Message.fromWire(in.getData());
+				//System.out.println("receive " + m);
 				if(m != null){
-					if(m.getType() == MessageType.Accepted && m.getValue().equals(v)){
-						majority.addMessage(m);
+					if(m.getType() == MessageType.Nack && m.getInstance() == instance){
+						start = 0; // skip waiting
+					}else if(m.getType() == MessageType.Promise && m.getInstance() == instance){
+						if(m.getValue() == null && m.getBallot() >= ballot){
+							majority.addMessage(m);
+						}else if (m.getValue() != null){
+							instance = proposer.getInstance().incrementAndGet();
+							ballot = 0;
+							bcounter = 0;
+							start = 0;
+							//re-send 2a
+							Message resend = new Message(m.getInstance(),proposer.getID(),PaxosRole.Acceptor,MessageType.Accept,m.getBallot(),m.getValue());
+							byte[] b = Message.toWire(resend);
+							DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
+							out.add(packet);
+							key.interestOps(SelectionKey.OP_READ|SelectionKey.OP_WRITE);
+						}
 					}
 				}
 			}

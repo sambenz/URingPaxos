@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.ring;
+package ch.usi.da.paxos.api;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -27,7 +27,7 @@ package ch.usi.da.paxos.ring;
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-abstract class ConfigKey {
+abstract public class ConfigKey {
 
 	/**
 	 * see RingManager for default

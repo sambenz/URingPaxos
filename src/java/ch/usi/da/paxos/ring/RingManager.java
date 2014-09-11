@@ -30,6 +30,8 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
 
+import ch.usi.da.paxos.TopologyManager;
+
 
 /**
  * Name: RingManager<br>

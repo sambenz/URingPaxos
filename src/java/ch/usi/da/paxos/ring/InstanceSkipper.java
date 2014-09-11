@@ -20,6 +20,7 @@ package ch.usi.da.paxos.ring;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;

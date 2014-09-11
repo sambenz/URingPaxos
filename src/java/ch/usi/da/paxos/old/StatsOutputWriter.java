@@ -1,4 +1,4 @@
-package ch.usi.da.paxos;
+package ch.usi.da.paxos.old;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 

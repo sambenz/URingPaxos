@@ -1,4 +1,4 @@
-package ch.usi.da.paxos;
+package ch.usi.da.paxos.old;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -32,23 +32,23 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
-import ch.usi.da.paxos.storage.Promise;
-
+import ch.usi.da.paxos.message.Value;
 
 /**
- * Name: ProposerReserver<br>
+ * Name: LeaderSender<br>
  * Description: <br>
  * 
- * Creation date: Apr 10, 2012<br>
+ * Creation date: Apr 11, 2012<br>
  * $Id$
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class ProposerReserver implements Runnable {
+public class LeaderSender implements Runnable {
 
 	private final Proposer proposer;
 	
@@ -60,82 +60,70 @@ public class ProposerReserver implements Runnable {
 	
 	private final Selector selector;
 	
+	private Value v;
+	
 	private Majority majority;
 	
-	private long instance;
-	
-	private int ballot;
-	
-	private int bcounter;
-	
 	private long start;
-			
+	
 	/**
 	 * Public constructor
 	 * 
 	 * @param proposer
 	 * @throws IOException 
 	 */
-	public ProposerReserver(Proposer proposer) throws IOException{
+	public LeaderSender(Proposer proposer) throws IOException{
 		this.proposer = proposer;
 		NetworkInterface i = NetworkInterface.getByName(Configuration.getInterface());
 	    this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
 	         .setOption(StandardSocketOptions.SO_REUSEADDR, true)
-	         .bind(Configuration.getGroup(PaxosRole.Proposer))
+	         .bind(Configuration.getGroup(PaxosRole.Learner))
 	         .setOption(StandardSocketOptions.IP_MULTICAST_IF, i);
 	    this.channel.configureBlocking(false);
-	    this.channel.join(Configuration.getGroup(PaxosRole.Proposer).getAddress(), i);
+	    this.channel.join(Configuration.getGroup(PaxosRole.Learner).getAddress(), i);
 		selector = Selector.open();
 	}
 	
 	@Override
 	public void run() {
-		while(proposer.isLeader()){
+		while(!proposer.isLeader()){
 			try {
-				instance = proposer.getInstance().incrementAndGet();
-				ballot = 0;
-				bcounter = 0;
-				boolean promise = false;
-				while(!promise){
-					// new ballot = 'ballot counter' + 'ID'
-					ballot = 10*bcounter+proposer.getID();
-
-					// send 1a
-					Message m = new Message(instance,proposer.getID(),PaxosRole.Acceptor,MessageType.Prepare,ballot,null);
-					byte[] b = Message.toWire(m);
-					DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
-					out.add(packet);
-					channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-					
-					// wait 1b majority
-					majority = new Majority();
-					start = System.currentTimeMillis();
-					while (!majority.isQuorum() && (System.currentTimeMillis() - start < 2000)){
-						selector.select(1000);
-						Set<SelectionKey> keys = selector.selectedKeys();
-						synchronized (keys){
-							Iterator<SelectionKey> it = keys.iterator();
-							while (it.hasNext()){
-								SelectionKey key = (SelectionKey)it.next();
-								it.remove();
-								if (!key.isValid())
-									continue;
-								if (key.isWritable()){
-									write(key);
-								}
-								if (key.isReadable()){
-									read(key);
+				v = proposer.getValueQueue().poll(5,TimeUnit.SECONDS); // wait for value
+				if(v != null){
+					boolean accepted = false;
+					while(!accepted){
+						Message m = new Message(-1,proposer.getID(),PaxosRole.Leader,MessageType.Value,-1,-1,v);
+						byte[] b = Message.toWire(m);
+						DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
+						out.add(packet);
+						channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
+						
+						// wait for the learned value
+						majority = new Majority();
+						start = System.currentTimeMillis();
+						while (!majority.isQuorum() && (System.currentTimeMillis() - start < 60000)){ // can loose messages after 60s !!!
+							selector.select(1000);
+							Set<SelectionKey> keys = selector.selectedKeys();
+							synchronized (keys){
+								Iterator<SelectionKey> it = keys.iterator();
+								while (it.hasNext()){
+									SelectionKey key = (SelectionKey)it.next();
+									it.remove();
+									if (!key.isValid())
+										continue;
+									if (key.isWritable()){
+										write(key);
+									}
+									if (key.isReadable()){
+										read(key);
+									}
 								}
 							}
 						}
+						accepted = majority.isQuorum();
 					}
-					bcounter++;
-					promise = majority.isQuorum();
+					System.out.println("value " + v + " accepted in instance " + majority.getMajorityDecision().getInstance());
 				}
-				if(!proposer.isPerfTest()){
-					System.out.println("reserve ballot " + ballot + " in instance " + instance);
-				}
-				proposer.getPromiseQueue().put(new Promise(new Long(instance),new Integer(ballot)));
 			} catch (InterruptedException e) {
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -154,8 +142,9 @@ public class ProposerReserver implements Runnable {
 		try{
 			buffer.clear();
 			SocketAddress address = channel.receive(buffer);
-			if (address == null)
+			if (address == null){
 				return;
+			}
 			buffer.flip();
 			int	count = buffer.remaining();
 			if (count > 0){
@@ -163,25 +152,9 @@ public class ProposerReserver implements Runnable {
 				buffer.get(bytes);
 				DatagramPacket in = new DatagramPacket(bytes, count, address);
 				Message m = Message.fromWire(in.getData());
-				//System.out.println("receive " + m);
 				if(m != null){
-					if(m.getType() == MessageType.Nack && m.getInstance() == instance){
-						start = 0; // skip waiting
-					}else if(m.getType() == MessageType.Promise && m.getInstance() == instance){
-						if(m.getValue() == null && m.getBallot() >= ballot){
-							majority.addMessage(m);
-						}else if (m.getValue() != null){
-							instance = proposer.getInstance().incrementAndGet();
-							ballot = 0;
-							bcounter = 0;
-							start = 0;
-							//re-send 2a
-							Message resend = new Message(m.getInstance(),proposer.getID(),PaxosRole.Acceptor,MessageType.Accept,m.getBallot(),m.getValue());
-							byte[] b = Message.toWire(resend);
-							DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
-							out.add(packet);
-							key.interestOps(SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-						}
+					if(m.getType() == MessageType.Accepted && m.getValue().equals(v)){
+						majority.addMessage(m);
 					}
 				}
 			}

@@ -1,4 +1,4 @@
-package ch.usi.da.paxos;
+package ch.usi.da.paxos.old;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -20,10 +20,7 @@ package ch.usi.da.paxos;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
@@ -32,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
@@ -40,17 +36,17 @@ import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
 
 /**
- * Name: LeaderSender<br>
+ * Name: LearnerListener<br>
  * Description: <br>
  * 
- * Creation date: Apr 11, 2012<br>
+ * Creation date: Apr 9, 2012<br>
  * $Id$
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class LeaderSender implements Runnable {
+public class LearnerListener implements Runnable {
 
-	private final Proposer proposer;
+	private final Learner learner;
 	
 	private final DatagramChannel channel;
 	
@@ -58,93 +54,65 @@ public class LeaderSender implements Runnable {
 	
 	private final List<DatagramPacket> out = new ArrayList<DatagramPacket>();
 	
-	private final Selector selector;
-	
-	private Value v;
-	
-	private Majority majority;
-	
-	private long start;
+	private Selector selector;
 	
 	/**
 	 * Public constructor
 	 * 
-	 * @param proposer
+	 * @param learner
 	 * @throws IOException 
 	 */
-	public LeaderSender(Proposer proposer) throws IOException{
-		this.proposer = proposer;
-		NetworkInterface i = NetworkInterface.getByName(Configuration.getInterface());
-	    this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
-	         .setOption(StandardSocketOptions.SO_REUSEADDR, true)
-	         .bind(Configuration.getGroup(PaxosRole.Learner))
-	         .setOption(StandardSocketOptions.IP_MULTICAST_IF, i);
-	    this.channel.configureBlocking(false);
-	    this.channel.join(Configuration.getGroup(PaxosRole.Learner).getAddress(), i);
+	public LearnerListener(Learner learner) throws IOException{
+		this.learner = learner;
+		this.channel = learner.getChannel();
 		selector = Selector.open();
 	}
 	
 	@Override
 	public void run() {
-		while(!proposer.isLeader()){
-			try {
-				v = proposer.getValueQueue().poll(5,TimeUnit.SECONDS); // wait for value
-				if(v != null){
-					boolean accepted = false;
-					while(!accepted){
-						Message m = new Message(-1,proposer.getID(),PaxosRole.Leader,MessageType.Value,-1,-1,v);
-						byte[] b = Message.toWire(m);
-						DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
-						out.add(packet);
-						channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-						
-						// wait for the learned value
-						majority = new Majority();
-						start = System.currentTimeMillis();
-						while (!majority.isQuorum() && (System.currentTimeMillis() - start < 60000)){ // can loose messages after 60s !!!
-							selector.select(1000);
-							Set<SelectionKey> keys = selector.selectedKeys();
-							synchronized (keys){
-								Iterator<SelectionKey> it = keys.iterator();
-								while (it.hasNext()){
-									SelectionKey key = (SelectionKey)it.next();
-									it.remove();
-									if (!key.isValid())
-										continue;
-									if (key.isWritable()){
-										write(key);
-									}
-									if (key.isReadable()){
-										read(key);
-									}
-								}
-							}
-						}
-						accepted = majority.isQuorum();
-					}
-					System.out.println("value " + v + " accepted in instance " + majority.getMajorityDecision().getInstance());
+		try{
+			channel.register(selector, SelectionKey.OP_READ);
+			while (selector.isOpen()){
+				selector.select(2000);
+				Long request = learner.getRequests().poll();
+				if(request != null){
+					Message m = new Message(request,learner.getID(),PaxosRole.Acceptor,MessageType.Accept,new Integer(9999),new Value(System.currentTimeMillis()+ "" + learner.getID(),new byte[0]));
+					byte[] b = Message.toWire(m);
+					DatagramPacket packet = new DatagramPacket(b,b.length,Configuration.getGroup(m.getReceiver()));
+					out.add(packet);
+					channel.register(selector,SelectionKey.OP_READ|SelectionKey.OP_WRITE);
 				}
-			} catch (InterruptedException e) {
-			} catch (IOException e) {
-				e.printStackTrace();
+				Set<SelectionKey> keys = selector.selectedKeys();
+				synchronized (keys){
+					Iterator<SelectionKey> it = keys.iterator();
+					while (it.hasNext()){
+						SelectionKey key = (SelectionKey)it.next();
+						it.remove();
+						if (!key.isValid())
+							continue;
+						if (key.isReadable()){
+							read(key);
+						}
+						if (key.isWritable()){
+							write(key);
+						}
+					}
+				}
 			}
-		}
-		try {
 			selector.close();
 			channel.close();
-		} catch (IOException e) {
+		}catch(IOException e){
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void read(SelectionKey key){
 		DatagramChannel channel = (DatagramChannel)key.channel();
 		try{
 			buffer.clear();
 			SocketAddress address = channel.receive(buffer);
-			if (address == null){
+			if (address == null)
 				return;
-			}
 			buffer.flip();
 			int	count = buffer.remaining();
 			if (count > 0){
@@ -153,8 +121,24 @@ public class LeaderSender implements Runnable {
 				DatagramPacket in = new DatagramPacket(bytes, count, address);
 				Message m = Message.fromWire(in.getData());
 				if(m != null){
-					if(m.getType() == MessageType.Accepted && m.getValue().equals(v)){
-						majority.addMessage(m);
+					// learn a value
+					Majority maj;
+					synchronized(learner.getInstanceList()){
+						if(!learner.getInstanceList().containsKey(m.getInstance())){
+							maj = new Majority();
+							learner.getInstanceList().put(m.getInstance(),maj);
+						}else{
+							maj = learner.getInstanceList().get(m.getInstance());
+						}
+					}
+					if(maj != null){
+						synchronized (maj){
+							maj.addMessage(m);
+							if(maj.isQuorum()){
+								learner.getDecisions().add(maj.getMajorityDecision());
+								learner.getInstanceList().remove(m.getInstance());
+							}
+						}
 					}
 				}
 			}

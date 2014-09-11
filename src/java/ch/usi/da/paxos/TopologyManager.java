@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.ring;
+package ch.usi.da.paxos;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -41,7 +41,9 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
+import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.ring.NetworkManager;
 
 
 /**

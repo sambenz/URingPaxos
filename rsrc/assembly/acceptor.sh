@@ -17,4 +17,4 @@ for i in $PRGDIR/lib/*.jar; do
 done
 
 # start the program
-$JAVA -cp $PRGDIR/lib:$CLASSPATH -Xmx1G ch.usi.da.paxos.Acceptor $@
+$JAVA -cp $PRGDIR/lib:$CLASSPATH -Xmx1G ch.usi.da.paxos.old.Acceptor $@

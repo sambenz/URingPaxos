@@ -96,11 +96,11 @@ Like "ringpaxos.sh"; but "thriftnode.sh"
 
 Packages Overview
 ---------------------------
+ch.usi.da.paxos
 ch.usi.da.paxos.api
-ch.usi.da.paxos.examples
 	Where you want to start as developer
 	
-ch.usi.da.paxos
+ch.usi.da.paxos.old
 	Simple Paxos Impl. (IP Multicast)
 	
 ch.usi.da.paxos.lab

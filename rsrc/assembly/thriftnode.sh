@@ -28,4 +28,4 @@ JVM_OPTS="-XX:+UseParallelGC"
 #JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.port=9001 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
 
 # start the program
-$JAVA -Djava.library.path=$PRGDIR/lib -cp $PRGDIR/lib:$CLASSPATH -Xms2G -Xmx2G $JVM_OPTS ch.usi.da.paxos.examples.ThriftNode $@
+$JAVA -Djava.library.path=$PRGDIR/lib -cp $PRGDIR/lib:$CLASSPATH -Xms2G -Xmx2G $JVM_OPTS ch.usi.da.paxos.ThriftNode $@

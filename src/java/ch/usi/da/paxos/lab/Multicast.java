@@ -24,8 +24,8 @@ import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 
-import ch.usi.da.paxos.Configuration;
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.old.Configuration;
 
 /**
  * Name: Multicast<br>

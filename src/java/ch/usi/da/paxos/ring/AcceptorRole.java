@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.StableStorage;
 import ch.usi.da.paxos.message.Message;

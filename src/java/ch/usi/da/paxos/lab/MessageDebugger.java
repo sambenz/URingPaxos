@@ -23,9 +23,9 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
-import ch.usi.da.paxos.Configuration;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
+import ch.usi.da.paxos.old.Configuration;
 
 /**
  * Name: MessageDebugger<br>
