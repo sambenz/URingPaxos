@@ -2,7 +2,7 @@ URingPaxos : A high throughput atomic multicast protocol
 --------------------------------------------------------
 
 To build:
-mvn package
+mvn -DskipTests package (tests assume a local Zookeeper instance)
 
 To deploy/run:
 Use the tar file in target/Paxos-1.0.tar.gz
