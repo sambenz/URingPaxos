@@ -148,7 +148,7 @@ public class NetworkManager {
 	 * 
 	 * @param m the received message
 	 */
-	public void receive(Message m){
+	public synchronized void receive(Message m){
 		/*if(logger.isDebugEnabled()){
 			logger.debug("receive network message (ring:" + ring.getRingID() + ") : " + m);
 		}*/
