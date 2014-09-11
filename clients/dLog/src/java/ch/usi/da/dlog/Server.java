@@ -49,7 +49,7 @@ import ch.usi.da.dlog.transport.ABListener;
 import ch.usi.da.dlog.transport.RawABListener;
 import ch.usi.da.dlog.transport.Receiver;
 import ch.usi.da.dlog.transport.UDPSender;
-import ch.usi.da.paxos.examples.Util;
+import ch.usi.da.paxos.Util;
 import ch.usi.da.paxos.ring.RingDescription;
 
 /**
