@@ -35,8 +35,9 @@ public class TestAcceptor {
 	
 	@BeforeClass
 	public static void prepare() throws Exception {
+		Thread.sleep(3000);
 		ZooKeeper zoo = new ZooKeeper("localhost:2181",1000,new DummyWatcher());
-		String path = "/ringpaxos/ring1/config/stable_storage";
+		String path = "/ringpaxos/topology1/config/stable_storage";
 		String data = "ch.usi.da.paxos.storage.InMemory";
 		zoo.setData(path,data.getBytes(),-1);
 		path = "/ringpaxos/config/multi_ring_lambda";

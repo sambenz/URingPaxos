@@ -115,8 +115,8 @@ public class CoordinatorRole extends Role {
 	@Override
 	public void run() {
 		ring.getNetwork().registerCallback(this);
-		try { // wait until ring is big enough
-			while(ring.getRing().size() < ring.getQuorum()){
+		try { // wait until quorum is possible (ring is big enough)
+			while(ring.getAcceptors().size() < ring.getQuorum()){
 				Thread.sleep(1000);
 			}
 			Thread.sleep(3000);
