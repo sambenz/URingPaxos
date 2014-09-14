@@ -39,7 +39,7 @@ public class Value implements Serializable {
 	
 	private final String ID;
 	
-	private final static String skipID  = "SKIP:";
+	private final static String skipID  = "SKIP";
 
 	private final boolean batch;
 	
@@ -141,6 +141,6 @@ public class Value implements Serializable {
 	}
 
 	public static String getSkipID(){
-		return skipID + "" + System.currentTimeMillis();
+		return skipID + ":" + System.currentTimeMillis() + ":" + System.nanoTime();
 	}
 }
