@@ -69,8 +69,8 @@ public class InstanceSkipper implements Runnable {
 					long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
 					long skip = expectedValues - valueSent;
 					if(skip > 0) {
-						if(logger.isDebugEnabled()){
-							logger.debug(String.format("skip %d values", skip));
+						if(logger.isTraceEnabled()){
+							logger.trace(String.format("InstanceSkipper sent skip %d values", skip));
 						}
 						Promise p = null;
 						try {

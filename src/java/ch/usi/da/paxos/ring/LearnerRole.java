@@ -127,7 +127,7 @@ public class LearnerRole extends Role implements Learner {
 	}
 
 	@Override
-	public void run() {
+	public void run() {		
 		ring.getNetwork().registerCallback(this);
 		Thread t = new Thread(new LearnerStatsWriter(ring,this));
 		t.setName("LearnerStatsWriter");
@@ -207,6 +207,9 @@ public class LearnerRole extends Role implements Learner {
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
 						if(de.getValue().isSkip()){
 							try {
+								if(logger.isTraceEnabled()){
+									logger.trace("Learner received SKIP " + de.getRing() + " " + de.getInstance() + " " + new String(de.getValue().getValue()));
+								}
 								latencies.addValue(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1]));
 								if(latencies.getN() >= median_window){
 									latency_to_coordinator = (int) latencies.getPercentile(50);

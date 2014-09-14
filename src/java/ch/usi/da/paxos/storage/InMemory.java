@@ -71,7 +71,7 @@ public class InMemory implements StableStorage {
 	@Override
 	public void putDecision(Long instance, Decision decision) {
 		decided.put(instance, decision);
-		logger.debug("InMemory stored " + decision);
+		logger.trace("InMemory stored " + decision);
 	}
 
 	@Override
