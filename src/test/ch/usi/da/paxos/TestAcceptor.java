@@ -343,7 +343,7 @@ public class TestAcceptor {
 		assertEquals(101,(int)a3.getStableStorage().getDecision(1L).getBallot());
 		assertEquals(101,(int)a1.getStableStorage().getBallot(1L));
 		assertEquals(101,(int)a2.getStableStorage().getBallot(1L));
-		assertEquals(101,(int)a3.getStableStorage().getBallot(1L));
+		//not required since sn'd acceptor decides and 3rd never receives Phase2; assertEquals(101,(int)a3.getStableStorage().getBallot(1L));
 		assertEquals(s,new String(a1.getStableStorage().getDecision(1L).getValue().getValue()));
 		assertEquals(s,new String(a2.getStableStorage().getDecision(1L).getValue().getValue()));
 		assertEquals(s,new String(a3.getStableStorage().getDecision(1L).getValue().getValue()));

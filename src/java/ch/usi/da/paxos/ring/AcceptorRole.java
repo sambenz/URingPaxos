@@ -182,26 +182,21 @@ public class AcceptorRole extends Role {
 					}else{
 						send_value = new Value(value.getID(),new byte[0]); // fast mode
 					}
-					if(ring.getNodeID() == ring.getLastAcceptor()){
-						if(m.getVoteCount() >= ring.getQuorum()){
-							learned.remove(value.getID());
-							Message n = new Message(instance,m.getSender(),PaxosRole.Learner,MessageType.Decision,ballot,value_ballot,send_value);
-							if(ring.getNetwork().getLeader() != null){
-								ring.getNetwork().getLeader().deliver(ring,n);
-							}
-							if(ring.getNetwork().getLearner() != null){
-								ring.getNetwork().getLearner().deliver(ring,n);
-							}
-							if(ring.getNetwork().getProposer() != null){
-								ring.getNetwork().getProposer().deliver(ring,n);
-							}
-							// network -> predecessor(last_accept)
-							if(ring.getNodeID() != ring.getRingPredecessor(ring.getLastAcceptor())){
-								ring.getNetwork().send(n);
-							}
-						}else{
-							logger.error("Not decided at end of the ring!");
+					if(m.getVoteCount() >= ring.getQuorum()){
+						learned.remove(value.getID());
+						Message n = new Message(instance,ring.getNodeID(),PaxosRole.Learner,MessageType.Decision,ballot,value_ballot,send_value);
+						if(ring.getNetwork().getLeader() != null){
+							ring.getNetwork().getLeader().deliver(ring,n);
 						}
+						if(ring.getNetwork().getLearner() != null){
+							ring.getNetwork().getLearner().deliver(ring,n);
+						}
+						if(ring.getNetwork().getProposer() != null){
+							ring.getNetwork().getProposer().deliver(ring,n);
+						}
+						ring.getNetwork().send(n);
+					}else if(ring.getNodeID() == ring.getLastAcceptor()){
+						logger.error("Not decided at end of the ring!");
 					}else{
 						Message n = new Message(m.getInstance(),m.getSender(),m.getReceiver(),m.getType(),ballot,value_ballot,send_value);
 						n.setVoteCount(m.getVoteCount());
