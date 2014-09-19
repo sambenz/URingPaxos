@@ -60,44 +60,45 @@ public class InstanceSkipper implements Runnable {
 	@Override
 	public void run() {
 		if(coordinator.multi_ring_lambda>0){
-		while(true){
-				try {
-					long time = System.currentTimeMillis();
-					int latency_compensation = coordinator.latency_compensation;
-					long valueSent = coordinator.value_count.get();
-					float executionTime = ((float)(time-boot_time-latency_compensation)) / 1000.0f;
-					long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
-					long skip = expectedValues - valueSent;
-					if(skip > 0) {
-						if(logger.isTraceEnabled()){
-							logger.trace(String.format("InstanceSkipper sent skip %d values", skip));
+		while(ring.isNodeCoordinator()){
+			try {
+				long time = System.currentTimeMillis();
+				int latency_compensation = coordinator.latency_compensation;
+				long valueSent = coordinator.value_count.get();
+				float executionTime = ((float)(time-boot_time-latency_compensation)) / 1000.0f;
+				long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
+				long skip = expectedValues - valueSent;
+				if(skip > 0) {
+					if(logger.isTraceEnabled()){
+						logger.trace(String.format("InstanceSkipper sent skip %d values", skip));
+					}
+					Promise p = null;
+					try {
+						p = coordinator.getPromiseQueue().take(); // wait for a promise
+					} catch (InterruptedException e) {
+					}
+					//send Phase2 with skip value
+					if(p != null){
+						Value v = new Value(Value.getSkipID(),Long.toString(skip).getBytes());
+						coordinator.value_count.addAndGet(skip);
+						Message m = new Message(p.getInstance(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2,p.getBallot(),0,v);
+						if(ring.getNetwork().getLearner() != null){
+							ring.getNetwork().getLearner().deliver(ring,m);
 						}
-						Promise p = null;
-						try {
-							p = coordinator.getPromiseQueue().take(); // wait for a promise
-						} catch (InterruptedException e) {
-						}
-						//send Phase2 with skip value
-						if(p != null){
-							Value v = new Value(Value.getSkipID(),Long.toString(skip).getBytes());
-							coordinator.value_count.addAndGet(skip);
-							Message m = new Message(p.getInstance(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2,p.getBallot(),0,v);
-							if(ring.getNetwork().getLearner() != null){
-								ring.getNetwork().getLearner().deliver(ring,m);
-							}
-							if(ring.getNetwork().getAcceptor() != null){
-								ring.getNetwork().getAcceptor().deliver(ring,m);
-							}else{ // else should never happen, since there is no coordinator without acceptor!
-								ring.getNetwork().send(m);
-							}
+						if(ring.getNetwork().getAcceptor() != null){
+							ring.getNetwork().getAcceptor().deliver(ring,m);
+						}else{ // else should never happen, since there is no coordinator without acceptor!
+							ring.getNetwork().send(m);
 						}
 					}
-					Thread.sleep(coordinator.multi_ring_delta_t);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;				
 				}
+				Thread.sleep(coordinator.multi_ring_delta_t);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;				
 			}
+		}
+		logger.debug("InstanceSkipper stopped.");
 		}
 	}
 
