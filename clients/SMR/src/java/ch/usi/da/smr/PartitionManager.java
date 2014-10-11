@@ -190,11 +190,11 @@ public class PartitionManager implements Watcher {
 	public ABListener getThriftABListener(int ring, int replicaID) throws TTransportException {
 		String host = "127.0.0.1";
 		try {
-			host = new String(zoo.getData("/ringpaxos/ring" + ring + "/nodes/" + replicaID,false, null));
+			host = new String(zoo.getData("/ringpaxos/topology" + ring + "/nodes/" + replicaID,false, null));
 			host = host.replaceAll("(;.*)","");
 			// Sanity check: is replicaID learner in ring(partition) && global_ring
-			if(zoo.exists("/ringpaxos/ring" + ring + "/learners/" + replicaID,false) != null &&
-			   zoo.exists("/ringpaxos/ring" + global_ring + "/learners/" + replicaID,false) != null	){
+			if(zoo.exists("/ringpaxos/topology" + ring + "/learners/" + replicaID,false) != null &&
+			   zoo.exists("/ringpaxos/topology" + global_ring + "/learners/" + replicaID,false) != null	){
 				logger.debug("ABListener check for ring " + ring + " and " + global_ring + ": OK!");
 			}else{
 				logger.warn("ABListener check for ring " + ring + " and " + global_ring + ": Fail!");
@@ -227,9 +227,9 @@ public class PartitionManager implements Watcher {
 		}else{
 			String host = "127.0.0.1";
 			try {
-				host = new String(zoo.getData("/ringpaxos/ring" + ring + "/nodes/" + clientID,false, null));
+				host = new String(zoo.getData("/ringpaxos/topology" + ring + "/nodes/" + clientID,false, null));
 				host = host.replaceAll("(;.*)","");
-				if(zoo.exists("/ringpaxos/ring" + ring + "/proposers/" + clientID,false) != null){
+				if(zoo.exists("/ringpaxos/topology" + ring + "/proposers/" + clientID,false) != null){
 					logger.debug("ABSender check for ring " + ring + ": OK!");
 				}else{
 					logger.warn("ABSender check for ring " + ring + ": Fail!");
