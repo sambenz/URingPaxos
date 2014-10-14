@@ -46,6 +46,8 @@ public class InstanceSkipper implements Runnable {
 	
 	private final long boot_time;
 	
+	private final int static_latency_compensation;
+	
 	public InstanceSkipper(RingManager ring,CoordinatorRole coordinator) {
 		this.coordinator = coordinator;
 		this.ring = ring;
@@ -55,6 +57,19 @@ public class InstanceSkipper implements Runnable {
 			this.boot_time = 0;
 		}
 		logger.info("InstanceSkipper use boot time: " + boot_time);
+		String latency_compensation = System.getenv("LAT");
+		int static_latency;
+		try{
+			if(latency_compensation != null){
+				static_latency = Integer.parseInt(latency_compensation);
+				logger.warn("InstanceSkipper use static latency compensation: " + static_latency);
+			}else{
+				static_latency = 0;			
+			}
+		}catch(NumberFormatException e){
+			static_latency = 0;
+		}
+		static_latency_compensation = static_latency;
 	}
 	
 	@Override
@@ -63,7 +78,12 @@ public class InstanceSkipper implements Runnable {
 		while(ring.isNodeCoordinator()){
 			try {
 				long time = System.currentTimeMillis();
-				int latency_compensation = coordinator.latency_compensation;
+				int latency_compensation = 0;
+				if(static_latency_compensation == 0){
+					latency_compensation = static_latency_compensation;
+				}else{
+					latency_compensation = coordinator.latency_compensation;
+				}
 				long valueSent = coordinator.value_count.get();
 				float executionTime = ((float)(time-boot_time-latency_compensation)) / 1000.0f;
 				long expectedValues = (long) ((coordinator.multi_ring_lambda) * executionTime);
