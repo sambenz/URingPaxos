@@ -21,19 +21,9 @@ package ch.usi.da.smr;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,13 +38,11 @@ import ch.usi.da.paxos.Util;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.recovery.HttpRecovery;
+import ch.usi.da.smr.recovery.RecoveryInterface;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 /**
  * Name: Replica<br>
@@ -102,16 +90,8 @@ public class Replica implements Receiver {
 
 	private final ABListener ab;
 	
-	private HttpServer httpd;
-
 	private final SortedMap<String,byte[]> db;
-
-	public static final String snapshot_file = "/tmp/snapshot.ser";
-
-	public static final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
-	
-	private final int max_ring = 20;
-	
+		
 	private volatile Map<Integer,Long> exec_instance = new HashMap<Integer,Long>();
 	
 	private long exec_cmd = 0;
@@ -119,6 +99,8 @@ public class Replica implements Receiver {
 	private int snapshot_modulo = 0; // disabled
 	
 	private final boolean use_thrift = false;
+	
+	RecoveryInterface stable_storage;
 	
 	private Thread recovery = null;
 	
@@ -137,17 +119,7 @@ public class Replica implements Receiver {
 			ab = partitions.getRawABListener(ringID,nodeID);
 		}
 		db = new  TreeMap<String,byte[]>();
-		
-		// remote snapshot transfer server
-		try {
-			httpd = HttpServer.create(new InetSocketAddress(8080), 0);
-			httpd.createContext("/state", new SendFile(state_file));        
-			httpd.createContext("/snapshot", new SendFile(snapshot_file));
-			httpd.setExecutor(null); // creates a default executor
-			httpd.start();
-		}catch(Exception e){
-			logger.error("Replica could not start http server: " + e);
-		}
+		stable_storage = new HttpRecovery(partitions);
 	}
 
 	public void setPartition(Partition partition){
@@ -159,7 +131,7 @@ public class Replica implements Receiver {
 	public void start(){
 		partitions.registerPartitionChangeNotifier(this);
 		// install old state
-		exec_instance = installState();
+		exec_instance = load();
 		// start listening
 		ab.registerReceiver(this);
 		if(min_token > max_token){
@@ -174,153 +146,8 @@ public class Replica implements Receiver {
 
 	public void close(){
 		ab.close();
-		if(httpd != null){
-			httpd.stop(1);
-		}
+		stable_storage.close();
 		//partitions.deregister(nodeID,token);
-	}
-	
-	public boolean checkpoint(){
-		if(storeState(exec_instance)){
-			try {
-				for(Entry<Integer, Long> e : exec_instance.entrySet()){
-					ab.safe(e.getKey(),e.getValue());
-				}
-				logger.info("Replica checkpointed up to instance " + exec_instance);
-				return true;
-			} catch (Exception e) {
-				logger.error(e);
-			}
-		}
-		return false;
-	}
-	
-	private boolean storeState(Map<Integer,Long> instances){
-		try {
-			synchronized(db){
-				logger.info("Replica start storing state ... ");
-				for(Entry<Integer,Long> e : instances.entrySet()){
-					db.put("r:" + e.getKey(),e.getValue().toString().getBytes());
-				}
-				FileOutputStream fs = new FileOutputStream(snapshot_file);
-		        ObjectOutputStream os = new ObjectOutputStream(fs);
-		        os.writeObject(db);
-		        os.flush();
-		        fs.getChannel().force(false); // fsync
-		        os.close();
-				fs = new FileOutputStream(state_file);
-				for(Entry<Integer, Long> e : exec_instance.entrySet()){
-					fs.write((e.getKey() + "=" + e.getValue() + "\n").getBytes());
-				}
-				fs.getChannel().force(false);
-		        os.close();
-		        logger.info("... state stored up to instance: " + instances);
-			}
-	        return true;
-		} catch (IOException e) {
-			logger.error(e);
-		}
-		return false;
-	}
-	
-	private Map<Integer,Long> installState(){
-		Map<Integer,Long> instances = new HashMap<Integer,Long>();
-		try {
-			String host = null;
-			InputStreamReader isr;
-			String line;
-			Map<Integer, Long> state = new HashMap<Integer, Long>();	
-			// local
-			try{
-				isr = new InputStreamReader(new FileInputStream(state_file));
-				BufferedReader bin = new BufferedReader(isr);	
-				while ((line = bin.readLine()) != null){
-					String[] s = line.split("=");
-					state.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
-				}
-				logger.info("Replica found local snapshot: " + state);
-				bin.close();
-			}catch (FileNotFoundException e){
-				logger.info("No local snapshot present.");
-			}
-			// remote TODO: must ask min. GSQ replicas
-			for(String h : partitions.getReplicas(token)){
-				if(h.contains(":")){
-					h = "[" + h + "]";
-				}
-				try{
-					URL url = new URL("http://" + h + ":8080/state");
-					HttpURLConnection con = (HttpURLConnection)url.openConnection();
-					isr = new InputStreamReader(con.getInputStream());
-					BufferedReader in = new BufferedReader(isr);
-					Map<Integer, Long> nstate = new HashMap<Integer, Long>();
-					while ((line = in.readLine()) != null){
-						String[] s = line.split("=");
-						nstate.put(Integer.parseInt(s[0]),Long.parseLong(s[1]));
-					}
-					if(state.isEmpty()){
-						state = nstate;
-						host = h;
-					}else if(newerState(nstate,state)){
-						state = nstate;
-						host = h;
-					}
-					logger.info("Replica found remote snapshot: " + nstate + " (" + h + ")");
-					in.close();
-				}catch(Exception e){
-					logger.error("Error getting state from " + h,e);
-				}
-			}
-			synchronized(db){
-				InputStream in;
-				if(host != null){
-					logger.info("Use remote snapshot from host " + host);
-					URL url = new URL("http://" + host + ":8080/snapshot");
-					HttpURLConnection con = (HttpURLConnection)url.openConnection();
-					in = con.getInputStream();
-				}else{
-					in = new FileInputStream(new File(snapshot_file));
-				}
-				ObjectInputStream ois = new ObjectInputStream(in);
-				@SuppressWarnings("unchecked")
-				Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
-				ois.close();
-				in.close();
-				db.clear();
-				db.putAll(m);
-				byte[] b = null;
-				for(int i = 1;i<max_ring+1;i++){
-					if((b = db.get("r:" + i)) != null){
-						instances.put(i,Long.valueOf(new String(b)));
-					}
-				}
-			}
-		} catch (IOException | ClassNotFoundException e) {
-			logger.error(e);
-			if(!exec_instance.isEmpty()){
-				return exec_instance;
-			}else{ // init to 0
-				instances.put(partitions.getGlobalRing(),0L);
-				for(Partition p : partitions.getPartitions()){
-					instances.put(p.getRing(),0L);
-				}				
-			}
-		}
-		logger.info("Replica installed snapshot instance: " + instances);
-		return instances;
-	}
-
-	public boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
-		for(Entry<Integer, Long> e : state.entrySet()){
-			long i = e.getValue();
-			if(i > 0){
-				long ni = nstate.get(e.getKey());
-				if(ni > i){
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override
@@ -341,13 +168,11 @@ public class Replica implements Receiver {
 		if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
 			while(m.getInstnce()-1 > exec_instance.get(m.getRing())){
 				logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));				
-				exec_instance = installState();
+				exec_instance = load();
 			}
 		}
 		
 		// write snapshot
-		// we could write this asynchronous; but different snapshot_modulo per replica
-		// does the same
 		exec_cmd++;
 		if(snapshot_modulo > 0 && exec_cmd % snapshot_modulo == 0){
 			checkpoint(); 
@@ -434,6 +259,38 @@ public class Replica implements Receiver {
 		udp.send(msg);
 	}
 
+	public Map<Integer,Long> load(){
+		try{
+			return stable_storage.installState(token,db);
+		}catch(Exception e){
+			if(!exec_instance.isEmpty()){
+				return exec_instance;
+			}else{ // init to 0
+				Map<Integer,Long> instances = new HashMap<Integer,Long>();
+				instances.put(partitions.getGlobalRing(),0L);
+				for(Partition p : partitions.getPartitions()){
+					instances.put(p.getRing(),0L);
+				}
+				return instances;
+			}
+		}
+	}
+	
+	public boolean checkpoint(){
+		if(stable_storage.storeState(exec_instance,db)){ //TODO: do this call asynchronous!
+			try {
+				for(Entry<Integer, Long> e : exec_instance.entrySet()){
+					ab.safe(e.getKey(),e.getValue());
+				}
+				logger.info("Replica checkpointed up to instance " + exec_instance);
+				return true;
+			} catch (Exception e) {
+				logger.error(e);
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Do not accept commands until you know you have recovered!
 	 * 
@@ -454,7 +311,7 @@ public class Replica implements Receiver {
 				public void run() {
 					logger.info("Replica starts recovery thread.");
 					while(!Thread.interrupted()){
-						exec_instance = installState();
+						exec_instance = load();
 						try {
 							Thread.sleep(10000);
 						} catch (InterruptedException e) {
@@ -467,6 +324,19 @@ public class Replica implements Receiver {
 			};
 			recovery.setName("Recovery");
 			recovery.start();
+		}
+		return false;
+	}
+
+	public static boolean newerState(Map<Integer, Long> nstate, Map<Integer, Long> state) {
+		for(Entry<Integer, Long> e : state.entrySet()){
+			long i = e.getValue();
+			if(i > 0){
+				long ni = nstate.get(e.getKey());
+				if(ni > i){
+					return true;
+				}
+			}
 		}
 		return false;
 	}
@@ -508,29 +378,5 @@ public class Replica implements Receiver {
 			}
 		}
 	}
-
-    static class SendFile implements HttpHandler {
-    	
-    	private final File file;
-    	
-    	public SendFile(String file){
-    		this.file = new File(file);
-    	}
-    	
-        public void handle(HttpExchange t) throws IOException {
-            FileInputStream fis = new FileInputStream(file);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-
-        	byte[] b = new byte[(int)file.length()];
-            bis.read(b, 0, b.length); //TODO: FIXME: keeps file in mem!
-            bis.close();
-            fis.close();
-
-            t.sendResponseHeaders(200, b.length);
-            OutputStream os = t.getResponseBody();
-            os.write(b);
-            os.close();
-        }
-    }
 
 }

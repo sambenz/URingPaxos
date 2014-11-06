@@ -21,6 +21,7 @@ import com.sun.net.httpserver.HttpServer;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.recovery.HttpRecovery;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPListener;
 
@@ -35,8 +36,8 @@ public class ReplicaTest implements Receiver {
 	public void initialize() throws Exception {
 		logger.setLevel(Level.FATAL);
 		
-		new File(Replica.state_file).delete();
-		new File(Replica.snapshot_file).delete();
+		new File(HttpRecovery.state_file).delete();
+		new File(HttpRecovery.snapshot_file).delete();
 		
 		replica = new Replica("0",1,1,0,"localhost:2181");
 		replica.start();
@@ -137,16 +138,16 @@ public class ReplicaTest implements Receiver {
 		//Thread.sleep(2000); // wait until port 8080 is free
 		
 		// mv checkpoint
-		File state = new File(Replica.state_file + "J");
-		new File(Replica.state_file).renameTo(state);
-		File data = new File(Replica.snapshot_file + "J");
-		new File(Replica.snapshot_file).renameTo(data);
+		File state = new File(HttpRecovery.state_file + "J");
+		new File(HttpRecovery.state_file).renameTo(state);
+		File data = new File(HttpRecovery.snapshot_file + "J");
+		new File(HttpRecovery.snapshot_file).renameTo(data);
 				
 		// remote snapshot transfer server
 		try {
 			HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-			server.createContext("/state", new Replica.SendFile(Replica.state_file + "J"));        
-			server.createContext("/snapshot", new Replica.SendFile(Replica.snapshot_file + "J"));
+			server.createContext("/state", new HttpRecovery.SendFile(HttpRecovery.state_file + "J"));        
+			server.createContext("/snapshot", new HttpRecovery.SendFile(HttpRecovery.snapshot_file + "J"));
 			server.setExecutor(null); // creates a default executor
 			server.start();
 		}catch(Exception e){
@@ -170,38 +171,38 @@ public class ReplicaTest implements Receiver {
 
 		state.put(1,1L);
 		nstate.put(1,1L);
-		assertEquals(false,replica.newerState(nstate, state));
+		assertEquals(false,Replica.newerState(nstate, state));
 		
 		state.put(1,1L);
 		nstate.put(1,2L);
-		assertEquals(true,replica.newerState(nstate, state));
+		assertEquals(true,Replica.newerState(nstate, state));
 
 		state.put(1,1L);
 		nstate.put(1,1L);
 		state.put(16,2L);
 		nstate.put(16,3L);
-		assertEquals(true,replica.newerState(nstate, state));
+		assertEquals(true,Replica.newerState(nstate, state));
 
 		state.put(1,1L);
 		nstate.put(1,1L);
 		state.put(16,3L);
 		nstate.put(16,2L);
-		assertEquals(false,replica.newerState(nstate, state));
+		assertEquals(false,Replica.newerState(nstate, state));
 
 		state.put(1,1L);
 		nstate.put(1,2L);
 		state.put(16,3L); // should not happen, since round-robin start in lowest ring
 		nstate.put(16,2L);
-		assertEquals(true,replica.newerState(nstate, state));
+		assertEquals(true,Replica.newerState(nstate, state));
 
 		state.clear();
 		nstate.clear();
-		assertEquals(false,replica.newerState(nstate, state));
+		assertEquals(false,Replica.newerState(nstate, state));
 		
 		state.put(0,0L); // special case: ring 0 means not global ring	
 		state.put(1,1L);
 		nstate.put(1,2L);
-		assertEquals(true,replica.newerState(nstate, state));
+		assertEquals(true,Replica.newerState(nstate, state));
 	}
 	
 	@Override
