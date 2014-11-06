@@ -121,6 +121,7 @@ public class Replica implements Receiver {
 		}
 		db = new  TreeMap<String,byte[]>();
 		stable_storage = new HttpRecovery(partitions);
+		//stable_storage = new DfsRecovery(nodeID,token,"/tmp",partitions);		
 	}
 
 	public void setPartition(Partition partition){

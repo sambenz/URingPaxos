@@ -21,6 +21,7 @@ import com.sun.net.httpserver.HttpServer;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
+import ch.usi.da.smr.recovery.DfsRecovery;
 import ch.usi.da.smr.recovery.HttpRecovery;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPListener;
@@ -38,7 +39,11 @@ public class ReplicaTest implements Receiver {
 		
 		new File(HttpRecovery.state_file).delete();
 		new File(HttpRecovery.snapshot_file).delete();
-		
+		new File("/tmp/0/1/" + DfsRecovery.state_file).delete();
+		new File("/tmp/0/1/" + DfsRecovery.snapshot_file).delete();
+		new File("/tmp/0/2/" + DfsRecovery.state_file).delete();
+		new File("/tmp/0/2/" + DfsRecovery.snapshot_file).delete();
+				
 		replica = new Replica("0",1,1,0,"localhost:2181");
 		replica.start();
 		
@@ -135,10 +140,11 @@ public class ReplicaTest implements Receiver {
 			replica.receive(m);
 		}
 		replica.async_checkpoint();
+		Thread.sleep(2000);
 		
 		// recover
 		assertEquals(false,replica2.is_ready(1,2L)); // triggers recovery
-		Thread.sleep(2000);
+		Thread.sleep(4000);
 		assertEquals(true,replica2.is_ready(1,2L));
 		assertEquals(true,replica2.is_ready(1,11L));
 		assertEquals(false,replica2.is_ready(1,12L));		

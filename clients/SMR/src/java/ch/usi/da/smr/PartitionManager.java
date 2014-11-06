@@ -151,6 +151,16 @@ public class PartitionManager implements Watcher {
 		return replicas;
 	}
 
+	public List<String> getReplicaIDs(String token){
+		List<String> replicas = new ArrayList<String>();
+		try {
+			return zoo.getChildren(path + "/" + token, true);
+		} catch (Exception e) {
+			logger.error(e);
+		}
+		return replicas;
+	}
+
 	public SortedMap<Integer, Integer> getCircle(){
 		return Collections.unmodifiableSortedMap(circle);
 	}
