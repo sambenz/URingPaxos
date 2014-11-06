@@ -96,7 +96,7 @@ public class ReplicaTest implements Receiver {
 	}
 
 	@Test
-	public void localRecovery() throws Exception {
+	public void localSyncRecovery() throws Exception {
 		Replica replica2 = new Replica("0",1,2,0,"localhost:2181");
 		replica2.start();
 		
@@ -109,7 +109,7 @@ public class ReplicaTest implements Receiver {
 			m.setInstance(i);
 			replica.receive(m);
 		}
-		replica.checkpoint();
+		replica.sync_checkpoint();
 		
 		// recover
 		assertEquals(false,replica2.is_ready(1,2L)); // triggers recovery
@@ -119,7 +119,32 @@ public class ReplicaTest implements Receiver {
 		assertEquals(false,replica2.is_ready(1,12L));		
 		replica2.close();
 	}
-	
+
+	@Test
+	public void localAsyncRecovery() throws Exception {
+		Replica replica2 = new Replica("0",1,2,0,"localhost:2181");
+		replica2.start();
+		
+		// set state and checkpoint
+		for(int i=1;i<11;i++){
+			List<Command> cmd = new ArrayList<Command>();
+			cmd.add(new Command(i, CommandType.PUT, "test" + i, "Value".getBytes()));
+			Message m = new Message(1,"127.0.0.1;1234","", cmd);
+			m.setRing(1);
+			m.setInstance(i);
+			replica.receive(m);
+		}
+		replica.async_checkpoint();
+		
+		// recover
+		assertEquals(false,replica2.is_ready(1,2L)); // triggers recovery
+		Thread.sleep(2000);
+		assertEquals(true,replica2.is_ready(1,2L));
+		assertEquals(true,replica2.is_ready(1,11L));
+		assertEquals(false,replica2.is_ready(1,12L));		
+		replica2.close();
+	}
+
 	@Test
 	public void remoteRecovery() throws Exception {
 		
@@ -132,7 +157,7 @@ public class ReplicaTest implements Receiver {
 			m.setInstance(i);
 			replica.receive(m);
 		}
-		replica.checkpoint();
+		replica.sync_checkpoint();
 		replica.close();
 		
 		//Thread.sleep(2000); // wait until port 8080 is free
@@ -204,7 +229,21 @@ public class ReplicaTest implements Receiver {
 		nstate.put(1,2L);
 		assertEquals(true,Replica.newerState(nstate, state));
 	}
-	
+
+	@Test
+	public void copyOnWrite() throws Exception {
+		Map<Integer,Long> state = new HashMap<Integer,Long>();
+		state.put(1,1L);
+		Map<Integer,Long> nstate = new HashMap<Integer,Long>(state);
+		
+		assertEquals(state.get(1),nstate.get(1));
+		
+		nstate.put(1,2L);
+		assertEquals(true,state.get(1) == 1L);
+		assertEquals(true,nstate.get(1) == 2L);		
+		
+	}
+
 	@Override
 	public void receive(Message m) {
 		received.add(m);

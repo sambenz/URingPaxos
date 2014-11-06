@@ -40,6 +40,7 @@ import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.recovery.HttpRecovery;
 import ch.usi.da.smr.recovery.RecoveryInterface;
+import ch.usi.da.smr.recovery.SnapshotWriter;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
@@ -90,7 +91,7 @@ public class Replica implements Receiver {
 
 	private final ABListener ab;
 	
-	private final SortedMap<String,byte[]> db;
+	private volatile SortedMap<String,byte[]> db;
 		
 	private volatile Map<Integer,Long> exec_instance = new HashMap<Integer,Long>();
 	
@@ -175,7 +176,7 @@ public class Replica implements Receiver {
 		// write snapshot
 		exec_cmd++;
 		if(snapshot_modulo > 0 && exec_cmd % snapshot_modulo == 0){
-			checkpoint(); 
+			async_checkpoint(); 
 		}
 		
 		synchronized(db){
@@ -276,8 +277,8 @@ public class Replica implements Receiver {
 		}
 	}
 	
-	public boolean checkpoint(){
-		if(stable_storage.storeState(exec_instance,db)){ //TODO: do this call asynchronous!
+	public boolean sync_checkpoint(){
+		if(stable_storage.storeState(exec_instance,db)){
 			try {
 				for(Entry<Integer, Long> e : exec_instance.entrySet()){
 					ab.safe(e.getKey(),e.getValue());
@@ -289,6 +290,15 @@ public class Replica implements Receiver {
 			}
 		}
 		return false;
+	}
+
+	public boolean async_checkpoint(){
+		Thread t = new Thread(new SnapshotWriter(exec_instance,db,stable_storage,ab));
+		t.start();
+		// create "copy-on-write" (shallow) maps
+		exec_instance = new HashMap<Integer,Long>(exec_instance);
+		db = new TreeMap<String,byte[]>(db);		
+		return true;
 	}
 
 	/**
