@@ -33,6 +33,10 @@ public class LogParser {
 	 */
 	public static void main(String[] args) throws IOException {
 		File file = new File(args[0]);
+		String ring = null;
+		if(args.length > 1){
+			ring = args[1];
+		}
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		String l;
 		List<Float> msgl = new ArrayList<Float>();
@@ -46,6 +50,7 @@ public class LogParser {
 		List<Float> noavgl = new ArrayList<Float>();
 		String latency = null;
 		while((l = reader.readLine()) != null){
+			if(ring != null && !(l.matches(".*Learner " + ring + " delivered.*") || l.matches(".*TCP " + ring + " .*"))){ continue; }
 			String[] xs = l.split(" ");
 			if(l.contains("delivered")){ // learner throughput
 				float msg = Float.parseFloat(xs[8]);
@@ -82,7 +87,7 @@ public class LogParser {
 			msgl.remove(msgl.size()-1);
 			mbitl.remove(mbitl.size()-1);
 			avgl.remove(avgl.size()-1);
-			System.out.println(file.getAbsolutePath() + " " + avg(msgl) + " " + avg(mbitl) + " " + avgl.get(avgl.size()-1) + " " + (avgl.size()*5) + "s learner");			
+			System.out.println(file.getAbsolutePath() + " " + avg(msgl) + " " + avg(mbitl) + " " + avgl.get(avgl.size()-1) + " " + (avgl.size()*5) + "s learner " + ring);			
 		}
 		if(nimsgl.size()>0){
 			nimsgl.remove(nimsgl.size()-1);
@@ -91,8 +96,8 @@ public class LogParser {
 			nomsgl.remove(nomsgl.size()-1);
 			nombitl.remove(nombitl.size()-1);
 			noavgl.remove(noavgl.size()-1);
-			System.out.println(file.getAbsolutePath() + " " + avg(nimsgl) + " " + avg(nimbitl) + " " + niavgl.get(niavgl.size()-1) + " " + (niavgl.size()*5) + "s TCP IN");
-			System.out.println(file.getAbsolutePath() + " " + avg(nomsgl) + " " + avg(nombitl) + " " + noavgl.get(noavgl.size()-1) + " " + (noavgl.size()*5) + "s TCP OUT");
+			System.out.println(file.getAbsolutePath() + " " + avg(nimsgl) + " " + avg(nimbitl) + " " + niavgl.get(niavgl.size()-1) + " " + (niavgl.size()*5) + "s TCP " + ring + " IN");
+			System.out.println(file.getAbsolutePath() + " " + avg(nomsgl) + " " + avg(nombitl) + " " + noavgl.get(noavgl.size()-1) + " " + (noavgl.size()*5) + "s TCP " + ring + " OUT");
 		}
 		if(latency != null){
 			System.out.println(file.getAbsolutePath() + " " + latency);
