@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.smr.Replica;
 import ch.usi.da.smr.transport.ABListener;
 
 /**
@@ -47,11 +48,14 @@ public class SnapshotWriter implements Runnable {
 	
 	private final ABListener ab;
 	
-	public SnapshotWriter(Map<Integer, Long> exec_instance,SortedMap<String, byte[]> db, RecoveryInterface stable_storage,ABListener ab) {
+	private final Replica replica;
+	
+	public SnapshotWriter(Replica replica, Map<Integer, Long> exec_instance,SortedMap<String, byte[]> db, RecoveryInterface stable_storage,ABListener ab) {
 		this.ab = ab;
 		this.db = db;
 		this.stable_storage = stable_storage;
 		this.exec_instance = exec_instance;
+		this.replica = replica;
 	}
 
 	@Override
@@ -65,8 +69,8 @@ public class SnapshotWriter implements Runnable {
 			} catch (Exception e) {
 				logger.error(e);
 			}
+			replica.setActiveSnapshot(false);
 		}
-
 	}
 
 }

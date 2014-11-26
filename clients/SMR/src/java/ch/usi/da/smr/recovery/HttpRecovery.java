@@ -69,6 +69,8 @@ public class HttpRecovery implements RecoveryInterface {
 
 	public static final String state_file = "/tmp/snapshot.state"; // only used to quickly decide if remote snapshot is newer
 
+	private boolean download_active = false;
+	
 	public HttpRecovery(PartitionManager partitions){
 		
 		this.partitions = partitions;
@@ -113,8 +115,12 @@ public class HttpRecovery implements RecoveryInterface {
 		return false;
 	}
 	
-	public Map<Integer,Long> installState(String token,Map<String,byte[]> db) throws Exception{
+	public Map<Integer,Long> installState(String token,Map<String,byte[]> db) throws Exception {
 		Map<Integer,Long> instances = new HashMap<Integer,Long>();
+		if(download_active){
+			logger.info("Install state surpressed since download active.");
+			return instances;
+		}
 		String host = null;
 		InputStreamReader isr;
 		String line;
@@ -160,21 +166,25 @@ public class HttpRecovery implements RecoveryInterface {
 				logger.error("Error getting state from " + h,e);
 			}
 		}
+		InputStream in;
+		if(host != null){
+			logger.info("Use remote snapshot from host " + host);
+			download_active = true;
+			URL url = new URL("http://" + host + ":8080/snapshot");
+			HttpURLConnection con = (HttpURLConnection)url.openConnection();
+			logger.info("Open remote host " + host + " size:" + con.getContentLengthLong() + " timeout:" + con.getReadTimeout());
+			in = con.getInputStream();
+		}else{
+			in = new FileInputStream(new File(snapshot_file));
+		}
+		ObjectInputStream ois = new ObjectInputStream(in);
+		logger.info("Start reading remote snapshot ... ");
+		@SuppressWarnings("unchecked")
+		Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
+		logger.info(" ... read " + m.size() + " entries.");
+		ois.close();
+		in.close();
 		synchronized(db){
-			InputStream in;
-			if(host != null){
-				logger.info("Use remote snapshot from host " + host);
-				URL url = new URL("http://" + host + ":8080/snapshot");
-				HttpURLConnection con = (HttpURLConnection)url.openConnection();
-				in = con.getInputStream();
-			}else{
-				in = new FileInputStream(new File(snapshot_file));
-			}
-			ObjectInputStream ois = new ObjectInputStream(in);
-			@SuppressWarnings("unchecked")
-			Map<String,byte[]> m = (Map<String,byte[]>) ois.readObject();
-			ois.close();
-			in.close();
 			db.clear();
 			db.putAll(m);
 			byte[] b = null;
@@ -185,6 +195,7 @@ public class HttpRecovery implements RecoveryInterface {
 			}
 		}
 		logger.info("Replica installed snapshot instance: " + instances);
+		download_active = false;
 		return instances;
 	}
 

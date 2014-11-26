@@ -105,6 +105,8 @@ public class Replica implements Receiver {
 	
 	private Thread recovery = null;
 	
+	private volatile boolean active_snapshot = false;
+	
 	public Replica(String token, int ringID, int nodeID, int snapshot_modulo, String zoo_host) throws Exception {
 		this.nodeID = nodeID;
 		this.token = token;
@@ -121,7 +123,7 @@ public class Replica implements Receiver {
 		}
 		db = new  TreeMap<String,byte[]>();
 		stable_storage = new HttpRecovery(partitions);
-		//stable_storage = new DfsRecovery(nodeID,token,"/tmp",partitions);		
+		//stable_storage = new DfsRecovery(nodeID,token,"/home/benz/mnt",partitions);		
 	}
 
 	public void setPartition(Partition partition){
@@ -294,14 +296,33 @@ public class Replica implements Receiver {
 	}
 
 	public boolean async_checkpoint(){
-		Thread t = new Thread(new SnapshotWriter(exec_instance,db,stable_storage,ab));
-		t.start();
-		// create "copy-on-write" (shallow) maps
-		exec_instance = new HashMap<Integer,Long>(exec_instance);
-		db = new TreeMap<String,byte[]>(db);		
+		if(!active_snapshot){
+			active_snapshot = true;
+			// shallow copy
+			Map<Integer,Long> old_exec_instance = new HashMap<Integer,Long>(exec_instance);
+			SortedMap<String,byte[]> old_db = new TreeMap<String,byte[]>(db);
+			// deep copy
+			/* Map<Integer,Long> old_exec_instance = new HashMap<Integer,Long>();
+			for(Entry<Integer,Long> e : exec_instance.entrySet()){
+				old_exec_instance.put(new Integer(e.getKey()),new Long(e.getValue()));
+			}
+			SortedMap<String,byte[]> old_db = new TreeMap<String,byte[]>();
+			for(Entry<String,byte[]> e : db.entrySet()){
+				old_db.put(new String(e.getKey()),Arrays.copyOf(e.getValue(),e.getValue().length));
+			}
+			old_db.putAll(db); */
+			Thread t = new Thread(new SnapshotWriter(this,old_exec_instance,old_db,stable_storage,ab));
+			t.start();
+		}else{
+			logger.info("Async checkpoint supressed since other active!");
+		}
 		return true;
 	}
-
+	
+	public void setActiveSnapshot(boolean b){
+		active_snapshot = b;
+	}
+	
 	/**
 	 * Do not accept commands until you know you have recovered!
 	 * 
@@ -313,6 +334,7 @@ public class Replica implements Receiver {
 		if(instance <= exec_instance.get(ring)+1){
 			if(recovery != null){
 				recovery.interrupt();
+				logger.info("Recovery thread interrupted!");
 			}
 			return true;
 		}
