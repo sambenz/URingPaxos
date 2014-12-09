@@ -38,7 +38,7 @@ import ch.usi.da.paxos.Util;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
-import ch.usi.da.smr.recovery.HttpRecovery;
+import ch.usi.da.smr.recovery.DfsRecovery;
 import ch.usi.da.smr.recovery.RecoveryInterface;
 import ch.usi.da.smr.recovery.SnapshotWriter;
 import ch.usi.da.smr.transport.ABListener;
@@ -103,7 +103,7 @@ public class Replica implements Receiver {
 	
 	RecoveryInterface stable_storage;
 	
-	private Thread recovery = null;
+	private volatile boolean recovery = false;
 	
 	private volatile boolean active_snapshot = false;
 	
@@ -122,8 +122,8 @@ public class Replica implements Receiver {
 			ab = partitions.getRawABListener(ringID,nodeID);
 		}
 		db = new  TreeMap<String,byte[]>();
-		stable_storage = new HttpRecovery(partitions);
-		//stable_storage = new DfsRecovery(nodeID,token,"/home/benz/mnt",partitions);		
+		//stable_storage = new HttpRecovery(partitions);
+		stable_storage = new DfsRecovery(nodeID,token,"/tmp/smr",partitions);		
 	}
 
 	public void setPartition(Partition partition){
@@ -322,7 +322,11 @@ public class Replica implements Receiver {
 	public void setActiveSnapshot(boolean b){
 		active_snapshot = b;
 	}
-	
+
+	public boolean getRecovery(){
+		return recovery;
+	}
+
 	/**
 	 * Do not accept commands until you know you have recovered!
 	 * 
@@ -332,18 +336,19 @@ public class Replica implements Receiver {
 	@Override
 	public boolean is_ready(Integer ring, Long instance) {
 		if(instance <= exec_instance.get(ring)+1){
-			if(recovery != null){
-				recovery.interrupt();
-				logger.info("Recovery thread interrupted!");
+			if(recovery == true){
+				recovery = false;
+				logger.info("Recovery set false.");
 			}
 			return true;
 		}
-		if(recovery == null){
-			recovery = new Thread(){
+		if(recovery == false){
+			recovery = true;
+			Thread t = new Thread(){
 				@Override
 				public void run() {
 					logger.info("Replica starts recovery thread.");
-					while(!Thread.interrupted()){
+					while(getRecovery()){
 						exec_instance = load();
 						try {
 							Thread.sleep(10000);
@@ -355,8 +360,8 @@ public class Replica implements Receiver {
 					logger.info("Recovery thread stopped.");
 				}
 			};
-			recovery.setName("Recovery");
-			recovery.start();
+			t.setName("Recovery");
+			t.start();
 		}
 		return false;
 	}

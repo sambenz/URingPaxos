@@ -39,10 +39,10 @@ public class ReplicaTest implements Receiver {
 		
 		new File(HttpRecovery.state_file).delete();
 		new File(HttpRecovery.snapshot_file).delete();
-		new File("/tmp/0/1/" + DfsRecovery.state_file).delete();
-		new File("/tmp/0/1/" + DfsRecovery.snapshot_file).delete();
-		new File("/tmp/0/2/" + DfsRecovery.state_file).delete();
-		new File("/tmp/0/2/" + DfsRecovery.snapshot_file).delete();
+		new File("/tmp/smr/0/1/" + DfsRecovery.state_file).delete();
+		new File("/tmp/smr/0/1/" + DfsRecovery.snapshot_file).delete();
+		new File("/tmp/smr/0/2/" + DfsRecovery.state_file).delete();
+		new File("/tmp/smr/0/2/" + DfsRecovery.snapshot_file).delete();
 				
 		replica = new Replica("0",1,1,0,"localhost:2181");
 		replica.start();
