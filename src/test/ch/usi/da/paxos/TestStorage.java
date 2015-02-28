@@ -94,6 +94,7 @@ public class TestStorage {
 		db.putDecision(9L,d);
 		db.putDecision(10L,d);
 		assertEquals(true,db.trim(7L));
+		assertEquals(new Long(7),db.getDecision(-1L).getInstance());
 		assertEquals(null,db.getDecision(6L));
 		assertEquals(d,db.getDecision(7L));		
 		

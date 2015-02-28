@@ -207,6 +207,7 @@ public class BerkeleyStorage implements StableStorage {
 	@Override
 	public synchronized boolean trim(Long instance) {
 		if(instance == 0) { return true; } // fast track
+		putDecision(-1L,new Decision(0,instance,0,null)); // if the transaction aborts
 		Transaction t = null;
 		if(db.getConfig().getTransactional()){
 			t = env.beginTransaction(null,null);
@@ -216,7 +217,7 @@ public class BerkeleyStorage implements StableStorage {
 		try{
 			while (cursor.getNext(key,data,LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS) {
 				Long i = keyBinding.entryToObject(key);
-				if(i < instance && cursor.delete() != OperationStatus.SUCCESS){
+				if(i > 0 && i < instance && cursor.delete() != OperationStatus.SUCCESS){
 					logger.error("Error deleting instance " + i + " from DB!");
 					dirty = true;
 				}
@@ -230,7 +231,6 @@ public class BerkeleyStorage implements StableStorage {
 				return false;
 			}
 		}
-		putDecision(-1L,new Decision(0,instance,0,null));
 		logger.debug("DB deltete up to instance " + instance);
 		return true;
 	}
