@@ -1,4 +1,5 @@
 package ch.usi.da.smr.message;
+
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -28,9 +29,28 @@ package ch.usi.da.smr.message;
  * @author Samuel Benz benz@geoid.ch
  */
 public enum CommandType {
-	GET,
-	GETRANGE,
-	PUT,
-	DELETE,
-	RESPONSE;
+	GET(1),
+	GETRANGE(2),
+	PUT(3),
+	DELETE(4),
+	RESPONSE(5);
+	
+	private final int id;
+	private CommandType(int id) {
+		this.id = id;
+	}
+	
+	public int getId(){
+		return id;
+	}
+	
+	public static CommandType fromId(int id){
+		for (CommandType r: values()){
+			if (r.id == id) {
+				return r;
+			}
+		}
+		throw new RuntimeException("CommandType " + id + "does not exist!");
+	}
+
 }

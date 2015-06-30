@@ -119,6 +119,37 @@ public class Message {
 	}
 
 	public static byte[] toByteArray(Message m){
+		/*ByteBuffer b = ByteBuffer.allocate(65535);
+		// int id
+		// String from
+		// String to
+		// long instance
+		// int ring
+		// boolean skip
+		// List commands
+		b.putInt(m.getID());
+		b.putInt(m.getFrom().getBytes().length);
+		b.put(m.getFrom().getBytes());
+		b.putInt(m.getTo().getBytes().length);
+		b.put(m.getTo().getBytes());
+		b.putLong(m.getInstnce());
+		b.putInt(m.getRing());
+		if(m.isSkip()){
+			b.put((byte) 0x01);
+		}else{
+			b.put((byte) 0x00);
+		}
+		b.putInt(m.getCommands().size());
+		for(Command cmd : m.getCommands()){
+			byte[] cb = Command.toByteArray(cmd);
+			b.putInt(cb.length);
+			b.put(cb);
+		}
+		byte[] a = new byte[b.position()];
+		b.rewind();		
+		b.get(a);
+		return a;*/
+
 		TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message msg = new ch.usi.da.smr.thrift.gen.Message();
 		msg.setId(m.getID());
@@ -167,6 +198,38 @@ public class Message {
 	}
 
 	public static Message fromByteArray(byte[] b){
+		/*ByteBuffer buffer = ByteBuffer.wrap(b);
+		int id = buffer.getInt();
+		byte[] fb = new byte[buffer.getInt()];
+		buffer.get(fb);
+		String from = new String(fb);
+		byte[] tb = new byte[buffer.getInt()];
+		buffer.get(tb);
+		String to = new String(tb);
+		long instance = buffer.getLong();
+		int ring = buffer.getInt();
+		byte[] sb = new byte[1];
+		buffer.get(sb);
+		boolean skip;
+		if(sb[0] > 0){
+			skip = true;
+		}else{
+			skip = false;
+		}
+		List<Command> commands = new ArrayList<Command>();
+		int entries = buffer.getInt();
+		for(int i=0;i < entries;i++){
+			byte[] cb = new byte[buffer.getInt()];
+			buffer.get(cb);
+			commands.add(Command.fromByteArray(cb));
+		}
+		Message m = new Message(id, from, to, commands);
+		m.setInstance(instance);
+		m.setRing(ring);
+		m.setSkip(skip);
+		
+		return m;
+		*/
 		TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message m = new ch.usi.da.smr.thrift.gen.Message();
 		try {
