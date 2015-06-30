@@ -35,8 +35,10 @@ public class CpuParser {
 		File file = new File(args[0]);
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		List<Float> cpu = new ArrayList<Float>();
+		List<Float> gc = new ArrayList<Float>();
 		String l;
 		float f = 0;
+		float g = 0;		
 		while((l = reader.readLine()) != null){
 			String[] xs = l.split(" ");
 			if(xs[1].contains("Info")){
@@ -44,13 +46,21 @@ public class CpuParser {
 					System.out.println(f);
 					cpu.add(f);
 				}
+				if(g > 0){
+					gc.add(g);
+				}
 				f = 0;
+				g = 0;
 			}else{
-				f = f + Float.parseFloat(xs[1]);
+				if(xs[3].contains("TCP")){ //MultiRingLearner")){
+					f = f + Float.parseFloat(xs[1]);
+				}else if(xs[3].contains("GC")){
+					g = g + Float.parseFloat(xs[1]);					
+				}
 			}
 			
 		}
-		System.err.println(file.getAbsolutePath() + " " + avg(cpu));
+		System.err.println(file.getAbsolutePath() + " avg:" + avg(cpu) + " max:" + max(cpu) + " GC:" + avg(gc));
 		reader.close();
 	}
 
@@ -60,5 +70,15 @@ public class CpuParser {
 			a = a + f;
 		}
 		return (float)a/l.size();
+	}
+	
+	public static Float max(List<Float> l){
+		float m = 0;
+		for(Float f : l){
+			if(f > m){
+				m = f;
+			}
+		}
+		return m;
 	}
 }
