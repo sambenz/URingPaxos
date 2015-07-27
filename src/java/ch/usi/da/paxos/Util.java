@@ -18,6 +18,7 @@ package ch.usi.da.paxos;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.beans.ExceptionListener;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -27,6 +28,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.ACL;
 
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.ring.RingDescription;
@@ -120,5 +127,75 @@ public class Util {
 			return InetAddress.getLoopbackAddress();
 		}
 	}
+
+	
+   /**
+    * This method fixes the race condition faced by the client when checking if
+    * a znode already exists before creating one. It basically ignores the 
+    * <b>NodeExistsException</b>, leaving the existing znode untouched.
+    * 
+    * @param path
+    *                the path for the node
+    * @param data
+    *                the initial data for the node
+    * @param acl
+    *                the acl for the node
+    * @param createMode
+    *                specifying whether the node to be created is ephemeral
+    *                and/or sequential
+    * @param zooClient 
+    *                a ZooKeeper client object
+    * @return the actual path of the created node
+    * @throws KeeperException if the server returns a non-zero error code
+    * @throws KeeperException.InvalidACLException if the ACL is invalid, null, or empty
+    * @throws InterruptedException if the transaction is interrupted
+    * @throws IllegalArgumentException if an invalid path is specified
+    */
+   public static String checkThenCreateZooNode(final String path, byte data[], List<ACL> acl, CreateMode createMode,
+         ZooKeeper zooClient) throws KeeperException, InterruptedException {
+      return checkThenCreateZooNode(path, data, acl, createMode, zooClient, null);
+   }
+
+   
+   /**
+    * This method fixes the race condition faced by the client when checking if
+    * a znode already exists before creating one. It basically handles the 
+    * <b>NodeExistsException</b>, if an exception handler was given, or ignore
+    * it, otherwise.
+    * 
+    * @param path
+    *                the path for the node
+    * @param data
+    *                the initial data for the node
+    * @param acl
+    *                the acl for the node
+    * @param createMode
+    *                specifying whether the node to be created is ephemeral
+    *                and/or sequential
+    * @param zooClient 
+    *                a ZooKeeper client object
+    * @param exceptionHandler
+    *                the object that will handle the NodeExistsExcpetion; if this
+    *                is null, the exception is ignored and the execution continues
+    *                without replacing the already existing znode
+    * @return the actual path of the created node
+    * @throws KeeperException if the server returns a non-zero error code
+    * @throws KeeperException.InvalidACLException if the ACL is invalid, null, or empty
+    * @throws InterruptedException if the transaction is interrupted
+    * @throws IllegalArgumentException if an invalid path is specified
+    */
+   public static String checkThenCreateZooNode(final String path, byte data[], List<ACL> acl, CreateMode createMode,
+         ZooKeeper zooClient, ExceptionListener exceptionHandler) throws KeeperException, InterruptedException {
+
+      String createReturn = null;
+      try {
+         createReturn = zooClient.create(path, data, acl, createMode);
+      } catch (NodeExistsException e) {
+         if (exceptionHandler != null)
+            exceptionHandler.exceptionThrown(e);
+      }
+      
+      return createReturn;
+   }
 
 }
