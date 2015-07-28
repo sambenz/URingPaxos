@@ -18,6 +18,7 @@ package ch.usi.da.paxos;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.beans.ExceptionListener;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,7 +35,6 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -154,49 +154,43 @@ public class TopologyManager implements Watcher {
 		for(String s : path.split("/")){
 			if(s.length() > 0){
 				p = p + "/" + s;
-				if(zoo.exists(p,false) == null){
-					zoo.create(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-				}
+				Util.checkThenCreateZooNode(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 			}
 		}
 
 		// register and watch topologyID
-		if(zoo.exists(prefix + "/" + topo_path,false) == null){
-			zoo.create(prefix + "/" + topo_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+		Util.checkThenCreateZooNode(prefix + "/" + topo_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		List<String> l = zoo.getChildren(prefix + "/" + topo_path, true);
 		for(String s : l){
 			zoo.getChildren(prefix + "/" + topo_path + "/" + s, true);
 		}
-		if(zoo.exists(prefix + "/" + topo_path + "/" + topologyID,false) == null){
-			zoo.create(prefix + "/" + topo_path + "/" + topologyID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
-		try {
-			zoo.create(prefix + "/" + topo_path + "/" + topologyID + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
-		} catch (NodeExistsException e){
-			logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
-		}
+      Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID,null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, zoo);
+      Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
+            new ExceptionListener() {
+               @Override
+               public void exceptionThrown(Exception e) {
+                  logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
+               }
+            });
 
 		// load/set basic configuration
-		if(zoo.exists(path + "/" + config_path,false) == null){
-			zoo.create(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"1000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.batch_policy,"none".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.BufferArray".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+		   Util.checkThenCreateZooNode(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"1000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.batch_policy,"none".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.BufferArray".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(path + "/" + config_path + "/" + k,false,null));
@@ -205,15 +199,13 @@ public class TopologyManager implements Watcher {
 		quorum = Integer.parseInt(configuration.get(ConfigKey.quorum_size));
 
 		// load/set multi ring paxos configuration
-		if(zoo.exists(prefix + "/" + config_path,false) == null){
-			zoo.create(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+			Util.checkThenCreateZooNode(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(prefix + "/" + config_path + "/" + k,false,null));
@@ -221,9 +213,7 @@ public class TopologyManager implements Watcher {
 		}
 
 		// register and watch node ID
-		if(zoo.exists(path + "/" + id_path,false) == null){
-			zoo.create(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+			Util.checkThenCreateZooNode(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(path + "/" + id_path, true); // start watching
 		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
 		// special case for EC2 inter-region ring; publish public IP
@@ -232,11 +222,13 @@ public class TopologyManager implements Watcher {
 			b = (public_ip + ";" + addr.getPort()).getBytes(); // store the SocketAddress
 			logger.warn("Publish env(EC2) in zookeeper: " + new String(b) + "!");
 		}
-		try {
-			zoo.create(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
-		} catch (NodeExistsException e){
-			logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
-		}
+		Util.checkThenCreateZooNode(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
+		      new ExceptionListener() {
+               @Override
+               public void exceptionThrown(Exception e) {
+                  logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
+               }
+            });
 		
 		// get last_acceptor and current coordinator
 		try {
