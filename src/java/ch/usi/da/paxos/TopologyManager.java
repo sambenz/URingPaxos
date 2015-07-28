@@ -56,19 +56,19 @@ import ch.usi.da.paxos.ring.NetworkManager;
  * @author Samuel Benz benz@geoid.ch
  */
 public class TopologyManager implements Watcher {
-	
+
 	private final static Logger logger = Logger.getLogger(TopologyManager.class);
 
 	protected final InetSocketAddress addr;
 
 	protected final ZooKeeper zoo;
-	
+
 	protected final String prefix;
-	
+
 	protected final String path;
-	
+
 	protected final String id_path = "nodes";
-	
+
 	protected final String topo_path = "rings";
 
 	protected final String proposer_path = "proposers";
@@ -76,33 +76,33 @@ public class TopologyManager implements Watcher {
 	protected final String acceptor_path = "acceptors";
 
 	protected final String learner_path = "learners";
-	
+
 	protected final String config_path = "config";
-	
+
 	protected final Map<String,String> configuration = new ConcurrentHashMap<String,String>();
-	
+
 	protected final List<Integer> nodes = new ArrayList<Integer>();
 
 	protected final List<Integer> proposers = new ArrayList<Integer>();
 
 	protected final List<Integer> acceptors = new ArrayList<Integer>();
-	
+
 	protected final List<Integer> learners = new ArrayList<Integer>();
 
 	protected final Set<PaxosRole> roles = new HashSet<PaxosRole>();
-	
+
 	protected final int nodeID;
-	
+
 	protected final int topologyID;
 
 	protected NetworkManager network;
-	
+
 	protected InetSocketAddress currentConnection = null;
-	
+
 	protected volatile int coordinator = 0;
-		
+
 	protected int quorum = 2; // default value
-	
+
 	/**
 	 * @param topologyID
 	 * @param nodeID
@@ -142,13 +142,13 @@ public class TopologyManager implements Watcher {
 		zoo.register(this);
 		registerNode();
 	}
-	
+
 	/**
 	 * @throws InterruptedException 
 	 * @throws KeeperException 
 	 */
 	protected void registerNode() throws KeeperException, InterruptedException {
-		
+
 		// create prefix
 		String p = "";
 		for(String s : path.split("/")){
@@ -164,33 +164,33 @@ public class TopologyManager implements Watcher {
 		for(String s : l){
 			zoo.getChildren(prefix + "/" + topo_path + "/" + s, true);
 		}
-      Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID,null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, zoo);
-      Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
-            new ExceptionListener() {
-               @Override
-               public void exceptionThrown(Exception e) {
-                  logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
-               }
-            });
+		Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID,null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + topo_path + "/" + topologyID + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
+				new ExceptionListener() {
+			@Override
+			public void exceptionThrown(Exception e) {
+				logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
+			}
+		});
 
 		// load/set basic configuration
-		   Util.checkThenCreateZooNode(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"1000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.batch_policy,"none".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.BufferArray".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		   Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"1000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.batch_policy,"none".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.BufferArray".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);	
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(path + "/" + config_path + "/" + k,false,null));
@@ -199,13 +199,13 @@ public class TopologyManager implements Watcher {
 		quorum = Integer.parseInt(configuration.get(ConfigKey.quorum_size));
 
 		// load/set multi ring paxos configuration
-			Util.checkThenCreateZooNode(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(prefix + "/" + config_path + "/" + k,false,null));
@@ -213,7 +213,7 @@ public class TopologyManager implements Watcher {
 		}
 
 		// register and watch node ID
-			Util.checkThenCreateZooNode(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		Util.checkThenCreateZooNode(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(path + "/" + id_path, true); // start watching
 		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
 		// special case for EC2 inter-region ring; publish public IP
@@ -223,13 +223,13 @@ public class TopologyManager implements Watcher {
 			logger.warn("Publish env(EC2) in zookeeper: " + new String(b) + "!");
 		}
 		Util.checkThenCreateZooNode(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
-		      new ExceptionListener() {
-               @Override
-               public void exceptionThrown(Exception e) {
-                  logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
-               }
-            });
-		
+				new ExceptionListener() {
+			@Override
+			public void exceptionThrown(Exception e) {
+				logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
+			}
+		});
+
 		// get last_acceptor and current coordinator
 		try {
 			l = zoo.getChildren(path + "/" + acceptor_path, true);
@@ -248,10 +248,10 @@ public class TopologyManager implements Watcher {
 		} catch (NoNodeException e){
 		}
 	}
-	
+
 	private void notifyTopologyChanged(){
 	}
-	
+
 	private void notifyNewCoordinator() {
 	}
 
@@ -261,7 +261,7 @@ public class TopologyManager implements Watcher {
 	public int getQuorum(){
 		return quorum;
 	}
-	
+
 	/**
 	 * @return the nodes
 	 */
@@ -317,7 +317,7 @@ public class TopologyManager implements Watcher {
 	public int getCoordinatorID(){
 		return coordinator;
 	}
-	
+
 	/**
 	 * @return return true if this node is the coordinator
 	 */
@@ -328,7 +328,7 @@ public class TopologyManager implements Watcher {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * Use for example: getNodeAddress(getRingSuccessor());
 	 * 
@@ -366,14 +366,14 @@ public class TopologyManager implements Watcher {
 	public NetworkManager getNetwork(){
 		return network;
 	}
-	
+
 	/**
 	 * @return the configuration map
 	 */
 	public Map<String,String> getConfiguration(){
 		return Collections.unmodifiableMap(configuration);
 	}
-	
+
 	@Override
 	public void process(WatchedEvent event) {
 		try {
@@ -455,5 +455,5 @@ public class TopologyManager implements Watcher {
 		} catch (InterruptedException e) {
 		}
 	}
-	
+
 }
