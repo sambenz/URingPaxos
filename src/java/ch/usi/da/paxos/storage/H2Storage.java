@@ -19,7 +19,7 @@ package ch.usi.da.paxos.storage;
  */
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.h2.mvstore.MVMap;
@@ -60,13 +60,13 @@ public class H2Storage implements StableStorage {
 	}
 	
 	public H2Storage(File file, boolean readonly, boolean async){
-		int pid = 0;
+		int subdirectory = 0;
 	    if(file == null){
 	    	try {
-				pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
-			} catch (NumberFormatException | IOException e) {
+				subdirectory = (new Random(System.nanoTime())).nextInt(Integer.MAX_VALUE);
+			} catch (NumberFormatException e) {
 			}
-	        String path = "/tmp";
+         String path = "/tmp";
 			String db_path = System.getenv("DB");
 			if(db_path != null){
 				path = db_path;
@@ -86,7 +86,7 @@ public class H2Storage implements StableStorage {
 		        open();
 		*/
 	    
-	    store = MVStore.open(file.getPath()+"/"+pid);	    
+	    store = MVStore.open(file.getPath()+"/"+subdirectory);	    
 	    
 	    store.setCacheSize(cacheSize);
 		store.setAutoCommitDelay(10*1000); 		// save updates in disk every X miliseconds
