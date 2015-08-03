@@ -79,8 +79,10 @@ public class TestStorage {
 		Decision d = new Decision(0,1L,42,new Value("id","value".getBytes()));
 		Decision d2 = new Decision(0,1L,43,new Value("id","value".getBytes()));
 		//assertEquals(false,db.containsDecision(1L));
+		db.putBallot(1L,5);
 		db.putDecision(1L,d);
 		db.putDecision(1L,d2);
+		db.putBallot(1L,15);
 		assertEquals(true,db.containsDecision(1L));
 		assertEquals(d2,db.getDecision(1L));
 		
@@ -98,7 +100,7 @@ public class TestStorage {
 		assertEquals(null,db.getDecision(6L));
 		assertEquals(d,db.getDecision(7L));		
 		
-		assertEquals(false,db.containsBallot(1L));		
+		// ballots are not trimmed assertEquals(false,db.containsBallot(1L));		
 		db.putBallot(1L,100);
 		assertEquals(true,db.containsBallot(1L));
 		assertEquals(100,db.getBallot(1L));
@@ -112,4 +114,14 @@ public class TestStorage {
 		db.close();
 
 	}
+	
+	/*@Test
+	public void BerkeleyList() throws Exception {
+		File file = new File("/tmp/ringpaxos-db/23611");
+		BerkeleyStorage db = new BerkeleyStorage(file,true,false);
+		db.listAllBallots();
+		db.listAllValues();		
+		db.close();
+	}*/
+
 }

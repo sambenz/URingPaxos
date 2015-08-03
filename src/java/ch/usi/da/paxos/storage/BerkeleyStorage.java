@@ -57,7 +57,9 @@ public class BerkeleyStorage implements StableStorage {
 
 	private final Environment env;
 	
-	private final Database db;
+	private final Database valuedb;
+
+	private final Database ballotdb;
 
 	private final Database classCatalogDb;
 
@@ -116,7 +118,8 @@ public class BerkeleyStorage implements StableStorage {
         }
         
         env = new Environment(file, envConfig);
-        db = env.openDatabase(null,"paxosDB",dbConfig);
+        valuedb = env.openDatabase(null,"valueDB",dbConfig);
+        ballotdb = env.openDatabase(null,"ballotDB",dbConfig);        
         classCatalogDb = env.openDatabase(null,"ClassCatalogDB", dbConfig);
         classCatalog = new StoredClassCatalog(classCatalogDb);
         keyBinding = TupleBinding.getPrimitiveBinding(Long.class);
@@ -125,14 +128,14 @@ public class BerkeleyStorage implements StableStorage {
 
         logger.info("BerkeleyStorage cache size: " + env.getMutableConfig().getCacheSize());
         logger.info("BerkeleyStorage durability: " + env.getMutableConfig().getDurability().getLocalSync());
-        logger.info("BerkeleyStorage deferred write: " + db.getConfig().getDeferredWrite());
+        logger.info("BerkeleyStorage deferred write: " + valuedb.getConfig().getDeferredWrite());
 	}
 
 	@Override
 	public synchronized void putBallot(Long instance, int ballot) {
         keyBinding.objectToEntry(instance,key);
         ballotBinding.objectToEntry(ballot,ballot_data);
-        OperationStatus status = db.put(null,key,ballot_data);
+        OperationStatus status = ballotdb.put(null,key,ballot_data);
         if(logger.isDebugEnabled()){
         	logger.debug("DB put ballot " + ballot + " for instance " + instance + " " + status.name());
         }
@@ -142,7 +145,7 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized int getBallot(Long instance) {
 	    keyBinding.objectToEntry(instance,key);
 	    Integer ballot = null;
-	    OperationStatus status = db.get(null,key,ballot_data,LockMode.DEFAULT);
+	    OperationStatus status = ballotdb.get(null,key,ballot_data,LockMode.DEFAULT);
 	    if (status == OperationStatus.SUCCESS) {
 	        ballot = ballotBinding.entryToObject(ballot_data);
 	    }
@@ -156,12 +159,12 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized boolean containsBallot(Long instance) {
 		boolean found = false;
 		keyBinding.objectToEntry(instance,key);
-	    OperationStatus status = db.get(null,key,ballot_data,LockMode.DEFAULT);
+	    OperationStatus status = ballotdb.get(null,key,ballot_data,LockMode.DEFAULT);
 	    if(status == OperationStatus.SUCCESS){
 	    	found = true;
 	    }
 		if(logger.isDebugEnabled()){
-			logger.debug("DB contains " + instance + " " + found + " (" + status.name() + ")");
+			logger.debug("DB contains ballot " + instance + " " + found + " (" + status.name() + ")");
 		}
 		return found;
 	}
@@ -170,9 +173,9 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized void putDecision(Long instance, Decision decision) {
         keyBinding.objectToEntry(instance,key);
         dataBinding.objectToEntry(decision,data);
-        OperationStatus status = db.put(null,key,data);
+        OperationStatus status = valuedb.put(null,key,data);
         if(logger.isDebugEnabled()){
-        	logger.debug("DB put " + decision + " " + status.name());
+        	logger.debug("DB put decision " + decision + " " + status.name());
         }
 	}
 
@@ -180,12 +183,12 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized Decision getDecision(Long instance) {
 	    keyBinding.objectToEntry(instance,key);
 	    Decision decision = null;
-	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
+	    OperationStatus status = valuedb.get(null,key,data,LockMode.DEFAULT);
 	    if (status == OperationStatus.SUCCESS) {
 	        decision = dataBinding.entryToObject(data);
 	    }
 	    if(logger.isDebugEnabled()){
-	    	logger.debug("DB get " + decision + " " + status.name());
+	    	logger.debug("DB get decision " + decision + " " + status.name());
 	    }
 		return decision;
 	}
@@ -194,12 +197,12 @@ public class BerkeleyStorage implements StableStorage {
 	public synchronized boolean containsDecision(Long instance) {
 		boolean found = false;
 		keyBinding.objectToEntry(instance,key);
-	    OperationStatus status = db.get(null,key,data,LockMode.DEFAULT);
+	    OperationStatus status = valuedb.get(null,key,data,LockMode.DEFAULT);
 	    if(status == OperationStatus.SUCCESS){
 	    	found = true;
 	    }
 		if(logger.isDebugEnabled()){
-			logger.debug("DB contains " + instance + " " + found + " (" + status.name() + ")");
+			logger.debug("DB contains decision " + instance + " " + found + " (" + status.name() + ")");
 		}
 		return found;
 	}
@@ -209,10 +212,10 @@ public class BerkeleyStorage implements StableStorage {
 		if(instance == 0) { return true; } // fast track
 		putDecision(-1L,new Decision(0,instance,0,null)); // if the transaction aborts
 		Transaction t = null;
-		if(db.getConfig().getTransactional()){
+		if(valuedb.getConfig().getTransactional()){
 			t = env.beginTransaction(null,null);
 		}
-		Cursor cursor = db.openCursor(t, null);
+		Cursor cursor = valuedb.openCursor(t, null);
 		boolean dirty = false; 
 		try{
 			while (cursor.getNext(key,data,LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS) {
@@ -248,7 +251,8 @@ public class BerkeleyStorage implements StableStorage {
 	@Override
 	public synchronized void close() {
 		try {
-			db.close();
+			valuedb.close();
+			ballotdb.close();
 			classCatalogDb.close();
 			env.close();
 		} catch(DatabaseException dbe) {
@@ -259,15 +263,27 @@ public class BerkeleyStorage implements StableStorage {
 	/**
 	 * Debug method
 	 */
-	public synchronized void listAll() {
-		Cursor cursor = db.openCursor(null, null);
+	public synchronized void listAllValues() {
+		Cursor cursor = valuedb.openCursor(null, null);
 	    while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-	    	
             Long instance = keyBinding.entryToObject(key);
             Decision decision = dataBinding.entryToObject(data);
             System.out.println("instance " +  instance + " -> " + decision + "");
 	    }
 	    cursor.close();
 	}
-	
+
+	/**
+	 * Debug method
+	 */
+	public synchronized void listAllBallots() {
+		Cursor cursor = ballotdb.openCursor(null, null);
+	    while (cursor.getNext(key,data,LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+            Long instance = keyBinding.entryToObject(key);
+            Integer ballot = ballotBinding.entryToObject(data);
+            System.out.println("instance " +  instance + " -> " + ballot + "");
+	    }
+	    cursor.close();
+	}
+
 }
