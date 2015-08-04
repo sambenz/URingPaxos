@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.Util;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
@@ -144,7 +145,7 @@ public class CoordinatorRole extends Role {
 				if(fastmode){ // Phase1Range
 					while(promises.size() < (reserved/2) && phase1range_in_transit.isEmpty()){
 						final int ballot = 10+ring.getNodeID();
-						Value v = new Value("",NetworkManager.intToByte(reserved));
+						Value v = new Value("",Util.intToByte(reserved));
 						Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1Range,ballot,0,v);
 						instance.addAndGet(reserved-1);
 						phase1range_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));
@@ -297,7 +298,7 @@ public class CoordinatorRole extends Role {
 			}
 		}else if(m.getType() == MessageType.Phase1Range && m.getSender() == ring.getNodeID()){
 			if(m.getVoteCount() >= ring.getQuorum()){
-				int n = NetworkManager.byteToInt(m.getValue().getValue());
+				int n = Util.byteToInt(m.getValue().getValue());
 				for(long i=m.getInstance();i<n+m.getInstance();i++){
 					Promise p = new Promise(i,m.getBallot());
 					promises.add(p);

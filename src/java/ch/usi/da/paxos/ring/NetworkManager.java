@@ -322,7 +322,7 @@ public class NetworkManager {
 	 */
 	public void send(Message m){
 		try {
-			send_queue.transfer(m); // (blocking call)
+			send_queue.put(m); // transfer(m) (blocking call)
 		} catch (InterruptedException e) {
 		}
 	}
@@ -396,26 +396,6 @@ public class NetworkManager {
 		}else if(role instanceof ProposerRole){
 			this.proposer = role;
 		}
-	}
-	
-	/**
-	 * @param value
-	 * @return a byte[]
-	 */
-	public static synchronized final byte[] intToByte(int value) {
-	    return new byte[] {
-	            (byte)(value >>> 24),
-	            (byte)(value >>> 16),
-	            (byte)(value >>> 8),
-	            (byte)value};
-	}
-	
-	/**
-	 * @param b
-	 * @return the int
-	 */
-	public static synchronized final int byteToInt(byte [] b) { 
-		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF); 
 	}
 
 }

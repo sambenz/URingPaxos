@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.Util;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.StableStorage;
@@ -145,7 +146,7 @@ public class AcceptorRole extends Role {
 			if(instance > last_trimmed_instance && instance > highest_seen_instance){ // reject if start instance is leq highest promised or decided instance
 				ballot = m.getBallot();
 				m.incrementVoteCount();
-				int p1_range = NetworkManager.byteToInt(value.getValue());
+				int p1_range = Util.byteToInt(value.getValue());
 				for(long i=m.getInstance();i<p1_range+m.getInstance();i++){
 					storage.putBallot(i,ballot);
 					if(i>highest_seen_instance){
