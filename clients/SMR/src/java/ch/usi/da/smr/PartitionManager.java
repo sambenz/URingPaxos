@@ -188,13 +188,13 @@ public class PartitionManager implements Watcher {
 		List<PaxosRole> role = new ArrayList<PaxosRole>();
 		role.add(PaxosRole.Learner);
 		List<RingDescription> rings = new ArrayList<RingDescription>();
-		rings.add(new RingDescription(ring,replicaID, role));
+		rings.add(new RingDescription(ring,role));
 		if(getGlobalRing() > 0){
-			rings.add(new RingDescription(getGlobalRing(),replicaID,role));
+			rings.add(new RingDescription(getGlobalRing(),role));
 		}
 		logger.debug("Create RawABListener " + rings);
 		Thread.sleep(1000); // wait until PartitionManger is ready
-		return new RawABListener(zoo_host,rings);
+		return new RawABListener(replicaID,zoo_host,rings);
 	}
 
 	public ABListener getThriftABListener(int ring, int replicaID) throws TTransportException {
@@ -223,9 +223,9 @@ public class PartitionManager implements Watcher {
 			List<PaxosRole> role = new ArrayList<PaxosRole>();
 			role.add(PaxosRole.Proposer);
 			List<RingDescription> rings = new ArrayList<RingDescription>();
-			rings.add(new RingDescription(ring, clientID, role));
+			rings.add(new RingDescription(ring, role));
 			logger.debug("RawABSender " + rings);
-			ABSender proposer = new RawABSender(zoo_host, rings);
+			ABSender proposer = new RawABSender(clientID, zoo_host, rings);
 			proposers.put(ring + "-" + clientID, proposer);
 			return proposer;
 		}

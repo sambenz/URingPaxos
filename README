@@ -26,8 +26,8 @@ Ring Paxos / Multi-Ring Paxos (Unicast TCP)
 ---------------------------
 You need no configuration files; everything is on zookeeper!
 
-Start a Node with "ringpaxos.sh 1,1:PAL [zookeeper.host:port]" 
-     (ringID,nodeID:roles;ringID,nodeID:roles;...)
+Start a Node with "ringpaxos.sh 1 1:PAL [zookeeper.host:port]" 
+     (nodeID ringID:roles;ringID:roles;...)
 
 Environment Config
 ----------------
@@ -73,7 +73,6 @@ multi_ring_delta_t: Delta t between the coordinator samples the ring throughput
   latency. E.g. EC2 SMR: from cmd send until the replica replies = 80 ms. Choose
   a delta_t below 80 ms. Do not set it too low: Without traffic in the ring you 
   will require one Paxos instance per every delta_t!
-multi_ring_m: How many round-robin messages per ring (1) 
 multi_ring_start_time: The virtual start time every coordinator agrees on. Set:
   echo "set /ringpaxos/config/multi_ring_start_time `date +%s`000" | zkCli.sh
   before you run the code.

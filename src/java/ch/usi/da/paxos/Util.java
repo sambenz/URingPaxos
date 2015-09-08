@@ -43,10 +43,10 @@ public class Util {
 	/**
 	 * Parse argument describing the ring into a List of RingDescription . 
 	 * The argument has the format:
-	 * ringid,id:PAL (P/A/L are the roles in the ring). 
+	 * ringid:PAL (P/A/L are the roles in the ring). 
 	 * 
 	 * More than one ring can be specified:
-	 * ring1id,id1:PAL;ring2id,id2:PAL
+	 * ring1id:PAL;ring2id:PAL
 	 *  
 	 * @param ringsArg String of ring properties to parse
 	 * @return list of ring descriptions that can be used to initialize a Node
@@ -55,12 +55,9 @@ public class Util {
 		// process rings
 		List<RingDescription> rings = new ArrayList<RingDescription>();
 		for (String r : ringsArg.split(";")) {
-			int ringID = Integer
-					.parseInt(r.split(":")[0].split(",")[0]);
-			int nodeID = Integer
-					.parseInt(r.split(":")[0].split(",")[1]);
+			int ringID = Integer.parseInt(r.split(":")[0]);
 			String roles = r.split(":")[1];
-			rings.add(new RingDescription(ringID, nodeID, getPaxosRoles(roles)));
+			rings.add(new RingDescription(ringID, getPaxosRoles(roles)));
 		}
 		return rings;
 	}

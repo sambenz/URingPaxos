@@ -48,9 +48,9 @@ public class TestAcceptor {
 	@Before 
 	public void initialize() throws Exception {
 		logger.setLevel(Level.ERROR);
-		n1 = new Node("localhost:2181",Util.parseRingsArgument("1,1:PAL"));
-		n2 = new Node("localhost:2181",Util.parseRingsArgument("1,2:PAL"));
-		n3 = new Node("localhost:2181",Util.parseRingsArgument("1,3:PAL"));
+		n1 = new Node(1,"localhost:2181",Util.parseRingsArgument("1:PAL"));
+		n2 = new Node(2,"localhost:2181",Util.parseRingsArgument("1:PAL"));
+		n3 = new Node(3,"localhost:2181",Util.parseRingsArgument("1:PAL"));
 		n1.start();
 		n2.start();
 		n3.start();

@@ -42,8 +42,8 @@ public class RawABSender implements ABSender {
 
 	private final int ring;
 	
-	public RawABSender(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
-		paxos = new Node(zoo_host, rings);
+	public RawABSender(int nodeID, String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
+		paxos = new Node(nodeID, zoo_host, rings);
 		ring = rings.get(0).getRingID();
 		paxos.start();
 	}

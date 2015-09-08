@@ -37,24 +37,17 @@ public class RingDescription {
 
 	private final int ringID;
 	
-	private final int nodeID;
-	
 	private final List<PaxosRole> roles;
 	
 	private RingManager ring;
 	
-	public RingDescription(int ringID,int nodeID,List<PaxosRole> roles){
+	public RingDescription(int ringID,List<PaxosRole> roles){
 		this.ringID = ringID;
-		this.nodeID = nodeID;
 		this.roles = roles;
 	}
 
 	public int getRingID() {
 		return ringID;
-	}
-
-	public int getNodeID() {
-		return nodeID;
 	}
 
 	public List<PaxosRole> getRoles() {
@@ -70,6 +63,6 @@ public class RingDescription {
 	}
 	
 	public String toString(){
-		return "ringID:" + ringID + " nodeID:" + nodeID + " " + roles;
+		return "ringID:" + ringID + " " + roles;
 	}
 }

@@ -31,4 +31,5 @@ import ch.usi.da.paxos.storage.FutureDecision;
  */
 public interface Proposer {
 	public FutureDecision propose(byte[] b);
+	public FutureDecision control(String s);
 }

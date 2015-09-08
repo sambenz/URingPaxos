@@ -50,7 +50,11 @@ import ch.usi.da.paxos.api.Proposer;
 public class Node implements PaxosNode {
 
 	private final Logger logger;
+
+	private final int nodeID;
 	
+	private final InetAddress ip;
+
 	private final List<ZooKeeper> zoos = new ArrayList<ZooKeeper>(); // hold refs to close
 	
 	private final String zoo_host;
@@ -61,71 +65,74 @@ public class Node implements PaxosNode {
 
 	private final Map<Integer, Proposer> ringProposer = new HashMap<Integer, Proposer>(); 
 
-	private Learner learner;
+	private Learner learner = null;
 	
 	/**
 	 * @param zoo_host
 	 * @param rings
 	 */
-	public Node(String zoo_host,List<RingDescription> rings) {
+	public Node(int nodeID, String zoo_host,List<RingDescription> rings) {
 		this.logger = Logger.getLogger(Node.class);
+		this.nodeID = nodeID;
 		this.zoo_host = zoo_host;
 		this.rings = rings;
+		this.ip = Util.getHostAddress();
 	}
 
-	public void start() throws IOException, KeeperException, InterruptedException{
+	public void start() throws IOException, KeeperException, InterruptedException {
 		try {
 			int pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
 			logger.info("PID: " + pid);
 		} catch (NumberFormatException | IOException e) {
 		}
-		// node address
-		final InetAddress ip = Util.getHostAddress();
 		if(isMultiLearner(rings)){
 			String error = "MultiRingLearner is replaced by ElasticLearner! Please add additional Learners dynamically.";
 			logger.error(error);
 			throw new RuntimeException(error);
 		}
 		for(RingDescription ring : rings){
-			// ring socket port
-			Random rand = new Random();
-			int port = 2000 + rand.nextInt(1000); // assign port between 2000-3000
-			InetSocketAddress addr = new InetSocketAddress(ip,port);
-			// create ring manager
-			ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
-			zoos.add(zoo);
-			RingManager rm = new RingManager(ring.getRingID(),ring.getNodeID(),addr,zoo,"/ringpaxos");
-			ring.setRingManager(rm);
-			rm.init();
-			// register and start roles
-			for(PaxosRole role : ring.getRoles()){
-				if(role.equals(PaxosRole.Proposer)){
-					ProposerRole r = new ProposerRole(rm);
-					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-					rm.registerRole(role);
-					ringProposer.put(ring.getRingID(), r);
-					Thread t = new Thread(r);
-					t.setName(role.toString());
-					t.start();
-				}else if(role.equals(PaxosRole.Acceptor)){
-					Role r = new AcceptorRole(rm);
-					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-					rm.registerRole(role);		
-					Thread t = new Thread(r);
-					t.setName(role.toString());
-					t.start();						
-				}else if(role.equals(PaxosRole.Learner)){
-					ElasticLearnerRole r = new ElasticLearnerRole(ring);
-					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-					rm.registerRole(role);
-					learner = r;
-					Thread t = new Thread(r);
-					t.setName("ElasticLearner");
-					t.start();
-				}
-			}
+			update(ring);
 		}
 		running = true;
+	}
+
+	private void update(RingDescription ring) throws IOException, KeeperException, InterruptedException {
+		// ring socket port
+		Random rand = new Random();
+		int port = 2000 + rand.nextInt(1000); // assign port between 2000-3000
+		InetSocketAddress addr = new InetSocketAddress(ip,port);
+		// create ring manager
+		ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
+		zoos.add(zoo);
+		RingManager rm = new RingManager(this,ring.getRingID(),addr,zoo,"/ringpaxos");
+		ring.setRingManager(rm);
+		rm.init();
+		// register and start roles
+		for(PaxosRole role : ring.getRoles()){
+			if(role.equals(PaxosRole.Proposer)){
+				ProposerRole r = new ProposerRole(rm);
+				logger.debug("Node register role: " + role + " at node " + nodeID + " in ring " + ring.getRingID());
+				rm.registerRole(role);
+				ringProposer.put(ring.getRingID(), r);
+				Thread t = new Thread(r);
+				t.setName(role.toString());
+				t.start();
+			}else if(role.equals(PaxosRole.Acceptor)){
+				Role r = new AcceptorRole(rm);
+				logger.debug("Node register role: " + role + " at node " + nodeID + " in ring " + ring.getRingID());
+				rm.registerRole(role);		
+				Thread t = new Thread(r);
+				t.setName(role.toString());
+				t.start();						
+			}else if(role.equals(PaxosRole.Learner) && learner == null){
+				ElasticLearnerRole r = new ElasticLearnerRole(ring);
+				logger.debug("Node register role: " + role + " at node " + nodeID + " in ring " + ring.getRingID());
+				learner = r;
+				Thread t = new Thread(r);
+				t.setName("ElasticLearner");
+				t.start();
+			}
+		}		
 	}
 	
 	public void stop() throws InterruptedException{
@@ -153,9 +160,17 @@ public class Node implements PaxosNode {
 		return learner_count > 1 ? true : false;
 	}
 
-	/**
-	 * @return the all rings
-	 */
+	@Override
+	public int getNodeID(){
+		return nodeID;
+	}
+
+	@Override
+	public InetAddress getInetAddress(){
+		return ip;
+	}
+	
+	@Override
 	public List<RingDescription> getRings(){
 		return rings;
 	}
@@ -175,4 +190,17 @@ public class Node implements PaxosNode {
 		}
 		return ringProposer.get(ringID);
 	}
+
+	@Override
+	public boolean updateRing(RingDescription ring) {
+		try {
+			update(ring);
+			rings.add(ring);
+			return true;
+		} catch (Exception e){
+			logger.debug("Error updating ring " + ring);
+		}
+		return false;
+	}
+	
 }

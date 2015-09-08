@@ -43,8 +43,8 @@ public class RawABListener implements ABListener, Runnable {
 	
 	private final Node paxos;
 	
-	public RawABListener(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
-		paxos = new Node(zoo_host, rings);
+	public RawABListener(int nodeID, String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
+		paxos = new Node(nodeID, zoo_host, rings);
 		paxos.start();
 	}
 

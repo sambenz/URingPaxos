@@ -18,6 +18,7 @@ package ch.usi.da.paxos.api;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.net.InetAddress;
 import java.util.List;
 
 import ch.usi.da.paxos.ring.RingDescription;
@@ -37,6 +38,12 @@ public interface PaxosNode {
 	 * @return list of ring descriptions
 	 */
 	public List<RingDescription> getRings();
+
+	/**
+	 * Update the list of rings a node manage
+	 * @return true if successful added
+	 */
+	public boolean updateRing(RingDescription ring);
 	
 	/**
 	 * Get the learner interface.
@@ -50,4 +57,17 @@ public interface PaxosNode {
 	 * @return The proposer. If the node is not initialized as a Proposer in the given ring, returns null.
 	 */
 	public Proposer getProposer(int ringID);
+	
+	/**
+	 * Get the node ID
+	 * @return the node ID
+	 */
+	public int getNodeID();
+	
+	/**
+	 * Get the node IP address
+	 * @return the IP address
+	 */
+	public InetAddress getInetAddress();
+	
 }

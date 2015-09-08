@@ -45,13 +45,13 @@ public class RawABListener implements ABListener, Runnable {
 	
 	private final Node paxos;
 	
-	public RawABListener(String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
-		paxos = new Node(zoo_host, rings);
+	public RawABListener(int nodeID, String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
+		paxos = new Node(nodeID, zoo_host, rings);
 		paxos.start();
 		// start thrift proposer
 		Proposer p = paxos.getProposer(rings.get(0).getRingID());
 		if (p != null) {
-			Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
+			Thread tp = new Thread(new ThriftProposer(p, nodeID + 9080));
 			tp.start();
 		}
 	}

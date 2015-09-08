@@ -100,6 +100,12 @@ public class TTYNode {
 							} catch (ClassCastException e){
 								logger.error("Proposer did not support TestMode");
 							}
+						} else if (s.startsWith("!")) {
+							if(paxos.getProposer(ring.getRingID()) != null){
+								paxos.getProposer(ring.getRingID()).control(s.replace("!",""));
+							}else{
+								logger.info("Node isn't a proposer for ring " + ring.getRingID());
+							}							
 						} else {
 							if(paxos.getProposer(ring.getRingID()) != null){
 								paxos.getProposer(ring.getRingID()).propose(s.getBytes());
@@ -149,15 +155,16 @@ public class TTYNode {
 
 	public static void main(String[] args) {
 		String zoo_host = "127.0.0.1:2181";
-		if (args.length > 1) {
-			zoo_host = args[1];
+		if (args.length > 2) {
+			zoo_host = args[2];
 		}
-		if (args.length < 1) {
-			System.err.println("Plese use \"Node\" \"ring ID,node ID:roles[;ring,ID:roles]\" (eg. 1,1:PAL)");
+		if (args.length < 2) {
+			System.err.println("Plese use \"Node\" \"node ID\" \"ring ID:roles[;ring ID:roles]\" (eg. 1 1:PAL)");
 		} else {
-			List<RingDescription> rings = Util.parseRingsArgument(args[0]);
+			int nodeID = Integer.parseInt(args[0]);
+			List<RingDescription> rings = Util.parseRingsArgument(args[1]);
 			// start paxos node
-			final Node node = new Node(zoo_host, rings);
+			final Node node = new Node(nodeID,zoo_host,rings);
 			try {
 				node.start();
 				Runtime.getRuntime().addShutdownHook(new Thread(){

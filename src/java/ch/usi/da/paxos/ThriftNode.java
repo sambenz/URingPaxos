@@ -69,18 +69,17 @@ public class ThriftNode {
 	 */
 	public static void main(String[] args) {
 		String zoo_host = "127.0.0.1:2181";
-		if (args.length > 1) {
-			zoo_host = args[1];
+		if (args.length > 2) {
+			zoo_host = args[2];
 		}
 
 		if (args.length < 1) {
-			System.err.println("Plese use \"ThriftNode\" \"ring ID,node ID:roles[;ring,ID:roles]\" (eg. 1,1:PAL)");
+			System.err.println("Plese use \"ThriftNode\" \"node ID\" \"ring ID:roles[;ringID:roles]\" (eg. 1 1:PAL)");
 		} else {
-			// process rings
-			List<RingDescription> rings = Util.parseRingsArgument(args[0]);
-
+			int nodeID = Integer.parseInt(args[0]);
+			List<RingDescription> rings = Util.parseRingsArgument(args[1]);
 			// start paxos node
-			final Node node = new Node(zoo_host, rings);
+			final Node node = new Node(nodeID,zoo_host,rings);
 			try {
 				node.start();
 				Runtime.getRuntime().addShutdownHook(new Thread(){
@@ -100,14 +99,14 @@ public class ThriftNode {
 			// start thrift learner
 			Learner l = node.getLearner();
 			if (l != null) {
-				Thread tl = new Thread(new ThriftLearner(l, rings.get(0).getNodeID() + 9090));
+				Thread tl = new Thread(new ThriftLearner(l, nodeID + 9090));
 				tl.start();
 			}
 
 			// start thrift proposer
 			Proposer p = node.getProposer(rings.get(0).getRingID());
 			if (p != null) {
-				Thread tp = new Thread(new ThriftProposer(p, rings.get(0).getNodeID() + 9080));
+				Thread tp = new Thread(new ThriftProposer(p, nodeID + 9080));
 				tp.start();
 			}
 		}

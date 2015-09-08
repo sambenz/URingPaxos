@@ -42,6 +42,7 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.paxos.api.ConfigKey;
+import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.ring.NetworkManager;
 
@@ -60,6 +61,8 @@ public class TopologyManager implements Watcher {
 	private final static Logger logger = Logger.getLogger(TopologyManager.class);
 
 	protected final InetSocketAddress addr;
+	
+	protected final PaxosNode node;
 
 	protected final ZooKeeper zoo;
 
@@ -104,23 +107,41 @@ public class TopologyManager implements Watcher {
 	protected int quorum = 2; // default value
 
 	/**
+	 * @param node
 	 * @param topologyID
-	 * @param nodeID
 	 * @param addr
 	 * @param zoo
 	 */
-	public TopologyManager(int topologyID,int nodeID,InetSocketAddress addr,ZooKeeper zoo) {
-		this(topologyID,nodeID,addr,zoo,"/ringpaxos");
+	public TopologyManager(PaxosNode node,int topologyID,InetSocketAddress addr,ZooKeeper zoo) {
+		this(node,topologyID,addr,zoo,"/ringpaxos");
 	}
 
 	/**
+	 * @param node
 	 * @param topologyID
-	 * @param nodeID
 	 * @param addr
 	 * @param zoo
 	 * @param prefix zookeeper prefix
 	 */
-	public TopologyManager(int topologyID,int nodeID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
+	public TopologyManager(PaxosNode node,int topologyID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
+		this.node = node;
+		this.topologyID = topologyID;
+		this.nodeID = node.getNodeID();
+		this.addr = addr;
+		this.zoo = zoo;
+		this.prefix = prefix;
+		this.path = prefix + "/topology" + topologyID;
+	}
+
+	/**
+	 * @param nodeID
+	 * @param topologyID
+	 * @param addr
+	 * @param zoo
+	 * @param prefix zookeeper prefix
+	 */
+	public TopologyManager(int nodeID,int topologyID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
+		this.node = null;
 		this.topologyID = topologyID;
 		this.nodeID = nodeID;
 		this.addr = addr;
@@ -358,6 +379,13 @@ public class TopologyManager implements Watcher {
 		return addr;
 	}
 
+	/**
+	 * @return a PaxosNode
+	 */
+	public PaxosNode getPaxosNode(){
+		return node;
+	}
+	
 	/**
 	 * @return the NetworkManager
 	 */

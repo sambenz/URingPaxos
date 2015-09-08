@@ -176,7 +176,33 @@ public class ProposerRole extends Role implements Proposer {
 		}
 		return future;
 	}
-	
+
+	/**
+	 * Use this method to send control messages from outside!
+	 * 
+	 * @param s A string which describes the subscribe command
+	 * @return A FutureDecision object on which you can wait until the value is proposed
+	 */
+	public synchronized FutureDecision control(String s){
+		send_count++;
+		//TODO: FIXME: should also add as proposer in !2 ??
+		Value v = new Value(Value.getSubscribeID(),s.getBytes());
+		if(proposallogger.isDebugEnabled()){
+			proposallogger.debug(v);
+		}else if(proposallogger.isInfoEnabled()){
+			proposallogger.info(v.asString());
+		}
+		FutureDecision future = new FutureDecision();
+		futures.put(v.getID(),future);
+		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,v);
+		if(batcher != null){
+			send_queue.add(m);
+		}else{
+			send(m);
+		}
+		return future;
+	}
+
 	/**
 	 * @param m
 	 */

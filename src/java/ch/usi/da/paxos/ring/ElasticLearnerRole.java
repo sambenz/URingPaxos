@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.storage.Decision;
 
@@ -45,11 +46,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 
 	private final static Logger logger = Logger.getLogger(ElasticLearnerRole.class);
 	
+	private final PaxosNode node;
+	
 	private final Map<Integer,RingDescription> ringmap = new HashMap<Integer,RingDescription>();
 	
 	private final List<Integer> rings = new ArrayList<Integer>();
 	
-	private final int maxRing = 20;
+	private final int maxRing = 100;
 	
 	private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>(); 
 	
@@ -66,6 +69,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 	 */
 	public ElasticLearnerRole(RingDescription initial_ring) {
 		RingManager rm = initial_ring.getRingManager();
+		node = rm.getPaxosNode();
 		rings.add(rm.getRingID());
 		ringmap.put(rm.getRingID(),initial_ring);
 		deliverRing = rm.getRingID();
@@ -82,15 +86,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 	public void run() {
 		// create initial learner
 		int initial_ring = rings.get(0);
-		RingManager ring = ringmap.get(initial_ring).getRingManager();
-		Role r = new LearnerRole(ring);
-		learner[initial_ring] = (LearnerRole) r;
-		logger.debug("ElasticLearnerRole register role: " + PaxosRole.Learner + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-		ring.registerRole(PaxosRole.Learner);		
-		Thread t = new Thread(r);
-		t.setName(PaxosRole.Learner + "-" + initial_ring);
-		t.start();
-		skip_count[initial_ring] = 0;
+		startLearner(initial_ring);
 		int count = 0;
 		while(true){
 			try{
@@ -100,7 +96,37 @@ public class ElasticLearnerRole extends Role implements Learner {
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
-					if(d.getValue() != null && d.getValue().isSkip()){
+					if(d.getValue() != null && d.getValue().isSubscribe()){
+						try {
+							int newring = Integer.parseInt(d.getValue().asString());
+							logger.info("ElasticLearner received subscribe: " + newring);
+							//TODO: FIXME: What about groups?
+							if(learner[newring] == null){
+								List<PaxosRole> rl = new ArrayList<PaxosRole>();
+								rl.add(PaxosRole.Learner);
+								RingDescription rd = new RingDescription(newring,rl);
+								ringmap.put(newring,rd);
+								if(!node.updateRing(rd)){
+									logger.error("ElasticLearnerRole failed to create Learner in ring " + newring);
+								}
+								rings.add(newring);
+								startLearner(newring);
+								while(true){
+									Decision d2 = learner[newring].getDecisions().take();
+									if(d2 != null && d2.getValue().isSubscribe()){
+										if(newring == Integer.parseInt(d2.getValue().asString())){
+											break;
+										}
+									}
+								}
+								deliverRing = min(rings);
+								//TODO: calculate max queue position count
+								//TODO: FIXME: How to Skip queue positions ???
+							}
+						}catch (NumberFormatException e) {
+							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
+						}
+					}else if(d.getValue() != null && d.getValue().isSkip()){
 						// skip message
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
@@ -117,7 +143,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 						values.add(d);
 					}
 				}
-				if(count >= 1){
+				if(count >= 1){ // removed variable M
 					count = 0;
 					deliverRing = getRingSuccessor(deliverRing);
 				}
@@ -128,6 +154,18 @@ public class ElasticLearnerRole extends Role implements Learner {
 		}
 	}
 
+	private void startLearner(int ringID){
+		RingManager ring = ringmap.get(ringID).getRingManager();
+		Role r = new LearnerRole(ring);
+		learner[ringID] = (LearnerRole) r;
+		logger.debug("ElasticLearnerRole register role: " + PaxosRole.Learner + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+		ring.registerRole(PaxosRole.Learner);		
+		Thread t = new Thread(r);
+		t.setName(PaxosRole.Learner + "-" + ringID);
+		t.start();
+		skip_count[ringID] = 0;
+	}
+	
 	private int getRingSuccessor(int id){
 		int pos = rings.indexOf(new Integer(id));
 		if(pos+1 >= rings.size()){
@@ -137,6 +175,16 @@ public class ElasticLearnerRole extends Role implements Learner {
 		}
 	}
 
+	private int min(List<Integer> rings) {
+		int min = Integer.MAX_VALUE;
+		for(int i : rings){
+			if(i < min){
+				min = i;
+			}
+		}
+		return min;
+	}
+	
 	@Override
 	public BlockingQueue<Decision> getDecisions() {
 		return values;

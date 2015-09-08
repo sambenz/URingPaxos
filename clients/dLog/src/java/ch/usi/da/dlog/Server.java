@@ -107,10 +107,10 @@ public class Server implements Receiver {
 
 	private long last_trim = -1;
 	
-	public Server(List<RingDescription> rings, String zoo_host) throws Exception {
+	public Server(int serverID, List<RingDescription> rings, String zoo_host) throws Exception {
 		this.rings = rings;
 		udp = new UDPSender();
-		ab = new RawABListener(zoo_host,rings);
+		ab = new RawABListener(serverID,zoo_host,rings);
         String path = "/tmp";
 		String db_path = System.getenv("DLOG");
 		if(db_path != null){
@@ -251,14 +251,15 @@ public class Server implements Receiver {
 	 */
 	public static void main(String[] args) {
 		String zoo_host = "127.0.0.1:2181";
-		if (args.length > 1) {
-			zoo_host = args[1];
+		if (args.length > 2) {
+			zoo_host = args[2];
 		}
-		if (args.length < 1) {
-			System.err.println("Plese use \"Server\" \"ring ID,node ID:roles[;ring,ID:roles]\" (eg. 1,1:PAL) [zookeeper host]");
+		if (args.length < 2) {
+			System.err.println("Plese use \"Server\" \"serverID\" \"ring ID:roles[;ringID:roles]\" (eg. 1 1:PAL) [zookeeper host]");
 		} else {
 			try {
-				final Server server = new Server(Util.parseRingsArgument(args[0]),zoo_host);
+				int serverID = Integer.parseInt(args[0]);
+				final Server server = new Server(serverID, Util.parseRingsArgument(args[1]),zoo_host);
 				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){
 					@Override
 					public void run(){

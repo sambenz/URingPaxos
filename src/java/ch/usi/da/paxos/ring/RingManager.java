@@ -31,6 +31,7 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.paxos.TopologyManager;
+import ch.usi.da.paxos.api.PaxosNode;
 
 
 /**
@@ -49,24 +50,35 @@ public class RingManager extends TopologyManager {
 	private volatile int last_acceptor = 0;
 
 	/**
+	 * @param node
 	 * @param ringID
-	 * @param nodeID
 	 * @param addr
 	 * @param zoo
 	 */
-	public RingManager(int ringID,int nodeID,InetSocketAddress addr,ZooKeeper zoo) {
-		super(ringID,nodeID,addr,zoo,"/ringpaxos");
+	public RingManager(PaxosNode node,int ringID,InetSocketAddress addr,ZooKeeper zoo) {
+		super(node,ringID,addr,zoo,"/ringpaxos");
 	}
 
 	/**
+	 * @param node
 	 * @param ringID
-	 * @param nodeID
 	 * @param addr
 	 * @param zoo
 	 * @param prefix zookeeper prefix
 	 */
-	public RingManager(int ringID,int nodeID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
-		super(ringID,nodeID,addr,zoo,prefix);
+	public RingManager(PaxosNode node, int ringID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
+		super(node,ringID,addr,zoo,prefix);
+	}
+
+	/**
+	 * @param nodeID
+	 * @param ringID
+	 * @param addr
+	 * @param zoo
+	 * @param prefix zookeeper prefix
+	 */
+	public RingManager(int nodeID, int ringID,InetSocketAddress addr,ZooKeeper zoo,String prefix) {
+		super(nodeID,ringID,addr,zoo,prefix);
 	}
 
 	/**
