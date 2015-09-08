@@ -47,11 +47,6 @@
 		<priority value="error" />
 		<appender-ref ref="STDOUT" />
 	</category>
-
-	<category name="net.spy.memcached" additivity="false">
-		<priority value="error" />
-		<appender-ref ref="STDOUT" />
-	</category>
 	
 	<category name="ch.usi.da.paxos.Stats" additivity="false">
 		<priority value="error" />
