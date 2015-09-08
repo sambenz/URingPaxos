@@ -79,12 +79,7 @@ public enum MessageType {
 	/**
 	 * new type for RingPaxos (learners to coord.)
 	 */
-	Relearn(12),
-	/**
-	 * new type for RingPaxos (learners to coord.)
-	 */
-	Latency(13);
-
+	Relearn(12);
 	
 	private final int id;
 	

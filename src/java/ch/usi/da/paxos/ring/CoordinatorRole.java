@@ -80,8 +80,6 @@ public class CoordinatorRole extends Role {
 
 	public int multi_ring_delta_t = 100;
 
-	public volatile int latency_compensation = 0;
-	
 	public AtomicLong value_count = new AtomicLong(0);
 	
 	/**
@@ -212,8 +210,6 @@ public class CoordinatorRole extends Role {
 			}else{ // else should never happen, since there is no coordinator without acceptor!
 				ring.getNetwork().send(n);
 			}
-		}else if(m.getType() == MessageType.Latency){
-			latency_compensation = Integer.parseInt(new String(m.getValue().getValue()));
 		}else if(m.getType() == MessageType.Value){
 			if(m.getValue().isBatch()){ // not so nice; but the instance skipper needs the exact amount of values
 				ByteBuffer buffer = ByteBuffer.wrap(m.getValue().getValue());

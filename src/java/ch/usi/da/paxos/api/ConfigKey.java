@@ -97,11 +97,6 @@ abstract public class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */	
-	public static final String multi_ring_m = "multi_ring_m";
-
-	/**
-	 * see RingManager for default
-	 */	
 	public static final String multi_ring_lambda = "multi_ring_lambda";
 
 	/**
@@ -114,11 +109,6 @@ abstract public class ConfigKey {
 	 */	
 	public static final String multi_ring_start_time = "multi_ring_start_time";
 
-	/**
-	 * see RingManager for default
-	 */	
-	public static final String reference_ring = "reference_ring";
-	
 	/**
 	 * see RingManager for default
 	 */	

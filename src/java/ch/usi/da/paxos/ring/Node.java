@@ -1,6 +1,6 @@
 package ch.usi.da.paxos.ring;
 /* 
- * Copyright (c) 2013 Università della Svizzera italiana (USI)
+ * Copyright (c) 2015 Università della Svizzera italiana (USI)
  * 
  * This file is part of URingPaxos.
  *
@@ -81,7 +81,11 @@ public class Node implements PaxosNode {
 		}
 		// node address
 		final InetAddress ip = Util.getHostAddress();
-		boolean start_multi_learner = isMultiLearner(rings);
+		if(isMultiLearner(rings)){
+			String error = "MultiRingLearner is replaced by ElasticLearner! Please add additional Learners dynamically.";
+			logger.error(error);
+			throw new RuntimeException(error);
+		}
 		for(RingDescription ring : rings){
 			// ring socket port
 			Random rand = new Random();
@@ -95,41 +99,31 @@ public class Node implements PaxosNode {
 			rm.init();
 			// register and start roles
 			for(PaxosRole role : ring.getRoles()){
-				if(!role.equals(PaxosRole.Learner) || !start_multi_learner){
-					if(role.equals(PaxosRole.Proposer)){
-						ProposerRole r = new ProposerRole(rm);
-						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-						rm.registerRole(role);
-						ringProposer.put(ring.getRingID(), r);
-						Thread t = new Thread(r);
-						t.setName(role.toString());
-						t.start();
-					}else if(role.equals(PaxosRole.Acceptor)){
-						Role r = new AcceptorRole(rm);
-						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-						rm.registerRole(role);		
-						Thread t = new Thread(r);
-						t.setName(role.toString());
-						t.start();						
-					}else if(role.equals(PaxosRole.Learner)){
-						LearnerRole r = new LearnerRole(rm);
-						logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-						rm.registerRole(role);
-						learner = r;
-						Thread t = new Thread(r);
-						t.setName(role.toString());
-						t.start();
-					}
+				if(role.equals(PaxosRole.Proposer)){
+					ProposerRole r = new ProposerRole(rm);
+					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+					rm.registerRole(role);
+					ringProposer.put(ring.getRingID(), r);
+					Thread t = new Thread(r);
+					t.setName(role.toString());
+					t.start();
+				}else if(role.equals(PaxosRole.Acceptor)){
+					Role r = new AcceptorRole(rm);
+					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+					rm.registerRole(role);		
+					Thread t = new Thread(r);
+					t.setName(role.toString());
+					t.start();						
+				}else if(role.equals(PaxosRole.Learner)){
+					ElasticLearnerRole r = new ElasticLearnerRole(ring);
+					logger.debug("Node register role: " + role + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+					rm.registerRole(role);
+					learner = r;
+					Thread t = new Thread(r);
+					t.setName("ElasticLearner");
+					t.start();
 				}
-			}			
-		}
-		if(start_multi_learner){ // start only one super learner
-			logger.debug("starting a MultiRingLearner");
-			MultiLearnerRole mr = new MultiLearnerRole(rings);
-			learner = mr;
-			Thread t = new Thread(mr);
-			t.setName("MultiRingLearner");
-			t.start();
+			}
 		}
 		running = true;
 	}
@@ -149,13 +143,6 @@ public class Node implements PaxosNode {
 		running = false;
 	}
 	
-	/**
-	 * @return the all rings
-	 */
-	public List<RingDescription> getRings(){
-		return rings;
-	}
-						
 	private boolean isMultiLearner(List<RingDescription> rings) {
 		int learner_count = 0;
 		for(RingDescription ring : rings){
@@ -166,6 +153,13 @@ public class Node implements PaxosNode {
 		return learner_count > 1 ? true : false;
 	}
 
+	/**
+	 * @return the all rings
+	 */
+	public List<RingDescription> getRings(){
+		return rings;
+	}
+						
 	@Override
 	public Learner getLearner() {
 		if (!running) {

@@ -1,6 +1,6 @@
 package ch.usi.da.paxos.ring;
 /* 
- * Copyright (c) 2013 Università della Svizzera italiana (USI)
+ * Copyright (c) 2015 Università della Svizzera italiana (USI)
  * 
  * This file is part of URingPaxos.
  *
@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
@@ -62,8 +60,6 @@ public class LearnerRole extends Role implements Learner {
 	
 	private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>();
 	
-	private final CountDownLatch latch; // used to synchronize multi-learner start
-	
 	// at most once delivery for the most recent 500k Values
 	Set<String> delivered = Collections.newSetFromMap(new LinkedHashMap<String, Boolean>(){
 		private static final long serialVersionUID = -5679181663800465934L;
@@ -92,26 +88,11 @@ public class LearnerRole extends Role implements Learner {
 	
 	public long deliver_bytes = 0;
 	
-	public volatile int latency_to_coordinator = 0;
-
-	private final int median_window = 1000;
-
-	private DescriptiveStatistics latencies = new DescriptiveStatistics(median_window);
-
 	/**
 	 * @param ring
 	 */
 	public LearnerRole(RingManager ring) {
-		this(ring, null);
-	}
-	
-	/**
-	 * @param ring
-	 * @param latch
-	 */
-	public LearnerRole(RingManager ring, CountDownLatch latch) {
 		this.ring = ring;
-		this.latch = latch;
 		if(ring.getConfiguration().containsKey(ConfigKey.learner_recovery)){
 			if(ring.getConfiguration().get(ConfigKey.learner_recovery).equals("1")){
 				recovery = true;
@@ -132,9 +113,6 @@ public class LearnerRole extends Role implements Learner {
 		Thread t = new Thread(new LearnerStatsWriter(ring,this));
 		t.setName("LearnerStatsWriter");
 		t.start();
-		if(latch != null){
-			latch.countDown();
-		}
 		while(true){
 			try{
 				Decision head = delivery.peek();
@@ -205,18 +183,6 @@ public class LearnerRole extends Role implements Learner {
 						delivered_instance = de.getInstance();
 						if(auto_trim) { safe_instance = delivered_instance; }
 						deliver_bytes = deliver_bytes + de.getValue().getValue().length;
-						if(de.getValue().isSkip()){
-							try {
-								if(logger.isTraceEnabled()){
-									logger.trace("Learner received SKIP " + de.getRing() + " " + de.getInstance() + " " + new String(de.getValue().getValue()));
-								}
-								latencies.addValue(System.currentTimeMillis() - Long.parseLong(d.getValue().getID().split(":")[1]));
-								if(latencies.getN() >= median_window){
-									latency_to_coordinator = (int) latencies.getPercentile(50);
-								}
-							}catch(Exception e){
-							}
-						}
 						if(de.getValue().isBatch()){
 							batch_count++;
 							ByteBuffer buffer = ByteBuffer.wrap(de.getValue().getValue());

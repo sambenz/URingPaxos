@@ -200,12 +200,10 @@ public class TopologyManager implements Watcher {
 
 		// load/set multi ring paxos configuration
 		Util.checkThenCreateZooNode(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_start_time,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		Util.checkThenCreateZooNode(prefix + "/" + config_path + "/" + ConfigKey.reference_ring,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(prefix + "/" + config_path + "/" + k,false,null));
