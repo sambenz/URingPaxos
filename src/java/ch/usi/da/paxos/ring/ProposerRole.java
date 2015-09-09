@@ -185,7 +185,6 @@ public class ProposerRole extends Role implements Proposer {
 	 */
 	public synchronized FutureDecision control(String s){
 		send_count++;
-		//TODO: FIXME: should also add as proposer in !2 ??
 		Value v = new Value(Value.getSubscribeID(),s.getBytes());
 		if(proposallogger.isDebugEnabled()){
 			proposallogger.debug(v);

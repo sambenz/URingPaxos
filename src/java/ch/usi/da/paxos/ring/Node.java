@@ -53,6 +53,8 @@ public class Node implements PaxosNode {
 
 	private final int nodeID;
 	
+	private final int groupID;
+		
 	private final InetAddress ip;
 
 	private final List<ZooKeeper> zoos = new ArrayList<ZooKeeper>(); // hold refs to close
@@ -67,13 +69,26 @@ public class Node implements PaxosNode {
 
 	private Learner learner = null;
 	
+
 	/**
+	 * @param nodeID
 	 * @param zoo_host
 	 * @param rings
 	 */
-	public Node(int nodeID, String zoo_host,List<RingDescription> rings) {
+	public Node(int nodeID,String zoo_host,List<RingDescription> rings) {
+		this(nodeID,-1,zoo_host,rings);
+	}
+
+	/**
+	 * @param nodeID
+	 * @param groupID
+	 * @param zoo_host
+	 * @param rings
+	 */
+	public Node(int nodeID,int groupID,String zoo_host,List<RingDescription> rings) {
 		this.logger = Logger.getLogger(Node.class);
 		this.nodeID = nodeID;
+		this.groupID = groupID;
 		this.zoo_host = zoo_host;
 		this.rings = rings;
 		this.ip = Util.getHostAddress();
@@ -163,6 +178,11 @@ public class Node implements PaxosNode {
 	@Override
 	public int getNodeID(){
 		return nodeID;
+	}
+
+	@Override
+	public int getGroupID(){
+		return groupID;
 	}
 
 	@Override

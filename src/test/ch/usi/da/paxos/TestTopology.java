@@ -30,7 +30,7 @@ public class TestTopology {
 		
 		ZooKeeper zoo = new ZooKeeper("127.0.0.1:2181",500,null);
 		InetSocketAddress addr = new InetSocketAddress(Util.getHostAddress(),getPort());
-		RingManager rm1 = new RingManager(1,2,addr,zoo,"/ringpaxos");
+		RingManager rm1 = new RingManager(2,1,addr,zoo,"/ringpaxos");
 		rm1.init();
 
 		Thread.sleep(1000);
@@ -86,7 +86,7 @@ public class TestTopology {
 
 		ZooKeeper zoo2 = new ZooKeeper("127.0.0.1:2181",500,null);
 		InetSocketAddress addr2 = new InetSocketAddress(Util.getHostAddress(),getPort());
-		TopologyManager tm2 = new TopologyManager(1,2,addr2,zoo2,"/ringpaxos");
+		TopologyManager tm2 = new TopologyManager(2,1,addr2,zoo2,"/ringpaxos");
 		tm2.init();
 
 		Thread.sleep(1000);

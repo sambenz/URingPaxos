@@ -63,6 +63,12 @@ public interface PaxosNode {
 	 * @return the node ID
 	 */
 	public int getNodeID();
+
+	/**
+	 * Get the group ID
+	 * @return the group ID
+	 */
+	public int getGroupID();
 	
 	/**
 	 * Get the node IP address

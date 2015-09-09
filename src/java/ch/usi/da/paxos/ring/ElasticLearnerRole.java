@@ -48,6 +48,8 @@ public class ElasticLearnerRole extends Role implements Learner {
 	
 	private final PaxosNode node;
 	
+	private final int replication_group;
+	
 	private final Map<Integer,RingDescription> ringmap = new HashMap<Integer,RingDescription>();
 	
 	private final List<Integer> rings = new ArrayList<Integer>();
@@ -70,6 +72,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 	public ElasticLearnerRole(RingDescription initial_ring) {
 		RingManager rm = initial_ring.getRingManager();
 		node = rm.getPaxosNode();
+		replication_group = node.getGroupID();
 		rings.add(rm.getRingID());
 		ringmap.put(rm.getRingID(),initial_ring);
 		deliverRing = rm.getRingID();
@@ -97,11 +100,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().isSubscribe()){
+						// subscribe message
 						try {
-							int newring = Integer.parseInt(d.getValue().asString());
-							logger.info("ElasticLearner received subscribe: " + newring);
-							//TODO: FIXME: What about groups?
-							if(learner[newring] == null){
+							String[] token = d.getValue().asString().split(",");
+							int group = Integer.parseInt(token[0]);
+							int newring = Integer.parseInt(token[1]);
+							logger.info("ElasticLearner received subscribe: " + newring + " for group " + group);
+							if(learner[newring] == null && replication_group == group){
 								List<PaxosRole> rl = new ArrayList<PaxosRole>();
 								rl.add(PaxosRole.Learner);
 								RingDescription rd = new RingDescription(newring,rl);
@@ -114,12 +119,12 @@ public class ElasticLearnerRole extends Role implements Learner {
 								while(true){
 									Decision d2 = learner[newring].getDecisions().take();
 									if(d2 != null && d2.getValue().isSubscribe()){
-										if(newring == Integer.parseInt(d2.getValue().asString())){
+										if(d.getValue().asString().equals(d2.getValue().asString())){
 											break;
 										}
 									}
 								}
-								deliverRing = min(rings);
+								deliverRing = minRing(rings);
 								//TODO: calculate max queue position count
 								//TODO: FIXME: How to Skip queue positions ???
 							}
@@ -175,7 +180,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 		}
 	}
 
-	private int min(List<Integer> rings) {
+	private int minRing(List<Integer> rings) {
 		int min = Integer.MAX_VALUE;
 		for(int i : rings){
 			if(i < min){

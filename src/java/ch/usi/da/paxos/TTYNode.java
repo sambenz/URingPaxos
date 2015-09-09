@@ -158,13 +158,18 @@ public class TTYNode {
 		if (args.length > 2) {
 			zoo_host = args[2];
 		}
+		int groupID = -1;
+		if (args.length > 3) {
+			groupID = Integer.parseInt(args[3]);
+			logger.info("Node is in group " + groupID);
+		}
 		if (args.length < 2) {
-			System.err.println("Plese use \"Node\" \"node ID\" \"ring ID:roles[;ring ID:roles]\" (eg. 1 1:PAL)");
+			System.err.println("Plese use \"Node\" \"node ID\" \"ring ID:roles[;ring ID:roles]\" [zookeeper] [groupID] (eg. 1 1:PAL)");
 		} else {
 			int nodeID = Integer.parseInt(args[0]);
 			List<RingDescription> rings = Util.parseRingsArgument(args[1]);
 			// start paxos node
-			final Node node = new Node(nodeID,zoo_host,rings);
+			final Node node = new Node(nodeID,groupID,zoo_host,rings);
 			try {
 				node.start();
 				Runtime.getRuntime().addShutdownHook(new Thread(){
