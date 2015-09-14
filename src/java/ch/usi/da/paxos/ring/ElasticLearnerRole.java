@@ -62,7 +62,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 	
 	private int deliverRing;
 	
+	private int minRing;
+	
 	private final long[] skip_count = new long[maxRing];
+
+	private final long[] v_count = new long[maxRing];
+
+	private long v_subscribe = Long.MAX_VALUE;
 	
 	private boolean deliver_skip_messages = false;
 
@@ -89,17 +95,20 @@ public class ElasticLearnerRole extends Role implements Learner {
 	public void run() {
 		// create initial learner
 		int initial_ring = rings.get(0);
+		minRing = initial_ring;
 		startLearner(initial_ring);
 		int count = 0;
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
 					count++;
+					v_count[deliverRing]++;
 					skip_count[deliverRing]--;
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().isSubscribe()){
+						v_count[deliverRing]++;
 						// subscribe message
 						try {
 							String[] token = d.getValue().asString().split(",");
@@ -107,6 +116,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 							int newring = Integer.parseInt(token[1]);
 							logger.info("ElasticLearner received subscribe: " + newring + " for group " + group);
 							if(learner[newring] == null && replication_group == group){
+								v_subscribe = Long.MAX_VALUE;
 								List<PaxosRole> rl = new ArrayList<PaxosRole>();
 								rl.add(PaxosRole.Learner);
 								RingDescription rd = new RingDescription(newring,rl);
@@ -118,15 +128,22 @@ public class ElasticLearnerRole extends Role implements Learner {
 								startLearner(newring);
 								while(true){
 									Decision d2 = learner[newring].getDecisions().take();
+									v_count[newring]++; //TODO: FIXME: What if a skip was inside? How do I know offset after trim? 
 									if(d2 != null && d2.getValue().isSubscribe()){
 										if(d.getValue().asString().equals(d2.getValue().asString())){
 											break;
 										}
 									}
 								}
-								deliverRing = minRing(rings);
-								//TODO: calculate max queue position count
-								//TODO: FIXME: How to Skip queue positions ???
+								long maxPosition = 0;
+								for(Integer r : rings){
+									if(v_count[r] > maxPosition){
+										maxPosition = v_count[r];
+									}
+								}
+								v_subscribe  = maxPosition;
+								minRing = minRing(rings); // the ring to start RR after v_subscribe
+								logger.info("ElasticLearner subscribe to ring " + newring + " in group " + group + " at position " + v_subscribe+1);								
 							}
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
@@ -144,6 +161,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 						}
 					}else{
 						count++;
+						v_count[deliverRing]++;
 						// learning an actual proposed value
 						values.add(d);
 					}
@@ -172,11 +190,18 @@ public class ElasticLearnerRole extends Role implements Learner {
 	}
 	
 	private int getRingSuccessor(int id){
-		int pos = rings.indexOf(new Integer(id));
-		if(pos+1 >= rings.size()){
-			return rings.get(0);
-		}else{
-			return rings.get(pos+1);
+		if(v_subscribe > v_count[minRing]){ // skip
+			return id;
+		}else if(v_subscribe == v_count[minRing]){ // start round-robin
+			v_subscribe = 0;
+			return minRing(rings);
+		}else{ // round-robin
+			int pos = rings.indexOf(new Integer(id));
+			if(pos+1 >= rings.size()){
+				return rings.get(0);
+			}else{
+				return rings.get(pos+1);
+			}
 		}
 	}
 
