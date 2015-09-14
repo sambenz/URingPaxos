@@ -128,7 +128,16 @@ public class ElasticLearnerRole extends Role implements Learner {
 								startLearner(newring);
 								while(true){
 									Decision d2 = learner[newring].getDecisions().take();
-									v_count[newring]++; //TODO: FIXME: What if a skip was inside? How do I know offset after trim? 
+									if(d2.getValue() != null && d2.getValue().isSkip()){
+										try {
+											long skip = Long.parseLong(new String(d2.getValue().getValue()));
+											v_count[newring] = v_count[newring] + skip;
+										}catch (NumberFormatException e) {
+											logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d,e);
+										}										
+									}else{
+										v_count[newring]++; //TODO: FIXME: How do I know offset after trim? 
+									}
 									if(d2 != null && d2.getValue().isSubscribe()){
 										if(d.getValue().asString().equals(d2.getValue().asString())){
 											break;
@@ -190,7 +199,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 	}
 	
 	private int getRingSuccessor(int id){
-		if(v_subscribe > v_count[minRing]){ // skip
+		if(v_subscribe-1 > v_count[deliverRing]){ // skip left
+			return id;
+		}else if(v_subscribe > v_count[minRing]){ // skip right
 			return id;
 		}else if(v_subscribe == v_count[minRing]){ // start round-robin
 			v_subscribe = 0;
