@@ -64,7 +64,6 @@ public class TestMdRP {
 		g2.stop();
 	}
 
-	@Ignore
 	@Test
 	public void basicSubscribe() throws Exception {
 		
@@ -124,17 +123,17 @@ public class TestMdRP {
 		s2.getProposer(2).propose(s.getBytes());
 		s = "m22";
 		s2.getProposer(2).propose(s.getBytes());
-		
-		//assertEquals(s,new String(d.getValue().getValue()));
-		
+				
 		Thread.sleep(2000); // wait until everything is proposed
 		
-		print(g1.getLearner().getDecisions());
-		print(g2.getLearner().getDecisions());
+		//System.err.println(format(g1.getLearner().getDecisions()));
+		//System.err.println(format(g2.getLearner().getDecisions()));
+		
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,m19,m20,m21,m22]");
+		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m16,m18,m20,m22]");
 
 	}
-
-	@Ignore
+	
 	@Test
 	public void doubleOffsetSubscribe() throws Exception {
 		
@@ -206,10 +205,11 @@ public class TestMdRP {
 
 		Thread.sleep(5000); // wait until everything is proposed
 
-		print(g1.getLearner().getDecisions());
-		print(g2.getLearner().getDecisions());
+		//System.err.println(format(g1.getLearner().getDecisions()));
+		//System.err.println(format(g2.getLearner().getDecisions()));
 
-		//assertEquals(g1.getLe,new String(d.getValue().getValue()));
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m8,m11,m10,m13,m12,m15,m14,m17,m16,m19,m18,m21,m20,m23,m22]");
+		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m17,m16,m19,m18,m21,m20,m23,m22]");
 
 	}
 
@@ -285,18 +285,22 @@ public class TestMdRP {
 
 		Thread.sleep(7000); // wait until everything is proposed
 
-		print(g1.getLearner().getDecisions());
-		print(g2.getLearner().getDecisions());
+		//System.err.println(format(g1.getLearner().getDecisions()));
+		//System.err.println(format(g2.getLearner().getDecisions()));
 
-		//assertEquals(g1.getLe,new String(d.getValue().getValue()));
-
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m11,m13,m15,m16,m17,m18,m19,m20,m21,m22,m23,m24]");
+		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,m19,m20,m21,m22,m23,m24]");
+		
 	}
 
-	public void print(BlockingQueue<Decision> list){
-		System.err.print("[");
+	public String format(BlockingQueue<Decision> list){
+		StringBuffer b = new StringBuffer();
+		b.append("[");
 		for(Decision d : list){
-			System.err.print(d.getValue().asString() + ",");
+			b.append(d.getValue().asString() + ",");
 		}
-		System.err.println("]");
+		b.deleteCharAt(b.length()-1);
+		b.append("]");
+		return b.toString();
 	}
 }

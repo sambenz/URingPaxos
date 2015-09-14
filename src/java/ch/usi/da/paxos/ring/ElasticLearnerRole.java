@@ -143,7 +143,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 								}
 								v_subscribe  = maxPosition;
 								minRing = minRing(rings); // the ring to start RR after v_subscribe
-								logger.info("ElasticLearner subscribe to ring " + newring + " in group " + group + " at position " + v_subscribe+1);								
+								logger.info("ElasticLearner subscribe to ring " + newring + " in group " + group + " at position " + (v_subscribe+1));								
 							}
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
