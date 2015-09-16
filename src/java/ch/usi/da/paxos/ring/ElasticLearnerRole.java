@@ -62,13 +62,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 	
 	private int deliverRing;
 	
-	private int minRing;
+	private int newRing;
 	
 	private final long[] skip_count = new long[maxRing];
 
 	private final long[] v_count = new long[maxRing];
 
-	private long v_subscribe = Long.MAX_VALUE;
+	private long v_subscribe = 0;
 	
 	private boolean deliver_skip_messages = false;
 
@@ -95,14 +95,12 @@ public class ElasticLearnerRole extends Role implements Learner {
 	public void run() {
 		// create initial learner
 		int initial_ring = rings.get(0);
-		minRing = initial_ring;
 		startLearner(initial_ring);
-		int count = 0;
+		int rr_count = 0;
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
-					count++;
-					v_count[deliverRing]++;
+					rr_count++;
 					skip_count[deliverRing]--;
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
@@ -113,30 +111,30 @@ public class ElasticLearnerRole extends Role implements Learner {
 						try {
 							String[] token = d.getValue().asString().split(",");
 							int group = Integer.parseInt(token[0]);
-							int newring = Integer.parseInt(token[1]);
-							logger.info("ElasticLearner received subscribe: " + newring + " for group " + group);
-							if(learner[newring] == null && replication_group == group){
-								v_subscribe = Long.MAX_VALUE;
+							int ring = Integer.parseInt(token[1]);
+							logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
+							if(learner[ring] == null && replication_group == group){
+								newRing = ring;
 								List<PaxosRole> rl = new ArrayList<PaxosRole>();
 								rl.add(PaxosRole.Learner);
-								RingDescription rd = new RingDescription(newring,rl);
-								ringmap.put(newring,rd);
+								RingDescription rd = new RingDescription(newRing,rl);
+								ringmap.put(newRing,rd);
 								if(!node.updateRing(rd)){
-									logger.error("ElasticLearnerRole failed to create Learner in ring " + newring);
+									logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
 								}
-								rings.add(newring);
-								startLearner(newring);
+								startLearner(newRing);
 								while(true){
-									Decision d2 = learner[newring].getDecisions().take();
+									Decision d2 = learner[newRing].getDecisions().take();
 									if(d2.getValue() != null && d2.getValue().isSkip()){
 										try {
 											long skip = Long.parseLong(new String(d2.getValue().getValue()));
-											v_count[newring] = v_count[newring] + skip;
+											v_count[newRing] = v_count[newRing] + skip;
 										}catch (NumberFormatException e) {
-											logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d,e);
+											logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d2,e);
 										}										
-									}else{
-										v_count[newring]++; //TODO: FIXME: How do I know offset after trim? 
+									}
+									else{
+										v_count[newRing]++;
 									}
 									if(d2 != null && d2.getValue().isSubscribe()){
 										if(d.getValue().asString().equals(d2.getValue().asString())){
@@ -145,14 +143,25 @@ public class ElasticLearnerRole extends Role implements Learner {
 									}
 								}
 								long maxPosition = 0;
-								for(Integer r : rings){
-									if(v_count[r] > maxPosition){
-										maxPosition = v_count[r];
+								if(v_count[deliverRing] > maxPosition){
+									maxPosition = v_count[deliverRing];
+								}
+								if(v_count[newRing] > maxPosition){
+									maxPosition = v_count[newRing];
+								}
+								v_subscribe = maxPosition+1;
+								// align the new stream
+								if(v_count[newRing] < maxPosition){
+									while(true){
+										learner[newRing].getDecisions().take();
+										v_count[newRing]++;
+										if(v_count[newRing] == maxPosition){
+											break;
+										}
 									}
 								}
-								v_subscribe  = maxPosition;
-								minRing = minRing(rings); // the ring to start RR after v_subscribe
-								logger.info("ElasticLearner subscribe to ring " + newring + " in group " + group + " at position " + (v_subscribe+1));								
+								deliverRing = getRingSuccessor(deliverRing);
+								logger.info("ElasticLearner subscribe to ring " + newRing + " in group " + group + " at position " + v_subscribe);
 							}
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
@@ -162,21 +171,24 @@ public class ElasticLearnerRole extends Role implements Learner {
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
+							v_count[deliverRing] = v_count[deliverRing] + skip;
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete SKIP message! -> " + d,e);
 						}
-						if(deliver_skip_messages){
+						if(deliver_skip_messages){ //TODO: will this violate ordering
 							values.add(d);
 						}
 					}else{
-						count++;
+						rr_count++;
 						v_count[deliverRing]++;
-						// learning an actual proposed value
-						values.add(d);
+						/*if(node.getGroupID() == 2){
+							System.err.println(d);
+						}*/
+						values.add(d); // deliver an actual proposed value
 					}
 				}
-				if(count >= 1){ // removed variable M
-					count = 0;
+				if(rr_count >= 1){ // removed variable M
+					rr_count = 0;
 					deliverRing = getRingSuccessor(deliverRing);
 				}
 			} catch (InterruptedException e) {
@@ -199,20 +211,25 @@ public class ElasticLearnerRole extends Role implements Learner {
 	}
 	
 	private int getRingSuccessor(int id){
-		if(v_subscribe-1 > v_count[deliverRing]){ // skip left
-			return id;
-		}else if(v_subscribe > v_count[minRing]){ // skip right
-			return id;
-		}else if(v_subscribe == v_count[minRing]){ // start round-robin
-			v_subscribe = 0;
-			return minRing(rings);
-		}else{ // round-robin
-			int pos = rings.indexOf(new Integer(id));
-			if(pos+1 >= rings.size()){
-				return rings.get(0);
-			}else{
-				return rings.get(pos+1);
+		/*if(node.getGroupID() == 2){
+			System.err.println(deliverRing + " " + v_count[1] + " " + v_count[2]);
+		}*/
+		boolean add = true;
+		for(Integer r : rings){
+			if(v_count[r] != v_subscribe-1){
+				add = false;
 			}
+		}
+		if(add){
+			rings.add(newRing);
+			//System.err.println("here add " + newRing + " return " + minRing(rings) + " " + rings);
+			return minRing(rings);
+		}
+		int pos = rings.indexOf(new Integer(id));
+		if(pos+1 >= rings.size()){
+			return rings.get(0);
+		}else{
+			return rings.get(pos+1);
 		}
 	}
 
