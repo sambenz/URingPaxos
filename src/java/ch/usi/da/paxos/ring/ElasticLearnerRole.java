@@ -162,6 +162,8 @@ public class ElasticLearnerRole extends Role implements Learner {
 								}
 								deliverRing = getRingSuccessor(deliverRing);
 								logger.info("ElasticLearner subscribe to ring " + newRing + " in group " + group + " at position " + v_subscribe);
+							}else{
+								rr_count++; //skip it in queue
 							}
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
@@ -181,9 +183,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 					}else{
 						rr_count++;
 						v_count[deliverRing]++;
-						/*if(node.getGroupID() == 2){
-							System.err.println(d);
-						}*/
 						values.add(d); // deliver an actual proposed value
 					}
 				}
@@ -211,9 +210,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 	}
 	
 	private int getRingSuccessor(int id){
-		/*if(node.getGroupID() == 2){
-			System.err.println(deliverRing + " " + v_count[1] + " " + v_count[2]);
-		}*/
 		boolean add = true;
 		for(Integer r : rings){
 			if(v_count[r] != v_subscribe-1){
@@ -222,7 +218,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 		}
 		if(add){
 			rings.add(newRing);
-			//System.err.println("here add " + newRing + " return " + minRing(rings) + " " + rings);
 			return minRing(rings);
 		}
 		int pos = rings.indexOf(new Integer(id));

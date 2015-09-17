@@ -134,8 +134,7 @@ public class TestMdRP {
 		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m16,m18,m20,m22]");
 
 	}
-	
-	@Ignore
+		
 	@Test
 	public void doubleOffsetSubscribe() throws Exception {
 		
@@ -210,11 +209,10 @@ public class TestMdRP {
 		System.err.println(format(g1.getLearner().getDecisions()));
 		System.err.println(format(g2.getLearner().getDecisions()));
 
-		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,m19,m20,m21,m22,m23]");
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m10,m11,m12,m13,m15,m14,m16,m17,m18,m19,m20,m21,m22,m23]");
 		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m16,m17,m18,m19,m20,m21,m22,m23]");
 
 	}
-
 
 	@Test
 	public void doubleInterleaveSubscribe() throws Exception {
@@ -292,7 +290,7 @@ public class TestMdRP {
 		System.err.println(format(g2.getLearner().getDecisions()));
 
 		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m11,m13,m15,m16,m17,m18,m19,m20,m21,m22,m23,m24]");
-		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m11,m12,m13,m14,m15,m16,m17,m18,m19,m20,m21,m22,m23,m24]");
+		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m11,m14,m13,m15,m16,m17,m18,m19,m20,m21,m22,m23,m24]");
 		
 	}
 
