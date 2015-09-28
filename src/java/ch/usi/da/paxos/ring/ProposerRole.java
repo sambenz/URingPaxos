@@ -185,7 +185,7 @@ public class ProposerRole extends Role implements Proposer {
 	 */
 	public synchronized FutureDecision control(String s){
 		send_count++;
-		Value v = new Value(Value.getSubscribeID(),s.getBytes());
+		Value v = new Value(Value.getControlID(),s.getBytes());
 		if(proposallogger.isDebugEnabled()){
 			proposallogger.debug(v);
 		}else if(proposallogger.isInfoEnabled()){

@@ -105,65 +105,75 @@ public class ElasticLearnerRole extends Role implements Learner {
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
-					if(d.getValue() != null && d.getValue().isSubscribe()){
+					if(d.getValue() != null && d.getValue().isControl()){
 						v_count[deliverRing]++;
 						// subscribe message
 						try {
 							String[] token = d.getValue().asString().split(",");
-							int group = Integer.parseInt(token[0]);
-							int ring = Integer.parseInt(token[1]);
-							logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
-							if(learner[ring] == null && replication_group == group){
-								newRing = ring;
-								List<PaxosRole> rl = new ArrayList<PaxosRole>();
-								rl.add(PaxosRole.Learner);
-								RingDescription rd = new RingDescription(newRing,rl);
-								ringmap.put(newRing,rd);
-								if(!node.updateRing(rd)){
-									logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
-								}
-								startLearner(newRing);
-								while(true){
-									Decision d2 = learner[newRing].getDecisions().take();
-									if(d2.getValue() != null && d2.getValue().isSkip()){
-										try {
-											long skip = Long.parseLong(new String(d2.getValue().getValue()));
-											v_count[newRing] = v_count[newRing] + skip;
-										}catch (NumberFormatException e) {
-											logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d2,e);
-										}										
+							String type = token[0];
+							int group = Integer.parseInt(token[1]);
+							int ring = Integer.parseInt(token[2]);
+							if(type.startsWith("s")){
+								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
+								if(learner[ring] == null && replication_group == group){
+									newRing = ring;
+									List<PaxosRole> rl = new ArrayList<PaxosRole>();
+									rl.add(PaxosRole.Learner);
+									RingDescription rd = new RingDescription(newRing,rl);
+									ringmap.put(newRing,rd);
+									if(!node.updateRing(rd)){
+										logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
 									}
-									else{
-										v_count[newRing]++;
-									}
-									if(d2 != null && d2.getValue().isSubscribe()){
-										if(d.getValue().asString().equals(d2.getValue().asString())){
-											break;
-										}
-									}
-								}
-								long maxPosition = 0;
-								if(v_count[deliverRing] > maxPosition){
-									maxPosition = v_count[deliverRing];
-								}
-								if(v_count[newRing] > maxPosition){
-									maxPosition = v_count[newRing];
-								}
-								v_subscribe = maxPosition+1;
-								// align the new stream
-								if(v_count[newRing] < maxPosition){
+									startLearner(newRing);
 									while(true){
-										learner[newRing].getDecisions().take();
-										v_count[newRing]++;
-										if(v_count[newRing] == maxPosition){
-											break;
+										Decision d2 = learner[newRing].getDecisions().take();
+										if(d2.getValue() != null && d2.getValue().isSkip()){
+											try {
+												long skip = Long.parseLong(new String(d2.getValue().getValue()));
+												v_count[newRing] = v_count[newRing] + skip;
+											}catch (NumberFormatException e) {
+												logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d2,e);
+											}										
+										}
+										else{
+											v_count[newRing]++;
+										}
+										if(d2 != null && d2.getValue().isControl()){
+											if(d.getValue().asString().equals(d2.getValue().asString())){
+												break;
+											}
 										}
 									}
+									long maxPosition = 0;
+									if(v_count[deliverRing] > maxPosition){
+										maxPosition = v_count[deliverRing];
+									}
+									if(v_count[newRing] > maxPosition){
+										maxPosition = v_count[newRing];
+									}
+									v_subscribe = maxPosition+1;
+									// align the new stream
+									if(v_count[newRing] < maxPosition){
+										while(true){
+											learner[newRing].getDecisions().take();
+											v_count[newRing]++;
+											if(v_count[newRing] == maxPosition){
+												break;
+											}
+										}
+									}
+									deliverRing = getRingSuccessor(deliverRing);
+									logger.info("ElasticLearner subscribe to ring " + newRing + " in group " + group + " at position " + v_subscribe);
+								}else{
+									rr_count++; //skip it in queue
 								}
-								deliverRing = getRingSuccessor(deliverRing);
-								logger.info("ElasticLearner subscribe to ring " + newRing + " in group " + group + " at position " + v_subscribe);
-							}else{
-								rr_count++; //skip it in queue
+							}else{ // unsubscribe
+								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
+								if(learner[ring] != null && replication_group == group){
+									rings.remove(new Integer(ring)); // remove entry not index position
+									//TODO: close old learner
+									logger.info("ElasticLearner removed ring " + ring + " at position " + v_count[ring]);
+								}								
 							}
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);

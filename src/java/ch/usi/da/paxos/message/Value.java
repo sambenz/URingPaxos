@@ -41,7 +41,7 @@ public class Value implements Serializable {
 	
 	private final static String skipID  = "SKIP";
 	
-	private final static String subscribe  = "subscribe";
+	private final static String control  = "control";
 	
 	private final boolean batch;
 	
@@ -138,8 +138,8 @@ public class Value implements Serializable {
 		return this.getID().startsWith(Value.skipID);
 	}
 
-	public boolean isSubscribe() {
-		return this.getID().startsWith(Value.subscribe);
+	public boolean isControl() {
+		return this.getID().startsWith(Value.control);
 	}
 
 	public boolean isBatch() {
@@ -150,8 +150,8 @@ public class Value implements Serializable {
 		return skipID + ":" + System.currentTimeMillis() + ":" + System.nanoTime();
 	}
 	
-	public static String getSubscribeID(){
-		return subscribe + ":" + System.currentTimeMillis() + ":" + System.nanoTime();
+	public static String getControlID(){
+		return control + ":" + System.currentTimeMillis() + ":" + System.nanoTime();
 	}
 
 }

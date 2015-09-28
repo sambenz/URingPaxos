@@ -64,29 +64,32 @@ public class TestMdRP {
 		g2.stop();
 	}
 
-	@Ignore
 	@Test
-	public void basicSubscribe() throws Exception {
+	public void basicUnSubscribe() throws Exception {
 		
 		// stream 1
 		String s = "m1";
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m3";
 		s1.getProposer(1).propose(s.getBytes());
+
+		s = "s,1,2";
+		s1.getProposer(1).control(s);
+
 		s = "m5";
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m7";
-		s1.getProposer(1).propose(s.getBytes());
-
-		s = "1,2";
-		s1.getProposer(1).control(s);
-		
+		s1.getProposer(1).propose(s.getBytes());		
 		s = "m9";
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m11";
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m13";
 		s1.getProposer(1).propose(s.getBytes());
+		
+		s = "u,1,2";
+		s1.getProposer(1).control(s);
+
 		s = "m15";
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m17";
@@ -97,6 +100,10 @@ public class TestMdRP {
 		s1.getProposer(1).propose(s.getBytes());
 
 		// stream 2
+		s = "s,1,2";
+		s2.getProposer(2).control(s);
+		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
+
 		s = "m2";
 		s2.getProposer(2).propose(s.getBytes());
 		s = "m4";
@@ -105,13 +112,12 @@ public class TestMdRP {
 		s2.getProposer(2).propose(s.getBytes());
 		s = "m8";
 		s2.getProposer(2).propose(s.getBytes());
-		
-		s = "1,2";
-		s2.getProposer(2).control(s);
-		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
-
 		s = "m10";
 		s2.getProposer(2).propose(s.getBytes());
+		
+		s = "u,1,2";
+		s2.getProposer(2).control(s);
+		
 		s = "m12";
 		s2.getProposer(2).propose(s.getBytes());
 		s = "m14";
@@ -130,7 +136,7 @@ public class TestMdRP {
 		System.err.println(format(g1.getLearner().getDecisions()));
 		System.err.println(format(g2.getLearner().getDecisions()));
 		
-		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m7,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,m19,m20,m21,m22]");
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m6,m7,m8,m9,m10,m11,m12,m13,m15,m17,m19,m21]");
 		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m16,m18,m20,m22]");
 
 	}
@@ -148,7 +154,7 @@ public class TestMdRP {
 		s = "m7";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s1.getProposer(1).control("1,2");
+		s1.getProposer(1).control("s,1,2");
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		
 		s = "m9";
@@ -160,7 +166,7 @@ public class TestMdRP {
 		s = "m15";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		s1.getProposer(1).control("2,1");
+		s1.getProposer(1).control("s,2,1");
 
 		s = "m17";
 		s1.getProposer(1).propose(s.getBytes());
@@ -174,7 +180,7 @@ public class TestMdRP {
 		s = "m4";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("1,2");
+		s2.getProposer(2).control("s,1,2");
 
 		s = "m6";
 		s2.getProposer(2).propose(s.getBytes());
@@ -185,7 +191,7 @@ public class TestMdRP {
 		s = "m12";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("2,1");
+		s2.getProposer(2).control("s,2,1");
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		s = "m21";
 		s1.getProposer(1).propose(s.getBytes());
@@ -221,7 +227,7 @@ public class TestMdRP {
 		String s = "m1";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s1.getProposer(1).control("1,2");
+		s1.getProposer(1).control("s,1,2");
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 
 		s = "m3";
@@ -233,7 +239,7 @@ public class TestMdRP {
 		s = "m9";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		s1.getProposer(1).control("2,1");
+		s1.getProposer(1).control("s,2,1");
 		
 		s = "m11";
 		s1.getProposer(1).propose(s.getBytes());
@@ -255,7 +261,7 @@ public class TestMdRP {
 		s = "m6";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("2,1");
+		s2.getProposer(2).control("s,2,1");
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		s = "m21";
 		s1.getProposer(1).propose(s.getBytes());
@@ -271,7 +277,7 @@ public class TestMdRP {
 		s = "m14";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("1,2");
+		s2.getProposer(2).control("s,1,2");
 
 		s = "m16";
 		s2.getProposer(2).propose(s.getBytes());
