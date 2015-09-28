@@ -105,7 +105,11 @@ public class TTYNode {
 								paxos.getProposer(ring.getRingID()).control(s.replace("!",""));
 							}else{
 								logger.info("Node isn't a proposer for ring " + ring.getRingID());
-							}							
+							}
+						} else if (s.startsWith("exp")) {
+							Thread t = new Thread(new Experiment(paxos));
+							t.setName("Experiment");
+							t.run();
 						} else {
 							if(paxos.getProposer(ring.getRingID()) != null){
 								paxos.getProposer(ring.getRingID()).propose(s.getBytes());
