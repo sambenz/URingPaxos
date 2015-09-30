@@ -74,7 +74,7 @@ public class LearnerStatsWriter implements Runnable {
 				last_deliver_count += deliver_count;
 				last_deliver_bytes += deliver_bytes;
 				last_time = time;
-				Thread.sleep(5000);
+				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break;				

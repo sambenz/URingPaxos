@@ -171,7 +171,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
 								if(learner[ring] != null && replication_group == group){
 									rings.remove(new Integer(ring)); // remove entry not index position
-									//TODO: close old learner
+									ringmap.get(ring).getRingManager().close();
 									learner[ring] = null;
 									deliverRing = minRing(rings); 
 									logger.info("ElasticLearner removed ring " + ring + " at position " + v_count[ring]);

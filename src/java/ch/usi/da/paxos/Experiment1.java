@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
@@ -16,11 +15,11 @@ import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.ring.RingManager;
 import ch.usi.da.paxos.storage.FutureDecision;
 
-public class Experiment implements Runnable {
+public class Experiment1 implements Runnable {
 
 	private final PaxosNode paxos;
 
-	private final static Logger logger = Logger.getLogger(Experiment.class);
+	private final static Logger logger = Logger.getLogger(Experiment1.class);
 
 	private final static Logger stats_logger = Logger.getLogger("ch.usi.da.paxos.Stats");
 	
@@ -36,7 +35,7 @@ public class Experiment implements Runnable {
 
 	private volatile boolean send2 = true;
 
-	public Experiment(PaxosNode paxos) {
+	public Experiment1(PaxosNode paxos) {
 		this.paxos = paxos;
 		
 		if(paxos.getRings().size() < 2){
@@ -98,7 +97,7 @@ public class Experiment implements Runnable {
 			public void run() {
 				try {
 
-					Thread.sleep(300);
+					Thread.sleep(45000);
 
 					paxos.getProposer(2).control("s,1,2");
 					paxos.getProposer(1).control("s,1,2");
@@ -131,9 +130,14 @@ public class Experiment implements Runnable {
 						t.start();
 					}
 
-					Thread.sleep(10000);
+					Thread.sleep(8000);
 					send1 = false;
+
+					paxos.getProposer(1).control("u,1,1");
+
+					Thread.sleep(45000);
 					send2 = false;
+
 					printHistogram();
 				} catch (InterruptedException e) {
 				}				

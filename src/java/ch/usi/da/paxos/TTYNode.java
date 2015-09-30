@@ -89,7 +89,7 @@ public class TTYNode {
 			try {
 				while ((s = in.readLine()) != null && s.length() != 0) {
 					if (s.startsWith("exp")) {
-						Thread t = new Thread(new Experiment(paxos));
+						Thread t = new Thread(new Experiment1(paxos));
 						t.setName("Experiment");
 						t.run();
 						continue;

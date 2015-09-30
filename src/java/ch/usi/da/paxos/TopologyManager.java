@@ -44,6 +44,7 @@ import org.apache.zookeeper.ZooKeeper;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.ring.AcceptorRole;
 import ch.usi.da.paxos.ring.NetworkManager;
 
 
@@ -163,7 +164,21 @@ public class TopologyManager implements Watcher {
 		zoo.register(this);
 		registerNode();
 	}
-
+	
+	/**
+	 * Close the topology manger
+	 * 
+	 * @throws InterruptedException 
+	 */
+	public void close() throws InterruptedException{
+		if(network.getAcceptor() != null){
+	    	((AcceptorRole)network.getAcceptor()).getStableStorage().close();
+	    }
+    	network.disconnectClient();
+    	network.closeServer();
+    	zoo.close();
+	}
+	
 	/**
 	 * @throws InterruptedException 
 	 * @throws KeeperException 
