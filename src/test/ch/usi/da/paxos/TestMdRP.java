@@ -135,7 +135,7 @@ public class TestMdRP {
 		System.err.println(format(g1.getLearner().getDecisions()));
 		System.err.println(format(g2.getLearner().getDecisions()));
 		
-		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m6,m7,m8,m9,m10,m11,m12,m13,m15,m17,m19,m21]");
+		assertEquals(format(g1.getLearner().getDecisions()),"[m1,m3,m5,m6,m7,m8,m9,m10,m11,m13,m15,m17,m19,m21]");
 		assertEquals(format(g2.getLearner().getDecisions()),"[m2,m4,m6,m8,m10,m12,m14,m16,m18,m20,m22]");
 
 	}

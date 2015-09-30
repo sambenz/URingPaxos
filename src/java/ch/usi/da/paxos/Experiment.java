@@ -14,7 +14,6 @@ import org.apache.log4j.Logger;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.ring.RingManager;
-import ch.usi.da.paxos.ring.ValueType;
 import ch.usi.da.paxos.storage.FutureDecision;
 
 public class Experiment implements Runnable {
@@ -29,38 +28,29 @@ public class Experiment implements Runnable {
 
 	private int concurrent_values = 20;
 	
-	private ValueType value_type = ValueType.FIX;
-	
 	private int value_size = 8912;
 		
 	private int value_count = 900000;
+	
+	private volatile boolean send1 = true;
+
+	private volatile boolean send2 = true;
 
 	public Experiment(PaxosNode paxos) {
 		this.paxos = paxos;
+		
+		if(paxos.getRings().size() < 2){
+			logger.error("Experiment needs proposeres in two rings!");
+			throw(new RuntimeException());
+		}
+		
 		RingManager ring = paxos.getRings().get(0).getRingManager();
 		if(ring.getConfiguration().containsKey(ConfigKey.concurrent_values)){
 			concurrent_values = Integer.parseInt(ring.getConfiguration().get(ConfigKey.concurrent_values));
 			logger.info("Experiment concurrent_values: " + concurrent_values);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_size)){
-			String v = ring.getConfiguration().get(ConfigKey.value_size);
-			if(v.toLowerCase().startsWith("int")){
-				value_type = ValueType.INTVALUE;
-			}else if(v.toLowerCase().startsWith("uni")){
-				value_type = ValueType.UNIFORM;
-			}else if(v.toLowerCase().startsWith("nor")){
-				value_type = ValueType.NORMAL;
-			}else if(v.toLowerCase().startsWith("exp")){
-				value_type = ValueType.EXPONENTIAL;
-			}else if(v.toLowerCase().startsWith("zip")){
-				value_type = ValueType.ZIPF;
-			}else{
-				value_type = ValueType.FIX;
-				value_size = Integer.parseInt(v);
-				logger.info("Experiment value_size: " + value_size);
-			}
-			logger.info("Experiment value_type: " + value_type);
-		}else{
+			value_size = Integer.parseInt(ring.getConfiguration().get(ConfigKey.value_size));
 			logger.info("Experiment value_size: " + value_size);
 		}
 		if(ring.getConfiguration().containsKey(ConfigKey.value_count)){
@@ -76,14 +66,13 @@ public class Experiment implements Runnable {
 		final AtomicLong stat_latency = new AtomicLong();
 		final AtomicLong stat_command = new AtomicLong();		    		
 		latency.clear();
-		final CountDownLatch await = new CountDownLatch(concurrent_values);
 		final Thread stats = new Thread("ExperimentStatsWriter"){		    			
 			private long last_time = System.nanoTime();
 			private long last_sent_count = 0;
 			private long last_sent_time = 0;
 			@Override
 			public void run() {
-				while(await.getCount() > 0){
+				while(true){
 					try {
 						long time = System.nanoTime();
 						long sent_count = stat_command.get() - last_sent_count;
@@ -103,14 +92,61 @@ public class Experiment implements Runnable {
 			}
 		};
 		stats.start();
-		logger.info("Start experiment with " + concurrent_values + " threads.");
-		logger.info("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
+		
+		final Thread coord = new Thread("ExperimentCoordinator"){		    			
+			@Override
+			public void run() {
+				try {
+
+					Thread.sleep(300);
+
+					paxos.getProposer(2).control("s,1,2");
+					paxos.getProposer(1).control("s,1,2");
+					paxos.getProposer(2).propose("trigger re-learn".getBytes());
+
+					for(int i=0;i<concurrent_values;i++){
+						Thread t = new Thread("Command Sender 2 " + i){
+							@Override
+							public void run(){
+								int send_count = 0;
+								while(send2 && send_count < send_per_thread){
+									FutureDecision f = null;
+									try{
+										long time = System.nanoTime();
+										if((f = paxos.getProposer(2).propose(new byte[value_size])) != null){
+											f.getDecision(1000); // wait response
+											long lat = System.nanoTime() - time;
+											stat_latency.addAndGet(lat);
+											stat_command.incrementAndGet();
+											latency.add(lat);
+										}
+									} catch (Exception e){
+										logger.error("Error in send thread!",e);
+									}
+									send_count++;
+								}
+								logger.debug("Thread terminated.");
+							}
+						};
+						t.start();
+					}
+
+					Thread.sleep(10000);
+					send1 = false;
+					send2 = false;
+					printHistogram();
+				} catch (InterruptedException e) {
+				}				
+			}
+		};
+		coord.start();
+		
 		for(int i=0;i<concurrent_values;i++){
-			Thread t = new Thread("Command Sender " + i){
+			Thread t = new Thread("Command Sender 1 " + i){
 				@Override
 				public void run(){
 					int send_count = 0;
-					while(send_count < send_per_thread){
+					while(send1 && send_count < send_per_thread){
 						FutureDecision f = null;
 						try{
 							long time = System.nanoTime();
@@ -126,21 +162,14 @@ public class Experiment implements Runnable {
 						}
 						send_count++;
 					}
-					await.countDown();
 					logger.debug("Thread terminated.");
 				}
 			};
 			t.start();
 		}
-		try {
-			await.await();
-		} catch (InterruptedException e) {
-		} // wait until finished
-		printHistogram();
 
-		
 	}
-
+	
 	private void printHistogram(){
 		Map<Long,Long> histogram = new HashMap<Long,Long>();
 		int a = 0,b = 0,b2 = 0,c = 0,d = 0,e = 0,f = 0;

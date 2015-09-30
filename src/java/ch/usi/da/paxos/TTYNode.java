@@ -88,6 +88,12 @@ public class TTYNode {
 			String s;
 			try {
 				while ((s = in.readLine()) != null && s.length() != 0) {
+					if (s.startsWith("exp")) {
+						Thread t = new Thread(new Experiment(paxos));
+						t.setName("Experiment");
+						t.run();
+						continue;
+					}
 					// propose value read from stdin to ALL the rings
 					for (RingDescription ring : paxos.getRings()) {
 						if (s.contains("start")) {
@@ -106,10 +112,6 @@ public class TTYNode {
 							}else{
 								logger.info("Node isn't a proposer for ring " + ring.getRingID());
 							}
-						} else if (s.startsWith("exp")) {
-							Thread t = new Thread(new Experiment(paxos));
-							t.setName("Experiment");
-							t.run();
 						} else {
 							if(paxos.getProposer(ring.getRingID()) != null){
 								paxos.getProposer(ring.getRingID()).propose(s.getBytes());
