@@ -103,6 +103,9 @@ public class Experiment1 implements Runnable {
 					paxos.getProposer(1).control("s,1,2");
 					paxos.getProposer(2).propose("trigger re-learn".getBytes());
 
+					send1 = false;
+					paxos.getProposer(1).control("u,1,1");
+
 					for(int i=0;i<concurrent_values;i++){
 						Thread t = new Thread("Command Sender 2 " + i){
 							@Override
@@ -129,16 +132,13 @@ public class Experiment1 implements Runnable {
 						};
 						t.start();
 					}
-
-					Thread.sleep(8000);
-					send1 = false;
-
-					paxos.getProposer(1).control("u,1,1");
-
 					Thread.sleep(45000);
 					send2 = false;
-
+					
+					Thread.sleep(5000);
 					printHistogram();
+					logger.info("Finished experiment!");
+					
 				} catch (InterruptedException e) {
 				}				
 			}
@@ -203,10 +203,10 @@ public class Experiment1 implements Runnable {
 			}
 		}
 		float avg = (float)sum/latency.size()/1000/1000;
-		logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
-		if(logger.isDebugEnabled()){
+		stats_logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
+		if(stats_logger.isDebugEnabled()){
 			for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
-				logger.debug(bin.getKey() + "," + bin.getValue());
+				stats_logger.debug(bin.getKey() + "," + bin.getValue());
 			}
 		}
 	}
