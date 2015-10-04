@@ -64,6 +64,10 @@ public class Experiment2 implements Runnable {
 
 	private volatile boolean send2 = true;
 
+	private volatile boolean send3 = true;
+
+	private volatile boolean send4 = true;
+
 	public Experiment2(PaxosNode paxos) {
 		this.paxos = paxos;
 		
@@ -126,7 +130,7 @@ public class Experiment2 implements Runnable {
 			public void run() {
 				try {
 
-					Thread.sleep(25000);
+					Thread.sleep(15000);
 
 					paxos.getProposer(2).control("s,1,2");
 					paxos.getProposer(1).control("s,1,2");
@@ -158,9 +162,83 @@ public class Experiment2 implements Runnable {
 						};
 						t.start();
 					}
-					Thread.sleep(25000);
+					
+					Thread.sleep(15000);
+					
+
+					paxos.getProposer(3).control("s,1,3");
+					paxos.getProposer(2).control("s,1,3");
+					paxos.getProposer(1).control("s,1,3");
+					paxos.getProposer(3).propose("trigger re-learn".getBytes());
+
+					for(int i=0;i<concurrent_values;i++){
+						Thread t = new Thread("Command Sender 3 " + i){
+							@Override
+							public void run(){
+								int send_count = 0;
+								while(send3 && send_count < send_per_thread){
+									FutureDecision f = null;
+									try{
+										long time = System.nanoTime();
+										if((f = paxos.getProposer(3).propose(new byte[value_size])) != null){
+											f.getDecision(1000); // wait response
+											long lat = System.nanoTime() - time;
+											stat_latency.addAndGet(lat);
+											stat_command.incrementAndGet();
+											latency.add(lat);
+										}
+									} catch (Exception e){
+										logger.error("Error in send thread!",e);
+									}
+									send_count++;
+								}
+								logger.debug("Thread terminated.");
+							}
+						};
+						t.start();
+					}
+					
+					Thread.sleep(15000);
+
+					paxos.getProposer(4).control("s,1,4");
+					paxos.getProposer(3).control("s,1,4");
+					paxos.getProposer(2).control("s,1,4");
+					paxos.getProposer(1).control("s,1,4");
+					paxos.getProposer(4).propose("trigger re-learn".getBytes());
+
+					for(int i=0;i<concurrent_values;i++){
+						Thread t = new Thread("Command Sender 4 " + i){
+							@Override
+							public void run(){
+								int send_count = 0;
+								while(send4 && send_count < send_per_thread){
+									FutureDecision f = null;
+									try{
+										long time = System.nanoTime();
+										if((f = paxos.getProposer(4).propose(new byte[value_size])) != null){
+											f.getDecision(1000); // wait response
+											long lat = System.nanoTime() - time;
+											stat_latency.addAndGet(lat);
+											stat_command.incrementAndGet();
+											latency.add(lat);
+										}
+									} catch (Exception e){
+										logger.error("Error in send thread!",e);
+									}
+									send_count++;
+								}
+								logger.debug("Thread terminated.");
+							}
+						};
+						t.start();
+					}
+					
+					Thread.sleep(15000);
+
 					send1 = false;
 					send2 = false;
+					send3 = false;
+					send4 = false;
 					
 					Thread.sleep(5000);
 					printHistogram();
