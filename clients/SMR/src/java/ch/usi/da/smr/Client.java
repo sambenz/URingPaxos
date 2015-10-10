@@ -340,7 +340,6 @@ public class Client implements Receiver {
     	if(cmd.getType() == CommandType.GETRANGE){
     		ring  = partitions.getGlobalRing();
     		subscribeGlobal(1);
-    		Thread.sleep(6000);
     		List<String> await = new ArrayList<String>();
     		for(Partition p : partitions.getPartitions()){
     			await.add(p.getID());

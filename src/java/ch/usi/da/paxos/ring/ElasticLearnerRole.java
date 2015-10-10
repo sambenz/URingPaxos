@@ -103,6 +103,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 				if(skip_count[deliverRing] > 0){
 					rr_count++;
 					skip_count[deliverRing]--;
+					v_count[deliverRing]++;
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
@@ -199,7 +200,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
-							v_count[deliverRing] = v_count[deliverRing] + skip;
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete SKIP message! -> " + d,e);
 						}
@@ -243,7 +243,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 			}
 		}
 		if(add){
-			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"); //TODO:
 			rings.add(newRing);
 			return minRing(rings);
 		}

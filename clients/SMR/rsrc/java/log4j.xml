@@ -27,8 +27,9 @@
 	</category>
 
 	<category name="ch.usi.da.paxos.Stats" additivity="false">
-		<priority value="info" />
+		<priority value="error" />
 		<appender-ref ref="STDOUT" />
+		<!-- <appender-ref ref="FILE" /> -->
 	</category>
 
 	<root>
