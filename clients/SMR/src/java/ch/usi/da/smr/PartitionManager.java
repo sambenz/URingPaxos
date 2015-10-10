@@ -40,6 +40,7 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.lab.DummyWatcher;
 import ch.usi.da.paxos.ring.RingDescription;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
@@ -85,7 +86,7 @@ public class PartitionManager implements Watcher {
 
 	public void init() throws KeeperException, InterruptedException, IOException {
 		logger.info("Init PartitionManager");
-		zoo = new ZooKeeper(zoo_host,3000,null);
+		zoo = new ZooKeeper(zoo_host,3000,new DummyWatcher());
 		zoo.register(this);
 		// create path
 		String p = "";

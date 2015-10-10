@@ -156,7 +156,7 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		logger.info("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
+		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 		
 		// skip already executed commands
 		/*FIXME: disabled recovery!if(m.getInstnce() <= exec_instance.get(m.getRing())){

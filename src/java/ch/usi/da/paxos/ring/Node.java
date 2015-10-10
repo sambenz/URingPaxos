@@ -37,6 +37,7 @@ import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.Proposer;
+import ch.usi.da.paxos.lab.DummyWatcher;
 
 /**
  * Name: Node<br>
@@ -117,7 +118,7 @@ public class Node implements PaxosNode {
 		int port = 2000 + rand.nextInt(1000); // assign port between 2000-3000
 		InetSocketAddress addr = new InetSocketAddress(ip,port);
 		// create ring manager
-		ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
+		ZooKeeper zoo = new ZooKeeper(zoo_host,3000,new DummyWatcher());
 		zoos.add(zoo);
 		RingManager rm = new RingManager(this,ring.getRingID(),addr,zoo,"/ringpaxos");
 		ring.setRingManager(rm);
