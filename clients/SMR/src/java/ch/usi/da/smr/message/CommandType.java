@@ -33,7 +33,9 @@ public enum CommandType {
 	GETRANGE(2),
 	PUT(3),
 	DELETE(4),
-	RESPONSE(5);
+	RESPONSE(5),
+	SUBSCRIBE(6),
+	UNSUBSCRIBE(7);
 	
 	private final int id;
 	private CommandType(int id) {

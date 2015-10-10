@@ -54,6 +54,8 @@ public class Message {
 	
 	private boolean skip = false;
 	
+	private boolean control = false;
+	
 	public Message(int id,String from,String to,List<Command> commands){
 		this.id = id;
 		this.from = from;
@@ -100,7 +102,15 @@ public class Message {
 	public boolean isSkip(){
 		return skip;
 	}
+
+	public void setControl(boolean control){
+		this.control = control;
+	}
 	
+	public boolean isControl(){
+		return control;
+	}
+
 	public String toString(){
 		return ("Message id:" + id + " from:" + from + " to:" + to + " " + commands);
 	}
@@ -172,6 +182,9 @@ public class Message {
 		if(decision.isSetValue() && decision.getValue().isSkip()){
 			m = new Message(0,"","",null);
 			m.setSkip(true);
+		}else if(decision.isSetValue() && decision.getValue().isControl()){
+			m = new Message(0,"","",null);
+			m.setControl(true);
 		}else{
 			m = fromByteArray(decision.getValue().getCmd());
 		}
@@ -187,6 +200,9 @@ public class Message {
 		if(decision.getValue() != null && decision.getValue().isSkip()){
 			m = new Message(0,"","",null);
 			m.setSkip(true);
+		}else if(decision.getValue() != null && decision.getValue().isControl()){
+			m = new Message(0,"","",null);
+			m.setControl(true);
 		}else{
 			m = fromByteArray(decision.getValue().getValue());
 		}

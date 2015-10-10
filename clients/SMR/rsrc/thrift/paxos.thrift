@@ -4,6 +4,7 @@ namespace java ch.usi.da.smr.thrift.gen
 struct Value {
   1: binary cmd,
   2: optional bool skip
+  3: optional bool control
 }
 
 struct Decision {
@@ -35,7 +36,9 @@ enum CmdType {
     GETRANGE,
     PUT,
     DELETE,
-    RESPONSE
+    RESPONSE,
+    SUBSCRIBE,
+    UNSUBSCRIBE
 }
 
 struct Cmd {

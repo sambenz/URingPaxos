@@ -71,21 +71,29 @@ public class BatchSender implements Runnable {
 		while(true){
 			try {
 				Response r = queue.take();
-				List<Command> cmds = new ArrayList<Command>();
-				int size = r.getCommand().getValue().length;
-				cmds.add(r.getCommand());
-				if(batch_size > 0){
-					while((r = queue.poll(500,TimeUnit.MICROSECONDS)) != null){ 
-						cmds.add(r.getCommand());
-						size = size + r.getCommand().getValue().length;
-						if(size >= batch_size){
-							break;
+				if(r.getCommand().isControl()){
+					List<Command> cmds = new ArrayList<Command>();
+					cmds.add(r.getCommand());
+					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
+					m.setControl(true);
+					sender.abroadcast(m);
+				}else{
+					List<Command> cmds = new ArrayList<Command>();
+					int size = r.getCommand().getValue().length;
+					cmds.add(r.getCommand());
+					if(batch_size > 0){
+						while((r = queue.poll(500,TimeUnit.MICROSECONDS)) != null){ 
+							cmds.add(r.getCommand());
+							size = size + r.getCommand().getValue().length;
+							if(size >= batch_size){
+								break;
+							}
 						}
+						logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
 					}
-					logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
+					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
+					sender.abroadcast(m);
 				}
-				Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
-				sender.abroadcast(m);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break;				

@@ -58,7 +58,13 @@ public class ThriftABSender implements ABSender {
 	
 	@Override
 	public long abroadcast(Message m){
-		Value value = new Value(ByteBuffer.wrap(Message.toByteArray(m)));
+		Value value = null;
+		if(m.isControl()){
+			value = new Value(ByteBuffer.wrap(m.getCommands().get(0).getValue()));
+			value.setControl(true);
+		}else{
+			value = new Value(ByteBuffer.wrap(Message.toByteArray(m)));
+		}
 		try {
 			//long start = System.nanoTime();
 			long ret = 1; //proposer.propose(value);

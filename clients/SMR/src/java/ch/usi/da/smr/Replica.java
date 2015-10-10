@@ -72,7 +72,7 @@ public class Replica implements Receiver {
 			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
 		} catch (NumberFormatException | IOException e) {
 		}
-		System.setProperty("logfilename", host + "-" + pid + ".log");
+		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
 	}
 
 	private final static Logger logger = Logger.getLogger(Replica.class);
@@ -135,7 +135,7 @@ public class Replica implements Receiver {
 	public void start(){
 		partitions.registerPartitionChangeNotifier(this);
 		// install old state
-		exec_instance = load();
+		//FIXME: disabled recovery! exec_instance = load();
 		// start listening
 		ab.registerReceiver(this);
 		if(min_token > max_token){
@@ -156,12 +156,13 @@ public class Replica implements Receiver {
 
 	@Override
 	public void receive(Message m) {
-		logger.debug("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
+		logger.info("Replica received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 		
 		// skip already executed commands
-		if(m.getInstnce() <= exec_instance.get(m.getRing())){
+		/*FIXME: disabled recovery!if(m.getInstnce() <= exec_instance.get(m.getRing())){
 			return;
-		}else if(m.isSkip()){ // skip skip-instances
+		}*/
+		if(m.isSkip() || m.isControl()){ // skip skip-instances
 			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
@@ -169,12 +170,12 @@ public class Replica implements Receiver {
 		List<Command> cmds = new ArrayList<Command>();
 
 		// recover if a not ascending instance arrives 
-		if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
+		/*FIXME: disabled recovery! if(m.getInstnce()-1 != exec_instance.get(m.getRing())){
 			while(m.getInstnce()-1 > exec_instance.get(m.getRing())){
 				logger.info("Replica start recovery: " + exec_instance.get(m.getRing()) + " to " + (m.getInstnce()-1));				
 				exec_instance = load();
 			}
-		}
+		}*/
 		
 		// write snapshot
 		exec_cmd++;

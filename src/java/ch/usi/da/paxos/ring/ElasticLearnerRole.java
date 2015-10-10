@@ -79,10 +79,11 @@ public class ElasticLearnerRole extends Role implements Learner {
 		RingManager rm = initial_ring.getRingManager();
 		node = rm.getPaxosNode();
 		replication_group = node.getGroupID();
+		logger.info("ElasticLearnerRole replication group " + replication_group);
 		rings.add(rm.getRingID());
 		ringmap.put(rm.getRingID(),initial_ring);
 		deliverRing = rm.getRingID();
-		logger.debug("ElasticLearnerRole initial ring=" + deliverRing);
+		logger.info("ElasticLearnerRole initial ring " + deliverRing);
 		if(rm.getConfiguration().containsKey(ConfigKey.deliver_skip_messages)){
 			if(rm.getConfiguration().get(ConfigKey.deliver_skip_messages).contains("1")){
 				deliver_skip_messages = true;
@@ -155,9 +156,19 @@ public class ElasticLearnerRole extends Role implements Learner {
 									// align the new stream
 									if(v_count[newRing] < maxPosition){
 										while(true){
-											learner[newRing].getDecisions().take();
-											v_count[newRing]++;
-											if(v_count[newRing] == maxPosition){
+											Decision d2 = learner[newRing].getDecisions().take();
+											if(d2.getValue() != null && d2.getValue().isSkip()){
+												try {
+													long skip = Long.parseLong(new String(d2.getValue().getValue()));
+													v_count[newRing] = v_count[newRing] + skip;
+												}catch (NumberFormatException e) {
+													logger.error("ElasticLearnerRole received incomplete SKIP message in new ring! -> " + d2,e);
+												}										
+											}
+											else{
+												v_count[newRing]++;
+											}
+											if(v_count[newRing] >= maxPosition){ // >= because of skips
 												break;
 											}
 										}
@@ -180,6 +191,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete subscribe message! -> " + d,e);
 						}
+						if(deliver_skip_messages){
+							values.add(d);
+						}
 					}else if(d.getValue() != null && d.getValue().isSkip()){
 						// skip message
 						try {
@@ -189,7 +203,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 						}catch (NumberFormatException e) {
 							logger.error("ElasticLearnerRole received incomplete SKIP message! -> " + d,e);
 						}
-						if(deliver_skip_messages){ //TODO: will this violate ordering
+						if(deliver_skip_messages){
 							values.add(d);
 						}
 					}else{
@@ -229,6 +243,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 			}
 		}
 		if(add){
+			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"); //TODO:
 			rings.add(newRing);
 			return minRing(rings);
 		}

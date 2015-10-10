@@ -84,6 +84,13 @@ public class Command {
 		return count;
 	}
 	
+	public boolean isControl(){
+		if(type == CommandType.SUBSCRIBE || type == CommandType.UNSUBSCRIBE){
+			return true;
+		}
+		return false;
+	}
+	
 	public String toString(){
 		return ("Command id:" + id + " type:" + type + " key:" + key);
 	}
@@ -116,6 +123,11 @@ public class Command {
 			cmd.setType(CmdType.GETRANGE); break;			
 		case RESPONSE:
 			cmd.setType(CmdType.RESPONSE); break;
+		case SUBSCRIBE:
+			cmd.setType(CmdType.SUBSCRIBE); break;
+		case UNSUBSCRIBE:
+			cmd.setType(CmdType.UNSUBSCRIBE); break;
+
 		}
 		cmd.setKey(c.getKey());
 		cmd.setValue(c.getValue());
@@ -166,6 +178,10 @@ public class Command {
 			type = CommandType.RESPONSE; break;
 		case GETRANGE:
 			type = CommandType.GETRANGE; break;
+		case SUBSCRIBE:
+			type = CommandType.SUBSCRIBE; break;
+		case UNSUBSCRIBE:
+			type = CommandType.UNSUBSCRIBE; break;
 		}
 		return new Command(c.getId(),type,c.getKey(),c.getValue(),c.getCount());
 	}

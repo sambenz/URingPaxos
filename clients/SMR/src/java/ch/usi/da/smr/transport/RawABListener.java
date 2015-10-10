@@ -44,7 +44,8 @@ public class RawABListener implements ABListener, Runnable {
 	private final Node paxos;
 	
 	public RawABListener(int nodeID, String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
-		paxos = new Node(nodeID, zoo_host, rings);
+		int groupID = rings.get(0).getRingID(); // assume groupID is equal to default ringID!
+		paxos = new Node(nodeID, groupID, zoo_host, rings);
 		paxos.start();
 	}
 
@@ -52,7 +53,14 @@ public class RawABListener implements ABListener, Runnable {
 	public void run() {
 		while(true) {
 			try {
-				Decision d = paxos.getLearner().getDecisions().peek();
+				Decision d = paxos.getLearner().getDecisions().take();
+				if(d != null && d.getValue() != null){					
+					Message m = Message.fromDecision(d);
+					if(m != null && receiver != null){
+						receiver.receive(m);
+					}
+				}
+				/*Decision d = paxos.getLearner().getDecisions().peek();
 				if(d != null && receiver.is_ready(d.getRing(),d.getInstance())){ // keep in queue until ready
 					d = paxos.getLearner().getDecisions().take();
 					if(d != null && d.getValue() != null){					
@@ -61,7 +69,7 @@ public class RawABListener implements ABListener, Runnable {
 							receiver.receive(m);
 						}
 					}
-				}
+				}*/
 			} catch (InterruptedException | RuntimeException e) {
 				break;
 			}

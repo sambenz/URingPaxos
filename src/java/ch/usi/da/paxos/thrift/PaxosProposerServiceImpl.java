@@ -50,7 +50,13 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 	public long propose(Value value) throws TException {
 		byte[] b = new byte[value.cmd.remaining()];
 		value.cmd.get(b);
-		FutureDecision f = proposer.propose(b);
+		FutureDecision f = null;
+		if(value.isControl()){
+			logger.debug("TrhiftProposer received control message " + new String(b));
+			f = proposer.control(new String(b));
+		}else{
+			f = proposer.propose(b);
+		}
 		try {
 			Decision d = f.getDecision(3000);
 			if(d != null){
@@ -67,7 +73,12 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 	public void nb_propose(Value value) throws TException {
 		byte[] b = new byte[value.cmd.remaining()];
 		value.cmd.get(b);
-		proposer.propose(b);
+		if(value.isControl()){
+			logger.debug("TrhiftProposer received control message " + new String(b));
+			proposer.control(new String(b));
+		}else{
+			proposer.propose(b);
+		}
 	}
 
 }

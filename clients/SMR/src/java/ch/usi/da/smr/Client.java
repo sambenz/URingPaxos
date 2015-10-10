@@ -78,7 +78,7 @@ public class Client implements Receiver {
 			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
 		} catch (NumberFormatException | IOException e) {
 		}
-		System.setProperty("logfilename", host + "-" + pid + ".log");
+		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
 	}
 	
 	private final static Logger logger = Logger.getLogger(Client.class);
@@ -135,12 +135,18 @@ public class Client implements Receiver {
 		    while((s = in.readLine()) != null && s.length() != 0){
 		    	// read input
 		    	String[] line = s.split("\\s+");
-		    	if(s.startsWith("start")){
+		    	if(s.startsWith("sub")){
+		    		subscribeGlobal(1);
+		    		cmd = null;
+		    	}else if(s.startsWith("unsub")){
+		    		unsubscribeGlobal(1);
+		    		cmd = null;
+		    	}else if(s.startsWith("start")){
 		    		cmd = null;
 		    		final int concurrent_cmd; // # of threads
 		    		final int send_per_thread;
 		    		final int value_size;
-		    		final int key_count = 50000; // 50k * 15k byte memory needed at replica
+		    		final int key_count = 50000; // 50k * 1k byte memory needed at replica
 		    		String[] sl = s.split(" ");
 		    		if(sl.length > 1){
 			    		concurrent_cmd = Integer.parseInt(sl[1]);
@@ -149,7 +155,7 @@ public class Client implements Receiver {
 		    		}else{
 			    		concurrent_cmd = 10;
 			    		send_per_thread = 50000;
-			    		value_size = 200;		    					    			
+			    		value_size = 1024;		    					    			
 		    		}
 		    		final AtomicInteger send_id = new AtomicInteger(0);
 		    		final AtomicLong stat_latency = new AtomicLong();
@@ -243,7 +249,7 @@ public class Client implements Receiver {
 		    	if(cmd != null){
 		    		Response r = null;
 		        	if((r = send(cmd)) != null){
-		        		List<Command> response = r.getResponse(1000); // wait response
+		        		List<Command> response = r.getResponse(10000); // wait response
 		        		if(!response.isEmpty()){
 		        			for(Command c : response){
 		    	    			if(c.getType() == CommandType.RESPONSE){
@@ -275,6 +281,49 @@ public class Client implements Receiver {
 		udp.close();
 	}
 
+	public void subscribeGlobal(int groupID) throws Exception {
+		int oldRing = groupID;
+		int newRing  = partitions.getGlobalRing();
+    	synchronized(send_queues){
+		if(!send_queues.containsKey(oldRing)){
+    			send_queues.put(oldRing,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(oldRing,this));
+    			t.setName("BatchSender-" + oldRing);
+    			t.start();
+    	}}
+    	synchronized(send_queues){
+		if(!send_queues.containsKey(newRing)){
+    			send_queues.put(newRing,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(newRing,this));
+    			t.setName("BatchSender-" + newRing);
+    			t.start();
+    	}}
+    	String c = "s," + groupID + "," + newRing;
+    	Command cmd = new Command(-1,CommandType.SUBSCRIBE,String.valueOf(groupID),c.getBytes());
+		Response r1 = new Response(cmd);
+		commands.put(cmd.getID(),r1);
+		send_queues.get(oldRing).add(r1);
+		Response r2 = new Response(cmd);
+		commands.put(cmd.getID(),r2);
+    	send_queues.get(newRing).add(r2);
+	}
+	
+	public void unsubscribeGlobal(int groupID) throws Exception {
+		int removeRing  = partitions.getGlobalRing();
+    	synchronized(send_queues){
+		if(!send_queues.containsKey(removeRing)){
+    			send_queues.put(removeRing,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(removeRing,this));
+    			t.setName("BatchSender-" + removeRing);
+    			t.start();
+    	}}
+    	String c = "u," + groupID + "," + removeRing;
+    	Command cmd = new Command(-1,CommandType.UNSUBSCRIBE,String.valueOf(groupID),c.getBytes());
+		Response r1 = new Response(cmd);
+		commands.put(cmd.getID(),r1);
+		send_queues.get(removeRing).add(r1);
+	}
+	
 	/**
 	 * Send a command (use same ID if your Response ended in a timeout)
 	 * 
@@ -290,11 +339,13 @@ public class Client implements Receiver {
 		int ring = -1;
     	if(cmd.getType() == CommandType.GETRANGE){
     		ring  = partitions.getGlobalRing();
+    		subscribeGlobal(1);
+    		Thread.sleep(6000);
     		List<String> await = new ArrayList<String>();
     		for(Partition p : partitions.getPartitions()){
     			await.add(p.getID());
     		}
-    		await_response.put(cmd.getID(),await);
+    		//FIXME: also subset of partition await_response.put(cmd.getID(),await);
     	}else{
     		ring = partitions.getRing(cmd.getKey());
 			// special case for EC2 inter-region app;

@@ -59,9 +59,9 @@ public class ThriftNode {
 			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
 		} catch (NumberFormatException | IOException e) {
 		}
-		System.setProperty("logfilename", host + "-" + pid + ".log");
-		System.setProperty("valuesfilename", host + "-" + pid + ".values");
-		System.setProperty("proposalfilename", host + "-" + pid + ".proposal");		
+		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
+		System.setProperty("valuesfilename", "L" + host + "-" + pid + ".values");
+		System.setProperty("proposalfilename", "L" + host + "-" + pid + ".proposal");		
 	}
 
 	/**

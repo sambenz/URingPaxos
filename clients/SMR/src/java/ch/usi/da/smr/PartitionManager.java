@@ -189,9 +189,10 @@ public class PartitionManager implements Watcher {
 		role.add(PaxosRole.Learner);
 		List<RingDescription> rings = new ArrayList<RingDescription>();
 		rings.add(new RingDescription(ring,role));
-		if(getGlobalRing() > 0){
+		// disabled for dynamic subscription
+		/*if(getGlobalRing() > 0){
 			rings.add(new RingDescription(getGlobalRing(),role));
-		}
+		}*/
 		logger.debug("Create RawABListener " + rings);
 		Thread.sleep(1000); // wait until PartitionManger is ready
 		return new RawABListener(replicaID,zoo_host,rings);
