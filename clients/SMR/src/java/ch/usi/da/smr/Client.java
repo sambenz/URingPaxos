@@ -154,7 +154,7 @@ public class Client implements Receiver {
 			    		value_size = Integer.parseInt(sl[3]);		    			
 		    		}else{
 			    		concurrent_cmd = 10;
-			    		send_per_thread = 50000;
+			    		send_per_thread = 25000;
 			    		value_size = 1024;		    					    			
 		    		}
 		    		final AtomicInteger send_id = new AtomicInteger(0);
@@ -191,6 +191,36 @@ public class Client implements Receiver {
 		    		stats.start();
 		    		logger.info("Start performance testing with " + concurrent_cmd + " threads.");
 		    		logger.info("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
+	    			Thread c = new Thread("Experiemnt controller"){
+						@Override
+						public void run(){
+							try {
+								//TODO: the experiment
+								Thread.sleep(12000);
+							
+								/*
+								long time1 = System.nanoTime();
+								subscribeGlobal(1);
+								//Thread.sleep(1000);
+								int id = send_id.incrementAndGet();
+								Command cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								Response r = null;
+								long time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 1 " + lat1 + " " + lat2);
+								}
+								Thread.sleep(2000);
+								unsubscribeGlobal(1);
+								*/
+								
+							} catch (Exception e) {
+							}
+						}
+					};
+					c.start();
 		    		for(int i=0;i<concurrent_cmd;i++){
 		    			Thread t = new Thread("Command Sender " + i){
 							@Override
@@ -221,6 +251,8 @@ public class Client implements Receiver {
 						t.start();
 		    		}
 		    		await.await(); // wait until finished
+		    		id = send_id.incrementAndGet();
+		    		Thread.sleep(5000);
 		    		printHistogram();
 		    	}else if(line.length > 3){
 		    		try{
@@ -370,11 +402,13 @@ public class Client implements Receiver {
 		logger.debug("Client received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 		
 		// filter away already received replica answers
-		if(delivered.contains(m.getID())){
+		//FIXME: disabled because of Hash collisions! 
+		/*if(delivered.contains(m.getID())){
+			logger.error("dublicate " + m);
 			return;
 		}else{
 			delivered.add(m.getID());
-		}
+		}*/
 		
 		// un-batch response (multiple responses per command_id)
 		for(Command c : m.getCommands()){
@@ -491,10 +525,8 @@ public class Client implements Receiver {
 		}
 		float avg = (float)sum/latency.size()/1000/1000;
 		logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
-		if(logger.isDebugEnabled()){
-			for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
-				logger.debug(bin.getKey() + "," + bin.getValue());
-			}
+		for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
+			logger.info(bin.getKey() + "," + bin.getValue());
 		}
 	}
 
