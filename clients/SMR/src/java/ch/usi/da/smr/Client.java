@@ -137,9 +137,15 @@ public class Client implements Receiver {
 		    	String[] line = s.split("\\s+");
 		    	if(s.startsWith("sub")){
 		    		subscribeGlobal(1);
+		    		subscribeGlobal(2);
+		    		subscribeGlobal(3);
+		    		subscribeGlobal(4);		    		
 		    		cmd = null;
 		    	}else if(s.startsWith("unsub")){
 		    		unsubscribeGlobal(1);
+		    		unsubscribeGlobal(2);
+		    		unsubscribeGlobal(3);
+		    		unsubscribeGlobal(4);		    		
 		    		cmd = null;
 		    	}else if(s.startsWith("start")){
 		    		cmd = null;
@@ -191,16 +197,17 @@ public class Client implements Receiver {
 		    		stats.start();
 		    		logger.info("Start performance testing with " + concurrent_cmd + " threads.");
 		    		logger.info("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
-	    			Thread c = new Thread("Experiemnt controller"){
+	    			/*Thread c = new Thread("Experiemnt controller"){
 						@Override
 						public void run(){
 							try {
 								//TODO: the experiment
 								Thread.sleep(12000);
 							
-								/*
+								// 1,2
 								long time1 = System.nanoTime();
 								subscribeGlobal(1);
+								subscribeGlobal(2);
 								//Thread.sleep(1000);
 								int id = send_id.incrementAndGet();
 								Command cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
@@ -210,17 +217,131 @@ public class Client implements Receiver {
 									r.getResponse(5000); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
-									logger.info("GETRANGE 1 " + lat1 + " " + lat2);
+									logger.info("GETRANGE 1,2 " + lat1 + " " + lat2);
 								}
-								Thread.sleep(2000);
+								//Thread.sleep(2000);
 								unsubscribeGlobal(1);
-								*/
+								unsubscribeGlobal(2);
+								
+								// 1,3
+								Thread.sleep(6000);
+								time1 = System.nanoTime();
+								subscribeGlobal(1);
+								subscribeGlobal(3);
+								//Thread.sleep(1000);
+								id = send_id.incrementAndGet();
+								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								r = null;
+								time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 1,3 " + lat1 + " " + lat2);
+								}
+								//Thread.sleep(2000);
+								unsubscribeGlobal(1);
+								unsubscribeGlobal(3);
+								
+								// 1,4
+								Thread.sleep(6000);
+								time1 = System.nanoTime();
+								subscribeGlobal(1);
+								subscribeGlobal(4);
+								//Thread.sleep(1000);
+								id = send_id.incrementAndGet();
+								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								r = null;
+								time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 1,4 " + lat1 + " " + lat2);
+								}
+								//Thread.sleep(2000);
+								unsubscribeGlobal(1);
+								unsubscribeGlobal(4);
+
+								// 2,3
+								Thread.sleep(6000);
+								time1 = System.nanoTime();
+								subscribeGlobal(2);
+								subscribeGlobal(3);
+								//Thread.sleep(1000);
+								id = send_id.incrementAndGet();
+								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								r = null;
+								time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 2,3 " + lat1 + " " + lat2);
+								}
+								//Thread.sleep(2000);
+								unsubscribeGlobal(2);
+								unsubscribeGlobal(3);
+
+								// 2,4
+								
+								// 3,4
+								
+								// 1,2,3
+								Thread.sleep(6000);
+								time1 = System.nanoTime();
+								subscribeGlobal(1);
+								subscribeGlobal(2);
+								subscribeGlobal(3);								
+								//Thread.sleep(1000);
+								id = send_id.incrementAndGet();
+								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								r = null;
+								time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 1,2,3 " + lat1 + " " + lat2);
+								}
+								//Thread.sleep(2000);
+								unsubscribeGlobal(1);
+								unsubscribeGlobal(2);								
+								unsubscribeGlobal(3);
+
+								// 1,2,4
+								// 1,3,4
+								// 2,3,4
+								
+								// 1,2,3,4
+								Thread.sleep(6000);
+								time1 = System.nanoTime();
+								subscribeGlobal(1);
+								subscribeGlobal(2);
+								subscribeGlobal(3);
+								subscribeGlobal(4);
+								//Thread.sleep(1000);
+								id = send_id.incrementAndGet();
+								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								r = null;
+								time2 = System.nanoTime();
+								if((r = send(cmd)) != null){
+									r.getResponse(5000); // wait response
+									long lat1 = System.nanoTime() - time1;
+									long lat2 = System.nanoTime() - time2;									
+									logger.info("GETRANGE 1,2,3,4 " + lat1 + " " + lat2);
+								}
+								//Thread.sleep(2000);
+								unsubscribeGlobal(1);
+								unsubscribeGlobal(2);
+								unsubscribeGlobal(3);
+								unsubscribeGlobal(4);
 								
 							} catch (Exception e) {
 							}
 						}
 					};
-					c.start();
+					c.start();*/
 		    		for(int i=0;i<concurrent_cmd;i++){
 		    			Thread t = new Thread("Command Sender " + i){
 							@Override
