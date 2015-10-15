@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import ch.usi.da.paxos.message.Control;
 import ch.usi.da.smr.message.Command;
 
 /**
@@ -43,10 +44,18 @@ public class Response {
 	
 	private final Command cmd;
 	
+	private final Control control;
+	
 	public Response(Command cmd){
 		this.cmd = cmd;
+		this.control = null;
 	}
 	
+	public Response(Control control){
+		this.cmd = null;
+		this.control = control;
+	}
+
 	public boolean isProccessed(){
 		return (done.getCount() == 0);
 	}
@@ -67,6 +76,17 @@ public class Response {
 	
 	public Command getCommand(){
 		return cmd;
+	}
+	
+	public boolean isControl(){
+		if(control != null){
+			return true;
+		}
+		return false;
+	}
+	
+	public Control getControl(){
+		return control;
 	}
 	
 	public List<Command> getResponse(int timeout) throws InterruptedException {

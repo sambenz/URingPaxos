@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.Util;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
@@ -137,15 +139,15 @@ public class Client implements Receiver {
 		    	String[] line = s.split("\\s+");
 		    	if(s.startsWith("sub")){
 		    		subscribeGlobal(1);
-		    		subscribeGlobal(2);
-		    		subscribeGlobal(3);
-		    		subscribeGlobal(4);		    		
+		    		//subscribeGlobal(2);
+		    		//subscribeGlobal(3);
+		    		//subscribeGlobal(4);		    		
 		    		cmd = null;
 		    	}else if(s.startsWith("unsub")){
 		    		unsubscribeGlobal(1);
-		    		unsubscribeGlobal(2);
-		    		unsubscribeGlobal(3);
-		    		unsubscribeGlobal(4);		    		
+		    		//unsubscribeGlobal(2);
+		    		//unsubscribeGlobal(3);
+		    		//unsubscribeGlobal(4);		    		
 		    		cmd = null;
 		    	}else if(s.startsWith("start")){
 		    		cmd = null;
@@ -201,7 +203,6 @@ public class Client implements Receiver {
 						@Override
 						public void run(){
 							try {
-								//TODO: the experiment
 								Thread.sleep(12000);
 							
 								// 1,2
@@ -451,13 +452,12 @@ public class Client implements Receiver {
     			t.setName("BatchSender-" + newRing);
     			t.start();
     	}}
-    	String c = "s," + groupID + "," + newRing;
-    	Command cmd = new Command(-1,CommandType.SUBSCRIBE,String.valueOf(groupID),c.getBytes());
-		Response r1 = new Response(cmd);
-		commands.put(cmd.getID(),r1);
+    	Control c = new Control(1,ControlType.Subscribe,groupID,newRing);
+		Response r1 = new Response(c);
+		commands.put(c.getID(),r1);
 		send_queues.get(oldRing).add(r1);
-		Response r2 = new Response(cmd);
-		commands.put(cmd.getID(),r2);
+		Response r2 = new Response(c);
+		commands.put(c.getID(),r2);
     	send_queues.get(newRing).add(r2);
 	}
 	
@@ -470,10 +470,10 @@ public class Client implements Receiver {
     			t.setName("BatchSender-" + removeRing);
     			t.start();
     	}}
-    	String c = "u," + groupID + "," + removeRing;
-    	Command cmd = new Command(-1,CommandType.UNSUBSCRIBE,String.valueOf(groupID),c.getBytes());
-		Response r1 = new Response(cmd);
-		commands.put(cmd.getID(),r1);
+    	//String c = "u," + groupID + "," + removeRing;
+    	Control c = new Control(1,ControlType.Unsubscribe,groupID,removeRing);
+		Response r1 = new Response(c);
+		commands.put(c.getID(),r1);
 		send_queues.get(removeRing).add(r1);
 	}
 	

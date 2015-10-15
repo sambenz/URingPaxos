@@ -4,23 +4,21 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package ch.usi.da.smr.thrift.gen;
+package ch.usi.da.paxos.thrift.gen;
 
 
 import java.util.Map;
 import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
-public enum CmdType implements org.apache.thrift.TEnum {
-  GET(0),
-  GETRANGE(1),
-  PUT(2),
-  DELETE(3),
-  RESPONSE(4);
+public enum ControlType implements org.apache.thrift.TEnum {
+  SUBSCRIBE(0),
+  UNSUBSCRIBE(1),
+  PREPARE(2);
 
   private final int value;
 
-  private CmdType(int value) {
+  private ControlType(int value) {
     this.value = value;
   }
 
@@ -35,18 +33,14 @@ public enum CmdType implements org.apache.thrift.TEnum {
    * Find a the enum type by its integer value, as defined in the Thrift IDL.
    * @return null if the value is not found.
    */
-  public static CmdType findByValue(int value) { 
+  public static ControlType findByValue(int value) { 
     switch (value) {
       case 0:
-        return GET;
+        return SUBSCRIBE;
       case 1:
-        return GETRANGE;
+        return UNSUBSCRIBE;
       case 2:
-        return PUT;
-      case 3:
-        return DELETE;
-      case 4:
-        return RESPONSE;
+        return PREPARE;
       default:
         return null;
     }

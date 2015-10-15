@@ -71,11 +71,9 @@ public class BatchSender implements Runnable {
 		while(true){
 			try {
 				Response r = queue.take();
-				if(r.getCommand().isControl()){
-					List<Command> cmds = new ArrayList<Command>();
-					cmds.add(r.getCommand());
-					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
-					m.setControl(true);
+				if(r.isControl()){
+					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",null);
+					m.setControl(r.getControl());
 					sender.abroadcast(m);
 				}else{
 					List<Command> cmds = new ArrayList<Command>();

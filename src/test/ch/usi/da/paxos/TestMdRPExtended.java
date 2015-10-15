@@ -77,7 +77,7 @@ public class TestMdRPExtended {
 		s = "m2";
 		s1.getProposer(1).propose(s.getBytes());
 
-		Control c = new Control(1L,ControlType.Subscribe,1,2);
+		Control c = new Control(1,ControlType.Subscribe,1,2);
 		s1.getProposer(1).control(c);
 		Thread.sleep(2000);		
 		s2.getProposer(2).control(c);
@@ -90,7 +90,7 @@ public class TestMdRPExtended {
 		s = "m4";
 		s2.getProposer(2).propose(s.getBytes());
 
-		c = new Control(2L,ControlType.Subscribe,1,3);
+		c = new Control(2,ControlType.Subscribe,1,3);
 		s1.getProposer(1).control(c);
 		s2.getProposer(2).control(c);
 		Thread.sleep(2000);		
@@ -110,7 +110,7 @@ public class TestMdRPExtended {
 
 		Thread.sleep(2000);
 		
-		c = new Control(3L,ControlType.Subscribe,1,4);
+		c = new Control(3,ControlType.Subscribe,1,4);
 		s1.getProposer(1).control(c);
 		s2.getProposer(2).control(c);
 		s3.getProposer(3).control(c);

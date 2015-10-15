@@ -45,10 +45,6 @@ public class RawABListener implements ABListener, Runnable {
 	
 	public RawABListener(int nodeID, String zoo_host, List<RingDescription> rings) throws IOException, KeeperException, InterruptedException {
 		int groupID = rings.get(0).getRingID(); // assume groupID is equal to default ringID!
-		//FIXME: remove! just added for a test
-		if(nodeID == 5){
-			groupID = 2;
-		}
 		paxos = new Node(nodeID, groupID, zoo_host, rings);
 		paxos.start();
 	}

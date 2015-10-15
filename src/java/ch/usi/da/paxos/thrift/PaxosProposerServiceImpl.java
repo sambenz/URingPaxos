@@ -21,8 +21,9 @@ package ch.usi.da.paxos.thrift;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
-import ch.usi.da.paxos.TTYNode;
 import ch.usi.da.paxos.api.Proposer;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.FutureDecision;
 import ch.usi.da.paxos.thrift.gen.PaxosProposerService;
@@ -49,13 +50,24 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 
 	@Override
 	public long propose(Value value) throws TException {
-		byte[] b = new byte[value.cmd.remaining()];
-		value.cmd.get(b);
 		FutureDecision f = null;
-		if(value.isControl()){
-			logger.debug("TrhiftProposer received control message " + new String(b));
-			f = proposer.control(TTYNode.parseControl(new String(b))); //FIXME
+		if(value.isSetControl()){
+			ch.usi.da.paxos.thrift.gen.Control c = value.getControl();
+			ControlType type = null;
+			switch(c.getType()){
+			case PREPARE:
+				type = ControlType.Prepare; break;
+			case SUBSCRIBE:
+				type = ControlType.Subscribe; break;
+			case UNSUBSCRIBE:
+				type = ControlType.Unsubscribe; break;
+			}
+			Control control = new Control(c.getId(),type,c.getGroup(),c.getRing());
+			logger.debug("TrhiftProposer received control message " + control);
+			f = proposer.control(control);
 		}else{
+			byte[] b = new byte[value.cmd.remaining()];
+			value.cmd.get(b);
 			f = proposer.propose(b);
 		}
 		try {
@@ -72,14 +84,24 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 
 	@Override
 	public void nb_propose(Value value) throws TException {
-		byte[] b = new byte[value.cmd.remaining()];
-		value.cmd.get(b);
-		if(value.isControl()){
-			logger.debug("TrhiftProposer received control message " + new String(b));
-			proposer.control(TTYNode.parseControl(new String(b)));  //FIXME
+		if(value.isSetControl()){
+			ch.usi.da.paxos.thrift.gen.Control c = value.getControl();
+			ControlType type = null;
+			switch(c.getType()){
+			case PREPARE:
+				type = ControlType.Prepare; break;
+			case SUBSCRIBE:
+				type = ControlType.Subscribe; break;
+			case UNSUBSCRIBE:
+				type = ControlType.Unsubscribe; break;
+			}
+			Control control = new Control(c.getId(),type,c.getGroup(),c.getRing());
+			logger.debug("TrhiftProposer received control message " + control);
+			proposer.control(control);
 		}else{
+			byte[] b = new byte[value.cmd.remaining()];
+			value.cmd.get(b);
 			proposer.propose(b);
 		}
 	}
-
 }

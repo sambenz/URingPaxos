@@ -32,45 +32,39 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.Serializable, Cloneable, Comparable<Cmd> {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Cmd");
+public class Control implements org.apache.thrift.TBase<Control, Control._Fields>, java.io.Serializable, Cloneable, Comparable<Control> {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Control");
 
   private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
-  private static final org.apache.thrift.protocol.TField KEY_FIELD_DESC = new org.apache.thrift.protocol.TField("key", org.apache.thrift.protocol.TType.STRING, (short)3);
-  private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRING, (short)4);
-  private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I32, (short)5);
-  private static final org.apache.thrift.protocol.TField CONTROL_FIELD_DESC = new org.apache.thrift.protocol.TField("control", org.apache.thrift.protocol.TType.STRUCT, (short)6);
+  private static final org.apache.thrift.protocol.TField GROUP_FIELD_DESC = new org.apache.thrift.protocol.TField("group", org.apache.thrift.protocol.TType.I32, (short)3);
+  private static final org.apache.thrift.protocol.TField RING_FIELD_DESC = new org.apache.thrift.protocol.TField("ring", org.apache.thrift.protocol.TType.I32, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new CmdStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new CmdTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new ControlStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new ControlTupleSchemeFactory());
   }
 
   public int id; // required
   /**
    * 
-   * @see CmdType
+   * @see ControlType
    */
-  public CmdType type; // required
-  public String key; // required
-  public ByteBuffer value; // required
-  public int count; // required
-  public Control control; // optional
+  public ControlType type; // required
+  public int group; // required
+  public int ring; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
     /**
      * 
-     * @see CmdType
+     * @see ControlType
      */
     TYPE((short)2, "type"),
-    KEY((short)3, "key"),
-    VALUE((short)4, "value"),
-    COUNT((short)5, "count"),
-    CONTROL((short)6, "control");
+    GROUP((short)3, "group"),
+    RING((short)4, "ring");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -89,14 +83,10 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
           return ID;
         case 2: // TYPE
           return TYPE;
-        case 3: // KEY
-          return KEY;
-        case 4: // VALUE
-          return VALUE;
-        case 5: // COUNT
-          return COUNT;
-        case 6: // CONTROL
-          return CONTROL;
+        case 3: // GROUP
+          return GROUP;
+        case 4: // RING
+          return RING;
         default:
           return null;
       }
@@ -138,72 +128,58 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
 
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
-  private static final int __COUNT_ISSET_ID = 1;
+  private static final int __GROUP_ISSET_ID = 1;
+  private static final int __RING_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.CONTROL};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.ID, new org.apache.thrift.meta_data.FieldMetaData("id", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.TYPE, new org.apache.thrift.meta_data.FieldMetaData("type", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CmdType.class)));
-    tmpMap.put(_Fields.KEY, new org.apache.thrift.meta_data.FieldMetaData("key", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.VALUE, new org.apache.thrift.meta_data.FieldMetaData("value", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
-    tmpMap.put(_Fields.COUNT, new org.apache.thrift.meta_data.FieldMetaData("count", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, ControlType.class)));
+    tmpMap.put(_Fields.GROUP, new org.apache.thrift.meta_data.FieldMetaData("group", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
-    tmpMap.put(_Fields.CONTROL, new org.apache.thrift.meta_data.FieldMetaData("control", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Control.class)));
+    tmpMap.put(_Fields.RING, new org.apache.thrift.meta_data.FieldMetaData("ring", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Cmd.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Control.class, metaDataMap);
   }
 
-  public Cmd() {
+  public Control() {
   }
 
-  public Cmd(
+  public Control(
     int id,
-    CmdType type,
-    String key,
-    ByteBuffer value,
-    int count)
+    ControlType type,
+    int group,
+    int ring)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.type = type;
-    this.key = key;
-    this.value = value;
-    this.count = count;
-    setCountIsSet(true);
+    this.group = group;
+    setGroupIsSet(true);
+    this.ring = ring;
+    setRingIsSet(true);
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public Cmd(Cmd other) {
+  public Control(Control other) {
     __isset_bitfield = other.__isset_bitfield;
     this.id = other.id;
     if (other.isSetType()) {
       this.type = other.type;
     }
-    if (other.isSetKey()) {
-      this.key = other.key;
-    }
-    if (other.isSetValue()) {
-      this.value = org.apache.thrift.TBaseHelper.copyBinary(other.value);
-;
-    }
-    this.count = other.count;
-    if (other.isSetControl()) {
-      this.control = new Control(other.control);
-    }
+    this.group = other.group;
+    this.ring = other.ring;
   }
 
-  public Cmd deepCopy() {
-    return new Cmd(this);
+  public Control deepCopy() {
+    return new Control(this);
   }
 
   @Override
@@ -211,18 +187,17 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     setIdIsSet(false);
     this.id = 0;
     this.type = null;
-    this.key = null;
-    this.value = null;
-    setCountIsSet(false);
-    this.count = 0;
-    this.control = null;
+    setGroupIsSet(false);
+    this.group = 0;
+    setRingIsSet(false);
+    this.ring = 0;
   }
 
   public int getId() {
     return this.id;
   }
 
-  public Cmd setId(int id) {
+  public Control setId(int id) {
     this.id = id;
     setIdIsSet(true);
     return this;
@@ -243,17 +218,17 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
 
   /**
    * 
-   * @see CmdType
+   * @see ControlType
    */
-  public CmdType getType() {
+  public ControlType getType() {
     return this.type;
   }
 
   /**
    * 
-   * @see CmdType
+   * @see ControlType
    */
-  public Cmd setType(CmdType type) {
+  public Control setType(ControlType type) {
     this.type = type;
     return this;
   }
@@ -273,109 +248,50 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     }
   }
 
-  public String getKey() {
-    return this.key;
+  public int getGroup() {
+    return this.group;
   }
 
-  public Cmd setKey(String key) {
-    this.key = key;
+  public Control setGroup(int group) {
+    this.group = group;
+    setGroupIsSet(true);
     return this;
   }
 
-  public void unsetKey() {
-    this.key = null;
+  public void unsetGroup() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __GROUP_ISSET_ID);
   }
 
-  /** Returns true if field key is set (has been assigned a value) and false otherwise */
-  public boolean isSetKey() {
-    return this.key != null;
+  /** Returns true if field group is set (has been assigned a value) and false otherwise */
+  public boolean isSetGroup() {
+    return EncodingUtils.testBit(__isset_bitfield, __GROUP_ISSET_ID);
   }
 
-  public void setKeyIsSet(boolean value) {
-    if (!value) {
-      this.key = null;
-    }
+  public void setGroupIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __GROUP_ISSET_ID, value);
   }
 
-  public byte[] getValue() {
-    setValue(org.apache.thrift.TBaseHelper.rightSize(value));
-    return value == null ? null : value.array();
+  public int getRing() {
+    return this.ring;
   }
 
-  public ByteBuffer bufferForValue() {
-    return value;
-  }
-
-  public Cmd setValue(byte[] value) {
-    setValue(value == null ? (ByteBuffer)null : ByteBuffer.wrap(value));
+  public Control setRing(int ring) {
+    this.ring = ring;
+    setRingIsSet(true);
     return this;
   }
 
-  public Cmd setValue(ByteBuffer value) {
-    this.value = value;
-    return this;
+  public void unsetRing() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __RING_ISSET_ID);
   }
 
-  public void unsetValue() {
-    this.value = null;
+  /** Returns true if field ring is set (has been assigned a value) and false otherwise */
+  public boolean isSetRing() {
+    return EncodingUtils.testBit(__isset_bitfield, __RING_ISSET_ID);
   }
 
-  /** Returns true if field value is set (has been assigned a value) and false otherwise */
-  public boolean isSetValue() {
-    return this.value != null;
-  }
-
-  public void setValueIsSet(boolean value) {
-    if (!value) {
-      this.value = null;
-    }
-  }
-
-  public int getCount() {
-    return this.count;
-  }
-
-  public Cmd setCount(int count) {
-    this.count = count;
-    setCountIsSet(true);
-    return this;
-  }
-
-  public void unsetCount() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __COUNT_ISSET_ID);
-  }
-
-  /** Returns true if field count is set (has been assigned a value) and false otherwise */
-  public boolean isSetCount() {
-    return EncodingUtils.testBit(__isset_bitfield, __COUNT_ISSET_ID);
-  }
-
-  public void setCountIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __COUNT_ISSET_ID, value);
-  }
-
-  public Control getControl() {
-    return this.control;
-  }
-
-  public Cmd setControl(Control control) {
-    this.control = control;
-    return this;
-  }
-
-  public void unsetControl() {
-    this.control = null;
-  }
-
-  /** Returns true if field control is set (has been assigned a value) and false otherwise */
-  public boolean isSetControl() {
-    return this.control != null;
-  }
-
-  public void setControlIsSet(boolean value) {
-    if (!value) {
-      this.control = null;
-    }
+  public void setRingIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __RING_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -392,39 +308,23 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (value == null) {
         unsetType();
       } else {
-        setType((CmdType)value);
+        setType((ControlType)value);
       }
       break;
 
-    case KEY:
+    case GROUP:
       if (value == null) {
-        unsetKey();
+        unsetGroup();
       } else {
-        setKey((String)value);
+        setGroup((Integer)value);
       }
       break;
 
-    case VALUE:
+    case RING:
       if (value == null) {
-        unsetValue();
+        unsetRing();
       } else {
-        setValue((ByteBuffer)value);
-      }
-      break;
-
-    case COUNT:
-      if (value == null) {
-        unsetCount();
-      } else {
-        setCount((Integer)value);
-      }
-      break;
-
-    case CONTROL:
-      if (value == null) {
-        unsetControl();
-      } else {
-        setControl((Control)value);
+        setRing((Integer)value);
       }
       break;
 
@@ -439,17 +339,11 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     case TYPE:
       return getType();
 
-    case KEY:
-      return getKey();
+    case GROUP:
+      return Integer.valueOf(getGroup());
 
-    case VALUE:
-      return getValue();
-
-    case COUNT:
-      return Integer.valueOf(getCount());
-
-    case CONTROL:
-      return getControl();
+    case RING:
+      return Integer.valueOf(getRing());
 
     }
     throw new IllegalStateException();
@@ -466,14 +360,10 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       return isSetId();
     case TYPE:
       return isSetType();
-    case KEY:
-      return isSetKey();
-    case VALUE:
-      return isSetValue();
-    case COUNT:
-      return isSetCount();
-    case CONTROL:
-      return isSetControl();
+    case GROUP:
+      return isSetGroup();
+    case RING:
+      return isSetRing();
     }
     throw new IllegalStateException();
   }
@@ -482,12 +372,12 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof Cmd)
-      return this.equals((Cmd)that);
+    if (that instanceof Control)
+      return this.equals((Control)that);
     return false;
   }
 
-  public boolean equals(Cmd that) {
+  public boolean equals(Control that) {
     if (that == null)
       return false;
 
@@ -509,39 +399,21 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         return false;
     }
 
-    boolean this_present_key = true && this.isSetKey();
-    boolean that_present_key = true && that.isSetKey();
-    if (this_present_key || that_present_key) {
-      if (!(this_present_key && that_present_key))
+    boolean this_present_group = true;
+    boolean that_present_group = true;
+    if (this_present_group || that_present_group) {
+      if (!(this_present_group && that_present_group))
         return false;
-      if (!this.key.equals(that.key))
-        return false;
-    }
-
-    boolean this_present_value = true && this.isSetValue();
-    boolean that_present_value = true && that.isSetValue();
-    if (this_present_value || that_present_value) {
-      if (!(this_present_value && that_present_value))
-        return false;
-      if (!this.value.equals(that.value))
+      if (this.group != that.group)
         return false;
     }
 
-    boolean this_present_count = true;
-    boolean that_present_count = true;
-    if (this_present_count || that_present_count) {
-      if (!(this_present_count && that_present_count))
+    boolean this_present_ring = true;
+    boolean that_present_ring = true;
+    if (this_present_ring || that_present_ring) {
+      if (!(this_present_ring && that_present_ring))
         return false;
-      if (this.count != that.count)
-        return false;
-    }
-
-    boolean this_present_control = true && this.isSetControl();
-    boolean that_present_control = true && that.isSetControl();
-    if (this_present_control || that_present_control) {
-      if (!(this_present_control && that_present_control))
-        return false;
-      if (!this.control.equals(that.control))
+      if (this.ring != that.ring)
         return false;
     }
 
@@ -554,7 +426,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
   }
 
   @Override
-  public int compareTo(Cmd other) {
+  public int compareTo(Control other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
@@ -581,42 +453,22 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetKey()).compareTo(other.isSetKey());
+    lastComparison = Boolean.valueOf(isSetGroup()).compareTo(other.isSetGroup());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetKey()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.key, other.key);
+    if (isSetGroup()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.group, other.group);
       if (lastComparison != 0) {
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetValue()).compareTo(other.isSetValue());
+    lastComparison = Boolean.valueOf(isSetRing()).compareTo(other.isSetRing());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetValue()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.value, other.value);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetCount()).compareTo(other.isSetCount());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCount()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.count, other.count);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetControl()).compareTo(other.isSetControl());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetControl()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.control, other.control);
+    if (isSetRing()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ring, other.ring);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -638,7 +490,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("Cmd(");
+    StringBuilder sb = new StringBuilder("Control(");
     boolean first = true;
 
     sb.append("id:");
@@ -653,35 +505,13 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("key:");
-    if (this.key == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.key);
-    }
+    sb.append("group:");
+    sb.append(this.group);
     first = false;
     if (!first) sb.append(", ");
-    sb.append("value:");
-    if (this.value == null) {
-      sb.append("null");
-    } else {
-      org.apache.thrift.TBaseHelper.toString(this.value, sb);
-    }
+    sb.append("ring:");
+    sb.append(this.ring);
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("count:");
-    sb.append(this.count);
-    first = false;
-    if (isSetControl()) {
-      if (!first) sb.append(", ");
-      sb.append("control:");
-      if (this.control == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.control);
-      }
-      first = false;
-    }
     sb.append(")");
     return sb.toString();
   }
@@ -689,9 +519,6 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
     // check for sub-struct validity
-    if (control != null) {
-      control.validate();
-    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -712,15 +539,15 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
     }
   }
 
-  private static class CmdStandardSchemeFactory implements SchemeFactory {
-    public CmdStandardScheme getScheme() {
-      return new CmdStandardScheme();
+  private static class ControlStandardSchemeFactory implements SchemeFactory {
+    public ControlStandardScheme getScheme() {
+      return new ControlStandardScheme();
     }
   }
 
-  private static class CmdStandardScheme extends StandardScheme<Cmd> {
+  private static class ControlStandardScheme extends StandardScheme<Control> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, Cmd struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, Control struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -740,41 +567,24 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
             break;
           case 2: // TYPE
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.type = CmdType.findByValue(iprot.readI32());
+              struct.type = ControlType.findByValue(iprot.readI32());
               struct.setTypeIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // KEY
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.key = iprot.readString();
-              struct.setKeyIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 4: // VALUE
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.value = iprot.readBinary();
-              struct.setValueIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 5: // COUNT
+          case 3: // GROUP
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.count = iprot.readI32();
-              struct.setCountIsSet(true);
+              struct.group = iprot.readI32();
+              struct.setGroupIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 6: // CONTROL
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.control = new Control();
-              struct.control.read(iprot);
-              struct.setControlIsSet(true);
+          case 4: // RING
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.ring = iprot.readI32();
+              struct.setRingIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -790,7 +600,7 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, Cmd struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, Control struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -802,42 +612,28 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
         oprot.writeI32(struct.type.getValue());
         oprot.writeFieldEnd();
       }
-      if (struct.key != null) {
-        oprot.writeFieldBegin(KEY_FIELD_DESC);
-        oprot.writeString(struct.key);
-        oprot.writeFieldEnd();
-      }
-      if (struct.value != null) {
-        oprot.writeFieldBegin(VALUE_FIELD_DESC);
-        oprot.writeBinary(struct.value);
-        oprot.writeFieldEnd();
-      }
-      oprot.writeFieldBegin(COUNT_FIELD_DESC);
-      oprot.writeI32(struct.count);
+      oprot.writeFieldBegin(GROUP_FIELD_DESC);
+      oprot.writeI32(struct.group);
       oprot.writeFieldEnd();
-      if (struct.control != null) {
-        if (struct.isSetControl()) {
-          oprot.writeFieldBegin(CONTROL_FIELD_DESC);
-          struct.control.write(oprot);
-          oprot.writeFieldEnd();
-        }
-      }
+      oprot.writeFieldBegin(RING_FIELD_DESC);
+      oprot.writeI32(struct.ring);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
 
   }
 
-  private static class CmdTupleSchemeFactory implements SchemeFactory {
-    public CmdTupleScheme getScheme() {
-      return new CmdTupleScheme();
+  private static class ControlTupleSchemeFactory implements SchemeFactory {
+    public ControlTupleScheme getScheme() {
+      return new ControlTupleScheme();
     }
   }
 
-  private static class CmdTupleScheme extends TupleScheme<Cmd> {
+  private static class ControlTupleScheme extends TupleScheme<Control> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, Cmd struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, Control struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
       if (struct.isSetId()) {
@@ -846,67 +642,46 @@ public class Cmd implements org.apache.thrift.TBase<Cmd, Cmd._Fields>, java.io.S
       if (struct.isSetType()) {
         optionals.set(1);
       }
-      if (struct.isSetKey()) {
+      if (struct.isSetGroup()) {
         optionals.set(2);
       }
-      if (struct.isSetValue()) {
+      if (struct.isSetRing()) {
         optionals.set(3);
       }
-      if (struct.isSetCount()) {
-        optionals.set(4);
-      }
-      if (struct.isSetControl()) {
-        optionals.set(5);
-      }
-      oprot.writeBitSet(optionals, 6);
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetId()) {
         oprot.writeI32(struct.id);
       }
       if (struct.isSetType()) {
         oprot.writeI32(struct.type.getValue());
       }
-      if (struct.isSetKey()) {
-        oprot.writeString(struct.key);
+      if (struct.isSetGroup()) {
+        oprot.writeI32(struct.group);
       }
-      if (struct.isSetValue()) {
-        oprot.writeBinary(struct.value);
-      }
-      if (struct.isSetCount()) {
-        oprot.writeI32(struct.count);
-      }
-      if (struct.isSetControl()) {
-        struct.control.write(oprot);
+      if (struct.isSetRing()) {
+        oprot.writeI32(struct.ring);
       }
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, Cmd struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, Control struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(6);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.id = iprot.readI32();
         struct.setIdIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.type = CmdType.findByValue(iprot.readI32());
+        struct.type = ControlType.findByValue(iprot.readI32());
         struct.setTypeIsSet(true);
       }
       if (incoming.get(2)) {
-        struct.key = iprot.readString();
-        struct.setKeyIsSet(true);
+        struct.group = iprot.readI32();
+        struct.setGroupIsSet(true);
       }
       if (incoming.get(3)) {
-        struct.value = iprot.readBinary();
-        struct.setValueIsSet(true);
-      }
-      if (incoming.get(4)) {
-        struct.count = iprot.readI32();
-        struct.setCountIsSet(true);
-      }
-      if (incoming.get(5)) {
-        struct.control = new Control();
-        struct.control.read(iprot);
-        struct.setControlIsSet(true);
+        struct.ring = iprot.readI32();
+        struct.setRingIsSet(true);
       }
     }
   }

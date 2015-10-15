@@ -28,6 +28,7 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
+import ch.usi.da.paxos.message.Control;
 import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.thrift.gen.PaxosProposerService;
 import ch.usi.da.smr.thrift.gen.Value;
@@ -59,9 +60,20 @@ public class ThriftABSender implements ABSender {
 	@Override
 	public long abroadcast(Message m){
 		Value value = null;
-		if(m.isControl()){
-			value = new Value(ByteBuffer.wrap(m.getCommands().get(0).getValue()));
-			value.setControl(true);
+		if(m.isSetControl()){
+			Control c = m.getControl();
+			ch.usi.da.smr.thrift.gen.ControlType type = null;
+			switch(c.getType()){
+			case Prepare:
+				type = ch.usi.da.smr.thrift.gen.ControlType.PREPARE; break;
+			case Subscribe:
+				type = ch.usi.da.smr.thrift.gen.ControlType.SUBSCRIBE; break;
+			case Unsubscribe:
+				type = ch.usi.da.smr.thrift.gen.ControlType.UNSUBSCRIBE; break;
+			}
+			ch.usi.da.smr.thrift.gen.Control control = new ch.usi.da.smr.thrift.gen.Control(c.getID(),type,c.getGroupID(),c.getRingID());
+			value = new Value();
+			value.setControl(control);
 		}else{
 			value = new Value(ByteBuffer.wrap(Message.toByteArray(m)));
 		}

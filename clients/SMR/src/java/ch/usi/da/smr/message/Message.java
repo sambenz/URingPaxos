@@ -26,6 +26,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TBinaryProtocol;
 
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.smr.thrift.gen.Cmd;
 import ch.usi.da.smr.thrift.gen.Decision;
 
@@ -54,7 +56,7 @@ public class Message {
 	
 	private boolean skip = false;
 	
-	private boolean control = false;
+	private Control control = null;
 	
 	public Message(int id,String from,String to,List<Command> commands){
 		this.id = id;
@@ -102,17 +104,29 @@ public class Message {
 	public boolean isSkip(){
 		return skip;
 	}
+	
+	public boolean isSetControl(){
+		if(control != null){
+			return true;
+		}
+		return false;
+	}
 
-	public void setControl(boolean control){
+	public void setControl(Control control){
 		this.control = control;
+		
 	}
 	
-	public boolean isControl(){
+	public Control getControl(){
 		return control;
 	}
-
+	
 	public String toString(){
-		return ("Message id:" + id + " from:" + from + " to:" + to + " " + commands);
+		if(control != null){
+			return ("Message id:" + id + " from:" + from + " to:" + to + " " + control);
+		}else{
+			return ("Message id:" + id + " from:" + from + " to:" + to + " " + commands);
+		}
 	}
 	
 	public boolean equals(Object obj) {
@@ -182,9 +196,19 @@ public class Message {
 		if(decision.isSetValue() && decision.getValue().isSkip()){
 			m = new Message(0,"","",null);
 			m.setSkip(true);
-		}else if(decision.isSetValue() && decision.getValue().isControl()){
-			m = new Message(0,"","",null);
-			m.setControl(true);
+		}else if(decision.isSetValue() && decision.getValue().isSetControl()){
+			ch.usi.da.smr.thrift.gen.Control c = decision.getValue().getControl();
+			m = new Message(0,"","",null); // not used in replica
+			ControlType type = null;
+			switch(c.getType()){
+			case PREPARE:
+				type = ControlType.Prepare; break;
+			case SUBSCRIBE:
+				type = ControlType.Subscribe; break;
+			case UNSUBSCRIBE:
+				type = ControlType.Unsubscribe; break;
+			}
+			m.setControl(new Control(c.getId(),type,c.getGroup(),c.getRing()));
 		}else{
 			m = fromByteArray(decision.getValue().getCmd());
 		}
@@ -202,7 +226,6 @@ public class Message {
 			m.setSkip(true);
 		}else if(decision.getValue() != null && decision.getValue().isControl()){
 			m = new Message(0,"","",null);
-			m.setControl(true);
 		}else{
 			m = fromByteArray(decision.getValue().getValue());
 		}

@@ -37,7 +37,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
 
   private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRING, (short)1);
   private static final org.apache.thrift.protocol.TField SKIP_FIELD_DESC = new org.apache.thrift.protocol.TField("skip", org.apache.thrift.protocol.TType.BOOL, (short)2);
-  private static final org.apache.thrift.protocol.TField CONTROL_FIELD_DESC = new org.apache.thrift.protocol.TField("control", org.apache.thrift.protocol.TType.BOOL, (short)3);
+  private static final org.apache.thrift.protocol.TField CONTROL_FIELD_DESC = new org.apache.thrift.protocol.TField("control", org.apache.thrift.protocol.TType.STRUCT, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -47,7 +47,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
 
   public ByteBuffer cmd; // required
   public boolean skip; // optional
-  public boolean control; // optional
+  public Control control; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -115,7 +115,6 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
 
   // isset id assignments
   private static final int __SKIP_ISSET_ID = 0;
-  private static final int __CONTROL_ISSET_ID = 1;
   private byte __isset_bitfield = 0;
   private _Fields optionals[] = {_Fields.SKIP,_Fields.CONTROL};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
@@ -126,7 +125,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     tmpMap.put(_Fields.SKIP, new org.apache.thrift.meta_data.FieldMetaData("skip", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
     tmpMap.put(_Fields.CONTROL, new org.apache.thrift.meta_data.FieldMetaData("control", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Control.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Value.class, metaDataMap);
   }
@@ -151,7 +150,9 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
 ;
     }
     this.skip = other.skip;
-    this.control = other.control;
+    if (other.isSetControl()) {
+      this.control = new Control(other.control);
+    }
   }
 
   public Value deepCopy() {
@@ -163,8 +164,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     this.cmd = null;
     setSkipIsSet(false);
     this.skip = false;
-    setControlIsSet(false);
-    this.control = false;
+    this.control = null;
   }
 
   public byte[] getCmd() {
@@ -224,27 +224,28 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SKIP_ISSET_ID, value);
   }
 
-  public boolean isControl() {
+  public Control getControl() {
     return this.control;
   }
 
-  public Value setControl(boolean control) {
+  public Value setControl(Control control) {
     this.control = control;
-    setControlIsSet(true);
     return this;
   }
 
   public void unsetControl() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __CONTROL_ISSET_ID);
+    this.control = null;
   }
 
   /** Returns true if field control is set (has been assigned a value) and false otherwise */
   public boolean isSetControl() {
-    return EncodingUtils.testBit(__isset_bitfield, __CONTROL_ISSET_ID);
+    return this.control != null;
   }
 
   public void setControlIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __CONTROL_ISSET_ID, value);
+    if (!value) {
+      this.control = null;
+    }
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -269,7 +270,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       if (value == null) {
         unsetControl();
       } else {
-        setControl((Boolean)value);
+        setControl((Control)value);
       }
       break;
 
@@ -285,7 +286,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
       return Boolean.valueOf(isSkip());
 
     case CONTROL:
-      return Boolean.valueOf(isControl());
+      return getControl();
 
     }
     throw new IllegalStateException();
@@ -344,7 +345,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     if (this_present_control || that_present_control) {
       if (!(this_present_control && that_present_control))
         return false;
-      if (this.control != that.control)
+      if (!this.control.equals(that.control))
         return false;
     }
 
@@ -430,7 +431,11 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
     if (isSetControl()) {
       if (!first) sb.append(", ");
       sb.append("control:");
-      sb.append(this.control);
+      if (this.control == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.control);
+      }
       first = false;
     }
     sb.append(")");
@@ -440,6 +445,9 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
     // check for sub-struct validity
+    if (control != null) {
+      control.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -495,8 +503,9 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
             }
             break;
           case 3: // CONTROL
-            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-              struct.control = iprot.readBool();
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.control = new Control();
+              struct.control.read(iprot);
               struct.setControlIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -527,10 +536,12 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
         oprot.writeBool(struct.skip);
         oprot.writeFieldEnd();
       }
-      if (struct.isSetControl()) {
-        oprot.writeFieldBegin(CONTROL_FIELD_DESC);
-        oprot.writeBool(struct.control);
-        oprot.writeFieldEnd();
+      if (struct.control != null) {
+        if (struct.isSetControl()) {
+          oprot.writeFieldBegin(CONTROL_FIELD_DESC);
+          struct.control.write(oprot);
+          oprot.writeFieldEnd();
+        }
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -567,7 +578,7 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
         oprot.writeBool(struct.skip);
       }
       if (struct.isSetControl()) {
-        oprot.writeBool(struct.control);
+        struct.control.write(oprot);
       }
     }
 
@@ -584,7 +595,8 @@ public class Value implements org.apache.thrift.TBase<Value, Value._Fields>, jav
         struct.setSkipIsSet(true);
       }
       if (incoming.get(2)) {
-        struct.control = iprot.readBool();
+        struct.control = new Control();
+        struct.control.read(iprot);
         struct.setControlIsSet(true);
       }
     }

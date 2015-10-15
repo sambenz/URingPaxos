@@ -43,18 +43,18 @@ public class TestMessage {
 
 	@Test
 	public void serializeControl() throws Exception {
-		Control c = new Control(1L, ControlType.Subscribe, 2, 5);
+		Control c = new Control(1, ControlType.Subscribe, 2, 5);
 		System.err.println(c);
 		Value v = new Value(Value.getControlID(),Control.toWire(c));
 		System.err.println(v);
 		System.err.println(v.asString());		
 		assertEquals(c,Control.fromWire(Control.toWire(c)));
 		assertEquals(true,c.equals(c));
-		Control c2 = new Control(1L, ControlType.Subscribe, 2, 6);
+		Control c2 = new Control(1, ControlType.Subscribe, 2, 6);
 		assertEquals(false,c.equals(c2));
-		Control c3 = new Control(2L, ControlType.Subscribe, 2, 5);
+		Control c3 = new Control(2, ControlType.Subscribe, 2, 5);
 		assertEquals(false,c.equals(c3));
-		Control c4 = new Control(1L, ControlType.Prepare, 2, 5);
+		Control c4 = new Control(1, ControlType.Prepare, 2, 5);
 		assertEquals(false,c.equals(c4));
 	}
 

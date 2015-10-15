@@ -34,7 +34,7 @@ public class Control implements Serializable {
 
 	private static final long serialVersionUID = -7653083064242882623L;
 	
-	private final long id;
+	private final int id;
 	
 	private final ControlType type;
 	
@@ -42,14 +42,14 @@ public class Control implements Serializable {
 	
 	private final int ringID;
 	
-	public Control(long id, ControlType type, int groupID, int ringID){
+	public Control(int id, ControlType type, int groupID, int ringID){
 		this.id = id;
 		this.type = type;
 		this.groupID = groupID;
 		this.ringID = ringID;
 	}
 	
-	public long getID(){
+	public int getID(){
 		return id;
 	}
 
@@ -114,11 +114,11 @@ public class Control implements Serializable {
 	 */
 	public static byte[] toWire(Control c){
 		ByteBuffer buffer = ByteBuffer.allocate(8+2+4+8);
-		// long  id
+		// int  id
 		// short type
 		// int   group
 		// long  position
-		buffer.putLong(c.getID());
+		buffer.putInt(c.getID());
 		buffer.putShort((short)c.getType().getId());
 		buffer.putInt(c.getGroupID());
 		buffer.putInt(c.getRingID());		
@@ -134,7 +134,7 @@ public class Control implements Serializable {
 	public static Control fromWire(byte[] b) {
 		ByteBuffer buffer = ByteBuffer.wrap(b);
 		try {
-			long id = buffer.getLong();
+			int id = buffer.getInt();
 			ControlType type = ControlType.fromId(buffer.getShort());
 			int group = buffer.getInt();
 			int ring = buffer.getInt();

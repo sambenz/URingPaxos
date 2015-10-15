@@ -42,7 +42,6 @@ import ch.usi.da.smr.recovery.DfsRecovery;
 import ch.usi.da.smr.recovery.RecoveryInterface;
 import ch.usi.da.smr.recovery.SnapshotWriter;
 import ch.usi.da.smr.transport.ABListener;
-import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
 
@@ -148,7 +147,7 @@ public class Replica implements Receiver {
 		Thread t = new Thread((Runnable) ab);
 		t.setName("ABListener");
 		t.start();
-		Thread c = new Thread("Experiemnt controller"){
+		/*Thread c = new Thread("Experiemnt controller"){
 			@Override
 			public void run(){
 				try {
@@ -166,12 +165,10 @@ public class Replica implements Receiver {
 						// add ring 2
 						ABSender old_sender = partitions.getThriftABSender(oldRing,2);
 						ABSender new_sender = partitions.getThriftABSender(newRing,2);
-				    	String c = "s," + groupID + "," + newRing;
-				    	Command cmd = new Command(-1,CommandType.SUBSCRIBE,String.valueOf(groupID),c.getBytes());
-				    	List<Command> cmds = new ArrayList<Command>();
-				    	cmds.add(cmd);
-						Message m = new Message(1,ip + ";" + 8000,"",cmds);
-						m.setControl(true);
+				    	//String c = "s," + groupID + "," + newRing;
+						Control c = new Control(1,ControlType.Subscribe,groupID,newRing); 
+						Message m = new Message(1,ip + ";" + 8000,"",null);
+						m.setControl(c);
 						old_sender.abroadcast(m);
 						new_sender.abroadcast(m);
 					
@@ -181,12 +178,9 @@ public class Replica implements Receiver {
 						//Thread.sleep(2000);
 
 						// remove ring 1
-				    	c = "u," + groupID + "," + oldRing;
-				    	cmd = new Command(-1,CommandType.UNSUBSCRIBE,String.valueOf(groupID),c.getBytes());
-				    	cmds.clear();
-				    	cmds.add(cmd);
-						m = new Message(1,ip + ";" + 8000,"",cmds);
-						m.setControl(true);
+				    	c = new Control(2,ControlType.Unsubscribe,groupID,oldRing); 
+						m = new Message(1,ip + ";" + 8000,"",null);
+						m.setControl(c);
 						new_sender.abroadcast(m);
 
 					}
@@ -194,7 +188,7 @@ public class Replica implements Receiver {
 				}
 			}
 		};
-		c.start();
+		c.start();*/
 	}
 
 	public void close(){
@@ -211,7 +205,7 @@ public class Replica implements Receiver {
 		/*FIXME: disabled recovery!if(m.getInstnce() <= exec_instance.get(m.getRing())){
 			return;
 		}*/
-		if(m.isSkip() || m.isControl()){ // skip skip-instances
+		if(m.isSkip() || m.isSetControl()){ // skip skip-instances
 			exec_instance.put(m.getRing(),m.getInstnce());
 			return;
 		}
@@ -310,13 +304,7 @@ public class Replica implements Receiver {
 		int msg_id = MurmurHash.hash32(m.getInstnce() + "-" + token);
 		Message msg = new Message(msg_id,token,m.getFrom(),cmds);
 		//logger.debug("Send UDP: " + msg);
-		if(nodeID == 5){
-			if(token == "7FFFFFFF"){ //FIXME
-				udp.send(msg);
-			}
-		}else{
-			udp.send(msg);
-		}
+		udp.send(msg);
 	}
 
 	public Map<Integer,Long> load(){

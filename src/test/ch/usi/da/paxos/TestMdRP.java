@@ -74,7 +74,7 @@ public class TestMdRP {
 		s = "m3";
 		s1.getProposer(1).propose(s.getBytes());
 
-		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		Control c1 = new Control(1,ControlType.Subscribe,1,2);
 		s1.getProposer(1).control(c1);
 
 		s = "m5";
@@ -88,7 +88,7 @@ public class TestMdRP {
 		s = "m13";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		Control c2 = new Control(1L,ControlType.Unsubscribe,1,2);
+		Control c2 = new Control(1,ControlType.Unsubscribe,1,2);
 		s1.getProposer(1).control(c2);
 
 		s = "m15";
@@ -155,7 +155,7 @@ public class TestMdRP {
 		s = "m7";
 		s1.getProposer(1).propose(s.getBytes());
 
-		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		Control c1 = new Control(1,ControlType.Subscribe,1,2);
 		s1.getProposer(1).control(c1);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		
@@ -168,7 +168,7 @@ public class TestMdRP {
 		s = "m15";
 		s1.getProposer(1).propose(s.getBytes());
 
-		Control c2 = new Control(1L,ControlType.Subscribe,2,1);
+		Control c2 = new Control(1,ControlType.Subscribe,2,1);
 		s1.getProposer(1).control(c2);
 
 		s = "m17";
@@ -230,7 +230,7 @@ public class TestMdRP {
 		String s = "m1";
 		s1.getProposer(1).propose(s.getBytes());
 
-		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		Control c1 = new Control(1,ControlType.Subscribe,1,2);
 		s1.getProposer(1).control(c1);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 
@@ -243,7 +243,7 @@ public class TestMdRP {
 		s = "m9";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		Control c2 = new Control(1L,ControlType.Subscribe,2,1);
+		Control c2 = new Control(1,ControlType.Subscribe,2,1);
 		s1.getProposer(1).control(c2);
 		
 		s = "m11";

@@ -162,7 +162,7 @@ public class TTYNode {
 		}
 	}
 
-	public static Control parseControl(String s){
+	protected static Control parseControl(String s){
 		String[] token = s.split(",");
 		if(token.length > 2){
 			ControlType type = ControlType.Prepare;
@@ -171,7 +171,7 @@ public class TTYNode {
 			}else if(token[0].startsWith("u")){
 				type = ControlType.Unsubscribe;
 			}
-			return new Control(1L,type,Integer.parseInt(token[1]),Integer.parseInt(token[2]));
+			return new Control(1,type,Integer.parseInt(token[1]),Integer.parseInt(token[2]));
 		}else{
 			return null;
 		}
