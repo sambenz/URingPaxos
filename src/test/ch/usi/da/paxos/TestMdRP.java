@@ -13,6 +13,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ch.usi.da.paxos.lab.DummyWatcher;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.storage.Decision;
 
@@ -72,8 +74,8 @@ public class TestMdRP {
 		s = "m3";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s = "s,1,2";
-		s1.getProposer(1).control(s);
+		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		s1.getProposer(1).control(c1);
 
 		s = "m5";
 		s1.getProposer(1).propose(s.getBytes());
@@ -86,8 +88,8 @@ public class TestMdRP {
 		s = "m13";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		s = "u,1,2";
-		s1.getProposer(1).control(s);
+		Control c2 = new Control(1L,ControlType.Unsubscribe,1,2);
+		s1.getProposer(1).control(c2);
 
 		s = "m15";
 		s1.getProposer(1).propose(s.getBytes());
@@ -100,7 +102,7 @@ public class TestMdRP {
 
 		// stream 2
 		s = "s,1,2";
-		s2.getProposer(2).control(s);
+		s2.getProposer(2).control(c1);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 
 		s = "m2";
@@ -115,7 +117,7 @@ public class TestMdRP {
 		s2.getProposer(2).propose(s.getBytes());
 		
 		s = "u,1,2";
-		s2.getProposer(2).control(s);
+		s2.getProposer(2).control(c2);
 		
 		s = "m12";
 		s2.getProposer(2).propose(s.getBytes());
@@ -153,7 +155,8 @@ public class TestMdRP {
 		s = "m7";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s1.getProposer(1).control("s,1,2");
+		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		s1.getProposer(1).control(c1);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		
 		s = "m9";
@@ -164,8 +167,9 @@ public class TestMdRP {
 		s1.getProposer(1).propose(s.getBytes());
 		s = "m15";
 		s1.getProposer(1).propose(s.getBytes());
-		
-		s1.getProposer(1).control("s,2,1");
+
+		Control c2 = new Control(1L,ControlType.Subscribe,2,1);
+		s1.getProposer(1).control(c2);
 
 		s = "m17";
 		s1.getProposer(1).propose(s.getBytes());
@@ -179,7 +183,7 @@ public class TestMdRP {
 		s = "m4";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("s,1,2");
+		s2.getProposer(2).control(c1);
 
 		s = "m6";
 		s2.getProposer(2).propose(s.getBytes());
@@ -190,7 +194,7 @@ public class TestMdRP {
 		s = "m12";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("s,2,1");
+		s2.getProposer(2).control(c2);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		s = "m21";
 		s1.getProposer(1).propose(s.getBytes());
@@ -226,7 +230,8 @@ public class TestMdRP {
 		String s = "m1";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s1.getProposer(1).control("s,1,2");
+		Control c1 = new Control(1L,ControlType.Subscribe,1,2);
+		s1.getProposer(1).control(c1);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 
 		s = "m3";
@@ -238,7 +243,8 @@ public class TestMdRP {
 		s = "m9";
 		s1.getProposer(1).propose(s.getBytes());
 		
-		s1.getProposer(1).control("s,2,1");
+		Control c2 = new Control(1L,ControlType.Subscribe,2,1);
+		s1.getProposer(1).control(c2);
 		
 		s = "m11";
 		s1.getProposer(1).propose(s.getBytes());
@@ -260,7 +266,7 @@ public class TestMdRP {
 		s = "m6";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("s,2,1");
+		s2.getProposer(2).control(c2);
 		Thread.sleep(2000); // give time to start up; recovery starts when next value is proposed
 		s = "m21";
 		s1.getProposer(1).propose(s.getBytes());
@@ -276,7 +282,7 @@ public class TestMdRP {
 		s = "m14";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s2.getProposer(2).control("s,1,2");
+		s2.getProposer(2).control(c1);
 
 		s = "m16";
 		s2.getProposer(2).propose(s.getBytes());

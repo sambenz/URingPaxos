@@ -35,6 +35,7 @@ import ch.usi.da.paxos.api.BatchPolicy;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.api.Proposer;
+import ch.usi.da.paxos.message.Control;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
@@ -183,9 +184,9 @@ public class ProposerRole extends Role implements Proposer {
 	 * @param s A string which describes the subscribe command
 	 * @return A FutureDecision object on which you can wait until the value is proposed
 	 */
-	public synchronized FutureDecision control(String s){
+	public synchronized FutureDecision control(Control c){
 		send_count++;
-		Value v = new Value(Value.getControlID(),s.getBytes());
+		Value v = new Value(Value.getControlID(),Control.toWire(c));
 		if(proposallogger.isDebugEnabled()){
 			proposallogger.debug(v);
 		}else if(proposallogger.isInfoEnabled()){

@@ -13,6 +13,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ch.usi.da.paxos.lab.DummyWatcher;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.storage.Decision;
 
@@ -75,10 +77,10 @@ public class TestMdRPExtended {
 		s = "m2";
 		s1.getProposer(1).propose(s.getBytes());
 
-		s = "s,1,2";
-		s1.getProposer(1).control(s);
+		Control c = new Control(1L,ControlType.Subscribe,1,2);
+		s1.getProposer(1).control(c);
 		Thread.sleep(2000);		
-		s2.getProposer(2).control(s);
+		s2.getProposer(2).control(c);
 		s = "m0"; // skipping manually
 		s2.getProposer(2).propose(s.getBytes());
 		s2.getProposer(2).propose(s.getBytes());
@@ -88,11 +90,11 @@ public class TestMdRPExtended {
 		s = "m4";
 		s2.getProposer(2).propose(s.getBytes());
 
-		s = "s,1,3";
-		s1.getProposer(1).control(s);
-		s2.getProposer(2).control(s);
+		c = new Control(2L,ControlType.Subscribe,1,3);
+		s1.getProposer(1).control(c);
+		s2.getProposer(2).control(c);
 		Thread.sleep(2000);		
-		s3.getProposer(3).control(s);
+		s3.getProposer(3).control(c);
 		s = "m0"; // skipping manually
 		s3.getProposer(3).propose(s.getBytes());
 		s3.getProposer(3).propose(s.getBytes());
@@ -108,12 +110,12 @@ public class TestMdRPExtended {
 
 		Thread.sleep(2000);
 		
-		s = "s,1,4";
-		s1.getProposer(1).control(s);
-		s2.getProposer(2).control(s);
-		s3.getProposer(3).control(s);
+		c = new Control(3L,ControlType.Subscribe,1,4);
+		s1.getProposer(1).control(c);
+		s2.getProposer(2).control(c);
+		s3.getProposer(3).control(c);
 		Thread.sleep(2000);
-		s4.getProposer(4).control(s);
+		s4.getProposer(4).control(c);
 		s = "m0"; // skipping manually
 		s4.getProposer(4).propose(s.getBytes());
 		s4.getProposer(4).propose(s.getBytes());

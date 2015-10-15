@@ -21,6 +21,7 @@ package ch.usi.da.paxos.thrift;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
+import ch.usi.da.paxos.TTYNode;
 import ch.usi.da.paxos.api.Proposer;
 import ch.usi.da.paxos.storage.Decision;
 import ch.usi.da.paxos.storage.FutureDecision;
@@ -53,7 +54,7 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 		FutureDecision f = null;
 		if(value.isControl()){
 			logger.debug("TrhiftProposer received control message " + new String(b));
-			f = proposer.control(new String(b));
+			f = proposer.control(TTYNode.parseControl(new String(b))); //FIXME
 		}else{
 			f = proposer.propose(b);
 		}
@@ -75,7 +76,7 @@ public class PaxosProposerServiceImpl implements PaxosProposerService.Iface {
 		value.cmd.get(b);
 		if(value.isControl()){
 			logger.debug("TrhiftProposer received control message " + new String(b));
-			proposer.control(new String(b));
+			proposer.control(TTYNode.parseControl(new String(b)));  //FIXME
 		}else{
 			proposer.propose(b);
 		}

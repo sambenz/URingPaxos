@@ -30,6 +30,8 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosNode;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.ring.RingManager;
 import ch.usi.da.paxos.storage.FutureDecision;
 
@@ -132,8 +134,9 @@ public class Experiment2 implements Runnable {
 
 					Thread.sleep(15000);
 
-					paxos.getProposer(2).control("s,1,2");
-					paxos.getProposer(1).control("s,1,2");
+					Control c = new Control(1,ControlType.Subscribe,1,2);
+					paxos.getProposer(2).control(c);
+					paxos.getProposer(1).control(c);
 					paxos.getProposer(2).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){
@@ -166,9 +169,10 @@ public class Experiment2 implements Runnable {
 					Thread.sleep(15000);
 					
 
-					paxos.getProposer(3).control("s,1,3");
-					paxos.getProposer(2).control("s,1,3");
-					paxos.getProposer(1).control("s,1,3");
+					c = new Control(2,ControlType.Subscribe,1,3);
+					paxos.getProposer(3).control(c);
+					paxos.getProposer(2).control(c);
+					paxos.getProposer(1).control(c);
 					paxos.getProposer(3).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){
@@ -200,10 +204,11 @@ public class Experiment2 implements Runnable {
 					
 					Thread.sleep(15000);
 
-					paxos.getProposer(4).control("s,1,4");
-					paxos.getProposer(3).control("s,1,4");
-					paxos.getProposer(2).control("s,1,4");
-					paxos.getProposer(1).control("s,1,4");
+					c = new Control(3,ControlType.Subscribe,1,4);
+					paxos.getProposer(4).control(c);
+					paxos.getProposer(3).control(c);
+					paxos.getProposer(2).control(c);
+					paxos.getProposer(1).control(c);
 					paxos.getProposer(4).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){

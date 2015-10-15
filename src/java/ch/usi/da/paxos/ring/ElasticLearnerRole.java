@@ -31,6 +31,8 @@ import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.storage.Decision;
 
 /**
@@ -109,13 +111,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 					Decision d = learner[deliverRing].getDecisions().take();
 					if(d.getValue() != null && d.getValue().isControl()){
 						v_count[deliverRing]++;
-						// subscribe message
+						// control message
 						try {
-							String[] token = d.getValue().asString().split(",");
-							String type = token[0];
-							int group = Integer.parseInt(token[1]);
-							int ring = Integer.parseInt(token[2]);
-							if(type.startsWith("s")){
+							Control control = Control.fromWire(d.getValue().getValue());
+							ControlType type = control.getType();
+							int group = control.getGroupID();
+							int ring = control.getRingID();
+							if(type == ControlType.Subscribe){
 								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
 								if(learner[ring] == null && replication_group == group){
 									newRing = ring;
@@ -141,7 +143,8 @@ public class ElasticLearnerRole extends Role implements Learner {
 											v_count[newRing]++;
 										}
 										if(d2 != null && d2.getValue().isControl()){
-											if(d.getValue().asString().equals(d2.getValue().asString())){
+											Control control2 = Control.fromWire(d2.getValue().getValue());
+											if(control.equals(control2)){
 												break;
 											}
 										}
@@ -179,7 +182,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 								}else{
 									rr_count++; //skip it in queue
 								}
-							}else{ // unsubscribe
+							}else if(type == ControlType.Unsubscribe){
 								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
 								if(learner[ring] != null && replication_group == group){
 									rings.remove(new Integer(ring)); // remove entry not index position

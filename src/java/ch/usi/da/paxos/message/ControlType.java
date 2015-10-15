@@ -1,6 +1,6 @@
-package ch.usi.da.paxos.api;
+package ch.usi.da.paxos.message;
 /* 
- * Copyright (c) 2013 Università della Svizzera italiana (USI)
+ * Copyright (c) 2015 Università della Svizzera italiana (USI)
  * 
  * This file is part of URingPaxos.
  *
@@ -18,19 +18,43 @@ package ch.usi.da.paxos.api;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import ch.usi.da.paxos.message.Control;
-import ch.usi.da.paxos.storage.FutureDecision;
-
 /**
- * Name: Proposer<br>
+ * Name: ControlType<br>
  * Description: <br>
  * 
- * Creation date: Jun 21, 2013<br>
+ * Creation date: Oct 15, 2015<br>
  * $Id$
  * 
- * @author leandro.pacheco.de.sousa@usi.ch
+ * @author Samuel Benz benz@geoid.ch
  */
-public interface Proposer {
-	public FutureDecision propose(byte[] b);
-	public FutureDecision control(Control c);
+public enum ControlType {
+	/**
+	 * prepare a subscribe
+	 */
+	Prepare(0),
+	/**
+	 * subscribe
+	 */
+	Subscribe(1),
+	/**
+	 * unsubscribe
+	 */
+	Unsubscribe(2);
+	
+	private final int id;
+	
+	private ControlType(int id) {
+		this.id = id;
+	}
+	
+	public int getId() {
+		return id;
+	}
+	
+	public static ControlType fromId(int id) {
+		for (ControlType t: values()){
+			if (t.id == id) { return t; }
+		}
+		throw new RuntimeException("ControlType " + id + " does not exist!");
+	}
 }

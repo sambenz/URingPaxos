@@ -30,6 +30,8 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.PaxosNode;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.ring.RingManager;
 import ch.usi.da.paxos.storage.FutureDecision;
 
@@ -128,12 +130,12 @@ public class Experiment1 implements Runnable {
 
 					Thread.sleep(45000);
 
-					paxos.getProposer(2).control("s,1,2");
-					paxos.getProposer(1).control("s,1,2");
+					paxos.getProposer(2).control(new Control(1,ControlType.Subscribe,1,2));
+					paxos.getProposer(1).control(new Control(1,ControlType.Subscribe,1,2));
 					paxos.getProposer(2).propose("trigger re-learn".getBytes());
 
 					send1 = false;
-					paxos.getProposer(1).control("u,1,1");
+					paxos.getProposer(1).control(new Control(2,ControlType.Unsubscribe,1,1));
 
 					for(int i=0;i<concurrent_values;i++){
 						Thread t = new Thread("Command Sender 2 " + i){

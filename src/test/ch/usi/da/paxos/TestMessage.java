@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import ch.usi.da.paxos.api.PaxosRole;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
 import ch.usi.da.paxos.message.Value;
@@ -37,6 +39,23 @@ public class TestMessage {
 		assertEquals(m,Message.fromWire(Message.toWire(m)));
 		assertEquals(Message.getCRC32(m),Message.getCRC32(Message.fromWire(Message.toWire(m))));
 		
+	}
+
+	@Test
+	public void serializeControl() throws Exception {
+		Control c = new Control(1L, ControlType.Subscribe, 2, 5);
+		System.err.println(c);
+		Value v = new Value(Value.getControlID(),Control.toWire(c));
+		System.err.println(v);
+		System.err.println(v.asString());		
+		assertEquals(c,Control.fromWire(Control.toWire(c)));
+		assertEquals(true,c.equals(c));
+		Control c2 = new Control(1L, ControlType.Subscribe, 2, 6);
+		assertEquals(false,c.equals(c2));
+		Control c3 = new Control(2L, ControlType.Subscribe, 2, 5);
+		assertEquals(false,c.equals(c3));
+		Control c4 = new Control(1L, ControlType.Prepare, 2, 5);
+		assertEquals(false,c.equals(c4));
 	}
 
 }

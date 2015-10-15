@@ -100,6 +100,8 @@ public class Value implements Serializable {
 	public String toString(){
 		if(isBatch()){
 			return("<batch>");
+		}else if(isControl()){
+			return((Control.fromWire(value)).toString() + " (" + ID + ")");
 		}else if(value.length == 0){
 			return("<none> (" + ID + ")");
 		}else if(new String(value).length()>40){
@@ -112,6 +114,8 @@ public class Value implements Serializable {
 	public String asString(){
 		if(isBatch()){
 			return("<batch>");
+		}else if(isControl()){
+			return (Control.fromWire(value)).toString();
 		}else if(value.length == 0){
 			return("<none>");
 		}else if(new String(value).length()>40){

@@ -30,6 +30,8 @@ import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.paxos.api.PaxosNode;
 import ch.usi.da.paxos.lab.Experiment2;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.message.Value;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.ProposerRole;
@@ -109,7 +111,7 @@ public class TTYNode {
 							}
 						} else if (s.startsWith("!")) {
 							if(paxos.getProposer(ring.getRingID()) != null){
-								paxos.getProposer(ring.getRingID()).control(s.replace("!",""));
+								paxos.getProposer(ring.getRingID()).control(parseControl(s.replace("!","")));
 							}else{
 								logger.info("Node isn't a proposer for ring " + ring.getRingID());
 							}
@@ -131,7 +133,7 @@ public class TTYNode {
 	}
 
 	/**
-	 * Thread that prints learnd values to stdout.
+	 * Thread that prints learned values to stdout.
 	 */
 	private static class StdoutLearner implements Runnable {
 		PaxosNode paxos;
@@ -157,6 +159,21 @@ public class TTYNode {
 					logger.error(e);
 				}
 			}
+		}
+	}
+
+	public static Control parseControl(String s){
+		String[] token = s.split(",");
+		if(token.length > 2){
+			ControlType type = ControlType.Prepare;
+			if(token[0].startsWith("s")){
+				type = ControlType.Subscribe;
+			}else if(token[0].startsWith("u")){
+				type = ControlType.Unsubscribe;
+			}
+			return new Control(1L,type,Integer.parseInt(token[1]),Integer.parseInt(token[2]));
+		}else{
+			return null;
 		}
 	}
 
