@@ -42,6 +42,7 @@ import ch.usi.da.smr.recovery.DfsRecovery;
 import ch.usi.da.smr.recovery.RecoveryInterface;
 import ch.usi.da.smr.recovery.SnapshotWriter;
 import ch.usi.da.smr.transport.ABListener;
+import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
 
@@ -79,7 +80,7 @@ public class Replica implements Receiver {
 	
 	public final int nodeID;
 
-	public final String token;
+	public String token;
 	
 	private final PartitionManager partitions;
 	
@@ -90,6 +91,8 @@ public class Replica implements Receiver {
 	private final UDPSender udp;
 
 	private final ABListener ab;
+	
+	private final InetAddress ip = Util.getHostAddress();
 	
 	private volatile SortedMap<String,byte[]> db;
 		
@@ -112,7 +115,6 @@ public class Replica implements Receiver {
 		this.token = token;
 		this.snapshot_modulo = snapshot_modulo;
 		this.partitions = new PartitionManager(zoo_host);
-		final InetAddress ip = Util.getHostAddress();
 		partitions.init();
 		setPartition(partitions.register(nodeID, ringID, ip, token));
 		udp = new UDPSender();
@@ -146,12 +148,59 @@ public class Replica implements Receiver {
 		Thread t = new Thread((Runnable) ab);
 		t.setName("ABListener");
 		t.start();
+		Thread c = new Thread("Experiemnt controller"){
+			@Override
+			public void run(){
+				try {
+					if(nodeID == 5){
+						//re-partitioning: split group
+						Thread.sleep(35000);
+						
+						//!!!!!!!!!!!! Edit also RawABListener to set correct replication group !!!!!!!!!!!!
+					
+						int oldRing = 1;
+						int newRing = 2;
+						int groupID = 2;
+						token = "7FFFFFFF";
+
+						// add ring 2
+						ABSender old_sender = partitions.getThriftABSender(oldRing,2);
+						ABSender new_sender = partitions.getThriftABSender(newRing,2);
+				    	String c = "s," + groupID + "," + newRing;
+				    	Command cmd = new Command(-1,CommandType.SUBSCRIBE,String.valueOf(groupID),c.getBytes());
+				    	List<Command> cmds = new ArrayList<Command>();
+				    	cmds.add(cmd);
+						Message m = new Message(1,ip + ";" + 8000,"",cmds);
+						m.setControl(true);
+						old_sender.abroadcast(m);
+						new_sender.abroadcast(m);
+					
+						// register new partition
+						setPartition(partitions.register(nodeID, newRing, ip, token));
+						
+						//Thread.sleep(2000);
+
+						// remove ring 1
+				    	c = "u," + groupID + "," + oldRing;
+				    	cmd = new Command(-1,CommandType.UNSUBSCRIBE,String.valueOf(groupID),c.getBytes());
+				    	cmds.clear();
+				    	cmds.add(cmd);
+						m = new Message(1,ip + ";" + 8000,"",cmds);
+						m.setControl(true);
+						new_sender.abroadcast(m);
+
+					}
+				} catch (Exception e) {
+				}
+			}
+		};
+		c.start();
 	}
 
 	public void close(){
 		ab.close();
 		stable_storage.close();
-		//partitions.deregister(nodeID,token);
+		partitions.deregister(nodeID,token);
 	}
 
 	@Override
@@ -261,7 +310,13 @@ public class Replica implements Receiver {
 		int msg_id = MurmurHash.hash32(m.getInstnce() + "-" + token);
 		Message msg = new Message(msg_id,token,m.getFrom(),cmds);
 		//logger.debug("Send UDP: " + msg);
-		udp.send(msg);
+		if(nodeID == 5){
+			if(token == "7FFFFFFF"){ //FIXME
+				udp.send(msg);
+			}
+		}else{
+			udp.send(msg);
+		}
 	}
 
 	public Map<Integer,Long> load(){
