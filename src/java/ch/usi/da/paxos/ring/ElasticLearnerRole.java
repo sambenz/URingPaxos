@@ -117,7 +117,20 @@ public class ElasticLearnerRole extends Role implements Learner {
 							ControlType type = control.getType();
 							int group = control.getGroupID();
 							int ring = control.getRingID();
-							if(type == ControlType.Subscribe){
+							if(type == ControlType.Prepare){
+								logger.info("ElasticLearner received prepare: " + ring + " for group " + group);
+								if(learner[ring] == null && replication_group == group){
+									newRing = ring;
+									List<PaxosRole> rl = new ArrayList<PaxosRole>();
+									rl.add(PaxosRole.Learner);
+									RingDescription rd = new RingDescription(newRing,rl);
+									ringmap.put(newRing,rd);
+									if(!node.updateRing(rd)){
+										logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
+									}
+									startLearner(newRing);
+								}
+							}else if(type == ControlType.Subscribe){
 								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
 								if(learner[ring] == null && replication_group == group){
 									newRing = ring;
@@ -129,6 +142,8 @@ public class ElasticLearnerRole extends Role implements Learner {
 										logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
 									}
 									startLearner(newRing);
+								}
+								if(learner[ring] != null && replication_group == group){
 									while(true){
 										Decision d2 = learner[newRing].getDecisions().take();
 										if(d2.getValue() != null && d2.getValue().isSkip()){

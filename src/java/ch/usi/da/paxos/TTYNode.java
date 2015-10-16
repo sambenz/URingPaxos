@@ -29,7 +29,7 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.paxos.api.PaxosNode;
-import ch.usi.da.paxos.lab.Experiment2;
+import ch.usi.da.paxos.lab.Experiment1;
 import ch.usi.da.paxos.message.Control;
 import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.message.Value;
@@ -92,7 +92,7 @@ public class TTYNode {
 			try {
 				while ((s = in.readLine()) != null && s.length() != 0) {
 					if (s.startsWith("exp")) {
-						Thread t = new Thread(new Experiment2(paxos));
+						Thread t = new Thread(new Experiment1(paxos));
 						t.setName("Experiment");
 						t.run();
 						continue;

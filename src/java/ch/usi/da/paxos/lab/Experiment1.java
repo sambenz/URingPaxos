@@ -56,7 +56,7 @@ public class Experiment1 implements Runnable {
 	
 	private final List<Long> latency = Collections.synchronizedList(new ArrayList<Long>());
 
-	private int concurrent_values = 20;
+	private int concurrent_values = 1;
 	
 	private int value_size = 8912;
 		
@@ -65,6 +65,8 @@ public class Experiment1 implements Runnable {
 	private volatile boolean send1 = true;
 
 	private volatile boolean send2 = true;
+	
+	private volatile boolean running = true;
 
 	public Experiment1(PaxosNode paxos) {
 		this.paxos = paxos;
@@ -102,7 +104,7 @@ public class Experiment1 implements Runnable {
 			private long last_sent_time = 0;
 			@Override
 			public void run() {
-				while(true){
+				while(running){
 					try {
 						long time = System.nanoTime();
 						long sent_count = stat_command.get() - last_sent_count;
@@ -128,11 +130,15 @@ public class Experiment1 implements Runnable {
 			public void run() {
 				try {
 
-					Thread.sleep(45000);
+					Thread.sleep(10000);
+
+					paxos.getProposer(2).control(new Control(3,ControlType.Prepare,1,2));
+					paxos.getProposer(1).control(new Control(3,ControlType.Prepare,1,2));
+
+					Thread.sleep(5000);
 
 					paxos.getProposer(2).control(new Control(1,ControlType.Subscribe,1,2));
 					paxos.getProposer(1).control(new Control(1,ControlType.Subscribe,1,2));
-					paxos.getProposer(2).propose("trigger re-learn".getBytes());
 
 					send1 = false;
 					paxos.getProposer(1).control(new Control(2,ControlType.Unsubscribe,1,1));
@@ -163,12 +169,13 @@ public class Experiment1 implements Runnable {
 						};
 						t.start();
 					}
-					Thread.sleep(45000);
+					Thread.sleep(15000);
 					send2 = false;
 					
 					Thread.sleep(5000);
 					printHistogram();
 					logger.info("Finished experiment!");
+					running = false;
 					
 				} catch (InterruptedException e) {
 				}				
