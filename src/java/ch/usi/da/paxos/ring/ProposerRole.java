@@ -270,7 +270,7 @@ public class ProposerRole extends Role implements Proposer {
 				test = false;
 			}
 		}
-		if(!test && logger.isDebugEnabled()){
+		if(!test && !v.isControl() && logger.isDebugEnabled()){
 			long time = System.nanoTime();
 			long send_time = Long.valueOf(ID.substring(0,ID.length()-1)); // since ID == nano-time + ring-id
 			long lat = time - send_time;

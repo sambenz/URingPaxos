@@ -101,13 +101,17 @@ public class Node implements PaxosNode {
 			logger.info("PID: " + pid);
 		} catch (NumberFormatException | IOException e) {
 		}
-		if(isMultiLearner(rings)){
-			String error = "MultiRingLearner is replaced by ElasticLearner! Please add additional Learners dynamically.";
-			logger.error(error);
-			throw new RuntimeException(error);
-		}
 		for(RingDescription ring : rings){
 			update(ring);
+		}
+		if(isMultiLearner(rings)){
+			logger.error("MultiRingLearner will be replaced by ElasticLearner!");
+			@SuppressWarnings("deprecation")
+			MultiLearnerRole mr = new MultiLearnerRole(rings);
+			learner = mr;
+			Thread t = new Thread(mr);
+			t.setName("MultiRingLearner");
+			t.start();
 		}
 		running = true;
 	}
@@ -140,7 +144,7 @@ public class Node implements PaxosNode {
 				Thread t = new Thread(r);
 				t.setName(role.toString());
 				t.start();						
-			}else if(role.equals(PaxosRole.Learner) && learner == null){
+			}else if(role.equals(PaxosRole.Learner) && learner == null && !isMultiLearner(rings)){
 				ElasticLearnerRole r = new ElasticLearnerRole(ring);
 				logger.debug("Node register role: " + role + " at node " + nodeID + " in ring " + ring.getRingID());
 				learner = r;
