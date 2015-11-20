@@ -637,7 +637,7 @@ public class Client implements Receiver {
 			}else{
 				e++;
 			}
-			Long key = new Long(Math.round(l/1000/1000));
+			Long key = new Long(Math.round(l/1000));
 			if(histogram.containsKey(key)){
 				histogram.put(key,histogram.get(key)+1);
 			}else{
