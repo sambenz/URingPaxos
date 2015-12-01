@@ -42,10 +42,10 @@ import org.apache.zookeeper.ZooKeeper;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.lab.DummyWatcher;
 import ch.usi.da.paxos.ring.RingDescription;
+import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.RawABListener;
-import ch.usi.da.smr.transport.RawABSender;
 import ch.usi.da.smr.transport.ThriftABListener;
 import ch.usi.da.smr.transport.ThriftABSender;
 
@@ -75,13 +75,25 @@ public class PartitionManager implements Watcher {
 	private final List<Partition> partitions = new ArrayList<Partition>();
 	
 	private final Map<String,ABSender> proposers = new HashMap<String,ABSender>();
+
+	private final Map<Integer,List<Integer>> loadbalancer = new HashMap<Integer,List<Integer>>();
 	
+	int position = 1;
+
 	private int global_ring = 16;
 	
 	private Replica replica = null;
+	
+	private final Map<Integer,Integer> connectMap;
 
 	public PartitionManager(String zoo_host) {
 		this.zoo_host = zoo_host;
+		this.connectMap = null;
+	}
+
+	public PartitionManager(String zoo_host,Map<Integer,Integer> connectMap) {
+		this.zoo_host = zoo_host;
+		this.connectMap = connectMap;
 	}
 
 	public void init() throws KeeperException, InterruptedException, IOException {
@@ -103,6 +115,7 @@ public class PartitionManager implements Watcher {
 			zoo.create(path + "/all","16".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		readPartitions();
+		readLBRings();
 	}
 
 	public Partition register(int replicaID, int ringID, InetAddress ip, String token){
@@ -185,6 +198,18 @@ public class PartitionManager implements Watcher {
 		return circle.get(hash);
 	}
 
+	public int getPartition(String key){
+		int hash = MurmurHash.hash32(key);
+		if (circle.isEmpty()) {
+			return -1; // the "all" partition
+		}
+		if (!circle.containsKey(hash)) {
+			SortedMap<Integer, Integer> tailMap = circle.tailMap(hash);
+			hash = tailMap.isEmpty() ? circle.firstKey() : tailMap.firstKey();
+		}
+		return hash;
+	}
+
 	public ABListener getRawABListener(int ring, int replicaID) throws IOException, KeeperException, InterruptedException {
 		List<PaxosRole> role = new ArrayList<PaxosRole>();
 		role.add(PaxosRole.Learner);
@@ -218,7 +243,7 @@ public class PartitionManager implements Watcher {
 		return new ThriftABListener(host,9090+replicaID);
 	}
 
-	public ABSender getRawABSender(int ring, int clientID) throws IOException, KeeperException, InterruptedException {
+	/*public ABSender getRawABSender(int ring, int clientID) throws IOException, KeeperException, InterruptedException {
 		if(proposers.containsKey(ring + "-" + clientID)){
 			return proposers.get(ring + "-" + clientID);
 		}else{
@@ -231,7 +256,7 @@ public class PartitionManager implements Watcher {
 			proposers.put(ring + "-" + clientID, proposer);
 			return proposer;
 		}
-	}
+	}*/
 
 	public ABSender getThriftABSender(int ring, int clientID) throws TTransportException {
 		if(proposers.containsKey(ring + "-" + clientID)){
@@ -256,15 +281,57 @@ public class PartitionManager implements Watcher {
 		}
 	}
 
+	public void sendPartition(int partition,Message m) throws Exception {
+		int ring = loadbalancer.get(partition).get(position-1);
+		position++;
+		if(position > loadbalancer.get(partition).size()){
+			position = 1;
+		}
+		ABSender sender = getThriftABSender(ring,connectMap.get(ring));
+		sender.abroadcast(m);
+	}
+
+	public void sendRing(int ring,Message m) throws Exception {
+		ABSender sender = getThriftABSender(ring,connectMap.get(ring));
+		sender.abroadcast(m);
+	}
+	
 	@Override
 	public void process(WatchedEvent event) {
 		if(event.getType() == EventType.NodeChildrenChanged && event.getPath().startsWith(path)){
 			readPartitions();
+			readLBRings();
+		}
+		if(event.getType() == EventType.NodeDataChanged && event.getPath().startsWith(path)){
+			readLBRings();
 		}
 	}
 
 	public void registerPartitionChangeNotifier(Replica replica) {
 		this.replica = replica;
+	}
+
+	private synchronized void readLBRings(){
+		try {
+			List<String> ls = zoo.getChildren(path, true);
+			for(String s : ls){
+				int part = -1;
+				if(!s.equals("all")){
+					part = Integer.parseInt(s);
+				}
+				String rstring = new String(zoo.getData(path + "/" + s, true, null));
+				List<Integer> rings = new ArrayList<Integer>();
+				String[] ra = rstring.split(",");
+				for(String r : ra){
+					rings.add(Integer.parseInt(r));
+				}
+				loadbalancer.put(part, rings);
+			}
+			position = 1;
+			logger.info("PartitionManger changed LB: " + loadbalancer);
+		} catch (Exception e) {
+			logger.error(e);
+		}
 	}
 
 	private synchronized void readPartitions(){
@@ -273,9 +340,13 @@ public class PartitionManager implements Watcher {
 		try {
 			List<String> ls = zoo.getChildren(path, true);
 			for(String s : ls){
-				int ring = Integer.parseInt(new String(zoo.getData(path + "/" + s, false, null)));
+				String rstring = new String(zoo.getData(path + "/" + s, true, null));
+				String rings[] = rstring.split(",");
+				int ring = Integer.parseInt(rings[0]);
 				if(s.equals("all")){
-					global_ring = Integer.parseInt(new String(zoo.getData(path + "/all", false, null)));
+					String sa = new String(zoo.getData(path + "/all", true, null));
+					String[] ra = sa.split(",");
+					global_ring = Integer.parseInt(ra[0]);
 				}else{
 					circle.put(Integer.parseInt(s,16),ring);
 				}

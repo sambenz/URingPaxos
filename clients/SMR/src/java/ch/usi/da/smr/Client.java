@@ -438,43 +438,28 @@ public class Client implements Receiver {
 	public void subscribeGlobal(int groupID) throws Exception {
 		int oldRing = groupID;
 		int newRing  = partitions.getGlobalRing();
-    	synchronized(send_queues){
-		if(!send_queues.containsKey(oldRing)){
-    			send_queues.put(oldRing,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(oldRing,this));
-    			t.setName("BatchSender-" + oldRing);
-    			t.start();
-    	}}
-    	synchronized(send_queues){
-		if(!send_queues.containsKey(newRing)){
-    			send_queues.put(newRing,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(newRing,this));
-    			t.setName("BatchSender-" + newRing);
-    			t.start();
-    	}}
     	Control c = new Control(1,ControlType.Subscribe,groupID,newRing);
 		Response r1 = new Response(c);
 		commands.put(c.getID(),r1);
-		send_queues.get(oldRing).add(r1);
+		Message m = new Message(1,ip.getHostAddress() + ";" + port,"",null);
+		m.setControl(r1.getControl());
+		partitions.sendRing(oldRing,m);
 		Response r2 = new Response(c);
 		commands.put(c.getID(),r2);
-    	send_queues.get(newRing).add(r2);
+		Message m2 = new Message(1,ip.getHostAddress() + ";" + port,"",null);
+		m2.setControl(r2.getControl());
+		partitions.sendRing(newRing,m2);
 	}
 	
 	public void unsubscribeGlobal(int groupID) throws Exception {
 		int removeRing  = partitions.getGlobalRing();
-    	synchronized(send_queues){
-		if(!send_queues.containsKey(removeRing)){
-    			send_queues.put(removeRing,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(removeRing,this));
-    			t.setName("BatchSender-" + removeRing);
-    			t.start();
-    	}}
     	//String c = "u," + groupID + "," + removeRing;
     	Control c = new Control(1,ControlType.Unsubscribe,groupID,removeRing);
 		Response r1 = new Response(c);
 		commands.put(c.getID(),r1);
-		send_queues.get(removeRing).add(r1);
+		Message m = new Message(1,ip.getHostAddress() + ";" + port,"",null);
+		m.setControl(r1.getControl());
+		partitions.sendRing(removeRing,m);
 	}
 	
 	/**
@@ -489,32 +474,29 @@ public class Client implements Receiver {
 	public Response send(Command cmd) throws Exception {
 		Response r = new Response(cmd);
 		commands.put(cmd.getID(),r);
-		int ring = -1;
+		int partition = -1;
     	if(cmd.getType() == CommandType.GETRANGE){
-    		ring  = partitions.getGlobalRing();
-    		//subscribeGlobal(1);
     		List<String> await = new ArrayList<String>();
     		for(Partition p : partitions.getPartitions()){
     			await.add(p.getID());
     		}
     		//FIXME: also subset of partition await_response.put(cmd.getID(),await);
     	}else{
-    		ring = partitions.getRing(cmd.getKey());
+    		partition = partitions.getPartition(cmd.getKey());
 			// special case for EC2 inter-region app;
 			String single_part = System.getenv("PART");
 			if(single_part != null){
-				ring = Integer.parseInt(single_part);
+				partition = Integer.parseInt(single_part);
 			}
     	}
-		if(ring < 0){ System.err.println("No partition found for key " + cmd.getKey()); return null; };
     	synchronized(send_queues){
-		if(!send_queues.containsKey(ring)){
-    			send_queues.put(ring,new LinkedBlockingQueue<Response>());
-    			Thread t = new Thread(new BatchSender(ring,this));
-    			t.setName("BatchSender-" + ring);
+		if(!send_queues.containsKey(partition)){
+    			send_queues.put(partition,new LinkedBlockingQueue<Response>());
+    			Thread t = new Thread(new BatchSender(partition,this));
+    			t.setName("BatchSender-" + partition);
     			t.start();
     	}}
-    	send_queues.get(ring).add(r);
+    	send_queues.get(partition).add(r);
     	return r;		
 	}
 
@@ -598,7 +580,7 @@ public class Client implements Receiver {
 		} else {
 			final Map<Integer,Integer> connectMap = parseConnectMap(args[0]);
 			try {
-				final PartitionManager partitions = new PartitionManager(zoo_host);
+				final PartitionManager partitions = new PartitionManager(zoo_host,connectMap);
 				partitions.init();
 				final Client client = new Client(partitions,connectMap);
 				Runtime.getRuntime().addShutdownHook(new Thread("ShutdownHook"){

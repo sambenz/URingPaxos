@@ -30,7 +30,6 @@ import org.apache.zookeeper.KeeperException;
 
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.Message;
-import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Response;
 
 /**
@@ -46,7 +45,7 @@ public class BatchSender implements Runnable {
 	
 	private final static Logger logger = Logger.getLogger(BatchSender.class);
 
-	private final ABSender sender;
+	//private final ABSender sender;
 	
 	private final Client client;
 	
@@ -54,16 +53,12 @@ public class BatchSender implements Runnable {
 	
 	private final int batch_size = 8912; // 0: disable
 	
-	private final boolean use_thrift = true;
+	private final int partition;
 	
-	public BatchSender(int ring, Client client) throws TTransportException, IOException, KeeperException, InterruptedException {
+	public BatchSender(int partition, Client client) throws TTransportException, IOException, KeeperException, InterruptedException {
 		this.client = client;
-		if(use_thrift){
-			sender = client.getPartitions().getThriftABSender(ring,client.getConnectMap().get(ring));
-		}else{
-			sender = client.getPartitions().getRawABSender(ring,client.getConnectMap().get(ring));
-		}
-		queue = client.getSendQueues().get(ring);
+		this.partition = partition;
+		queue = client.getSendQueues().get(partition);
 	}
 	
 	@Override
@@ -74,7 +69,7 @@ public class BatchSender implements Runnable {
 				if(r.isControl()){
 					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",null);
 					m.setControl(r.getControl());
-					sender.abroadcast(m);
+					client.getPartitions().sendPartition(partition,m);
 				}else{
 					List<Command> cmds = new ArrayList<Command>();
 					int size = r.getCommand().getValue().length;
@@ -90,9 +85,10 @@ public class BatchSender implements Runnable {
 						logger.debug("BatchSender composed #cmd " + cmds.size() + " with size " + size + " bytes.");
 					}
 					Message m = new Message(1,client.getIp().getHostAddress() + ";" + client.getPort(),"",cmds);
-					sender.abroadcast(m);
+					client.getPartitions().sendPartition(partition,m);
 				}
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
+				e.printStackTrace();
 				Thread.currentThread().interrupt();
 				break;				
 			}
