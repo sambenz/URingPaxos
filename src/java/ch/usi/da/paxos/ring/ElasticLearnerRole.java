@@ -206,6 +206,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 									((LearnerRole)ringmap.get(ring).getRingManager().getNetwork().getLearner()).close();
 									ringmap.get(ring).getRingManager().close();
 									learner[ring] = null;
+									v_count[ring] = 0;
 									deliverRing = minRing(rings); 
 									logger.info("ElasticLearner removed ring " + ring + " at position " + v_count[ring]);
 								}								
