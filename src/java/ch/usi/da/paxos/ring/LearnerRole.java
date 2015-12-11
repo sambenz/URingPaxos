@@ -81,6 +81,8 @@ public class LearnerRole extends Role implements Learner {
 	private boolean recovery = false;
 	
 	private volatile boolean recovered = false;
+
+	public volatile boolean terminate = false;
 			
 	public long deliver_count = 0;
 	
@@ -113,7 +115,7 @@ public class LearnerRole extends Role implements Learner {
 		Thread t = new Thread(new LearnerStatsWriter(ring,this));
 		t.setName("LearnerStatsWriter");
 		t.start();
-		while(true){
+		while(!terminate){
 			try{
 				Decision head = delivery.peek();
 				// initial recovering
@@ -253,6 +255,10 @@ public class LearnerRole extends Role implements Learner {
 		}else{
 			logger.error("Learner setSafeInstance() for not delivered instance number?!");
 		}
+	}
+	
+	public void close(){
+		terminate = true;
 	}
 	
 	private int findPos(long instance) {

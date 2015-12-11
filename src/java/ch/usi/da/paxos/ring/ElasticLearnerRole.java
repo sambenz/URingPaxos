@@ -118,6 +118,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 							int group = control.getGroupID();
 							int ring = control.getRingID();
 							if(type == ControlType.Prepare){
+								long time = System.nanoTime();
 								logger.info("ElasticLearner received prepare: " + ring + " for group " + group);
 								if(learner[ring] == null && replication_group == group){
 									newRing = ring;
@@ -128,8 +129,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 									if(!node.updateRing(rd)){
 										logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
 									}
-									startLearner(newRing);
+									startLearner(newRing);									
 								}
+								logger.info("ElasticLearner prepare end in " + (System.nanoTime()-time));
 							}else if(type == ControlType.Subscribe){
 								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
 								if(learner[ring] == null && replication_group == group){
@@ -201,6 +203,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
 								if(learner[ring] != null && replication_group == group){
 									rings.remove(new Integer(ring)); // remove entry not index position
+									((LearnerRole)ringmap.get(ring).getRingManager().getNetwork().getLearner()).close();
 									ringmap.get(ring).getRingManager().close();
 									learner[ring] = null;
 									deliverRing = minRing(rings); 

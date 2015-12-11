@@ -44,7 +44,7 @@ public class LearnerStatsWriter implements Runnable {
 	private long last_deliver_count = 0;
 
 	private long last_deliver_bytes = 0;
-			
+	
 	public LearnerStatsWriter(RingManager ring, LearnerRole learner) {
 		this.learner = learner;
 		ringID = ring.getRingID();
@@ -75,6 +75,9 @@ public class LearnerStatsWriter implements Runnable {
 				last_deliver_bytes += deliver_bytes;
 				last_time = time;
 				Thread.sleep(1000);
+				if(learner.terminate){
+					break;
+				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break;				
