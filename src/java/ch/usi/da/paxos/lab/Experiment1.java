@@ -56,9 +56,9 @@ public class Experiment1 implements Runnable {
 	
 	private final List<Long> latency = Collections.synchronizedList(new ArrayList<Long>());
 
-	private int concurrent_values = 1;
+	private int concurrent_values = 60;
 	
-	private int value_size = 8912;
+	private int value_size = 32768; //8912;
 		
 	private int value_count = 900000;
 	
@@ -130,7 +130,7 @@ public class Experiment1 implements Runnable {
 			public void run() {
 				try {
 
-					Thread.sleep(10000);
+					Thread.sleep(40000);
 
 					paxos.getProposer(2).control(new Control(3,ControlType.Prepare,1,2));
 					paxos.getProposer(1).control(new Control(3,ControlType.Prepare,1,2));
@@ -169,7 +169,7 @@ public class Experiment1 implements Runnable {
 						};
 						t.start();
 					}
-					Thread.sleep(15000);
+					Thread.sleep(45000);
 					send2 = false;
 					
 					Thread.sleep(5000);
@@ -233,7 +233,7 @@ public class Experiment1 implements Runnable {
 			}else{
 				e++;
 			}
-			Long key = new Long(Math.round(l/1000/1000));
+			Long key = new Long(Math.round(l/1000));
 			if(histogram.containsKey(key)){
 				histogram.put(key,histogram.get(key)+1);
 			}else{
