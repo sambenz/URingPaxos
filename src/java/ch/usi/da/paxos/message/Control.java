@@ -87,7 +87,7 @@ public class Control implements Serializable {
 	}
 	
 	public String toString(){
-		return "control id: " + id + " type: " + type + " in group " + groupID + " at position: " + ringID;
+		return "control id: " + id + " type: " + type + " in group " + groupID + " ring " + ringID;
 	}
 
 	public boolean equals(Object obj) {
