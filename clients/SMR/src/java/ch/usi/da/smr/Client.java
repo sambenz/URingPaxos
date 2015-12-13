@@ -100,9 +100,9 @@ public class Client implements Receiver {
 	private Map<Integer, BlockingQueue<Response>> send_queues = new HashMap<Integer, BlockingQueue<Response>>();
 	
 	// we need only one response per replica group
-	Set<Integer> delivered = Collections.newSetFromMap(new LinkedHashMap<Integer, Boolean>(){
+	Set<Long> delivered = Collections.newSetFromMap(new LinkedHashMap<Long, Boolean>(){
 		private static final long serialVersionUID = -5674181661800265432L;
-		protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
+		protected boolean removeEldestEntry(Map.Entry<Long, Boolean> eldest) {
 	        return size() > 50000;
 	    }
 	});
@@ -112,6 +112,8 @@ public class Client implements Receiver {
 	private final int port;
 	
 	private final Map<Integer,Integer> connectMap;
+	
+	private int controlID = 0;
 	
 	public Client(PartitionManager partitions,Map<Integer,Integer> connectMap) throws IOException {
 		this.partitions = partitions;
@@ -138,16 +140,12 @@ public class Client implements Receiver {
 		    	// read input
 		    	String[] line = s.split("\\s+");
 		    	if(s.startsWith("sub")){
-		    		subscribeGlobal(1);
-		    		//subscribeGlobal(2);
-		    		//subscribeGlobal(3);
-		    		//subscribeGlobal(4);		    		
+		    		prepareGlobal(controlID++,1);
+		    		Thread.sleep(8000);
+		    		subscribeGlobal(controlID++,1);
 		    		cmd = null;
 		    	}else if(s.startsWith("unsub")){
-		    		unsubscribeGlobal(1);
-		    		//unsubscribeGlobal(2);
-		    		//unsubscribeGlobal(3);
-		    		//unsubscribeGlobal(4);		    		
+		    		unsubscribeGlobal(controlID++,1);
 		    		cmd = null;
 		    	}else if(s.startsWith("start")){
 		    		cmd = null;
@@ -161,8 +159,8 @@ public class Client implements Receiver {
 			    		send_per_thread = Integer.parseInt(sl[2]);
 			    		value_size = Integer.parseInt(sl[3]);		    			
 		    		}else{
-			    		concurrent_cmd = 10;
-			    		send_per_thread = 25000;
+			    		concurrent_cmd = 70; //10;
+			    		send_per_thread = 15000;
 			    		value_size = 1024;		    					    			
 		    		}
 		    		final AtomicInteger send_id = new AtomicInteger(0);
@@ -199,91 +197,112 @@ public class Client implements Receiver {
 		    		stats.start();
 		    		logger.info("Start performance testing with " + concurrent_cmd + " threads.");
 		    		logger.info("(values_per_thread:" + send_per_thread + " value_size:" + value_size + ")");
-	    			/*Thread c = new Thread("Experiemnt controller"){
+	    			Thread c = new Thread("Experiemnt controller"){
 						@Override
 						public void run(){
 							try {
 								Thread.sleep(12000);
+								
+								int prepare_time = 2000;
+								int wait_before_getrange = 2000;
+								int wait_before_subscribe = 1000;
+								int cmd_timeout = 0;
 							
 								// 1,2
 								long time1 = System.nanoTime();
-								subscribeGlobal(1);
-								subscribeGlobal(2);
-								//Thread.sleep(1000);
+								prepareGlobal(1,1);
+								prepareGlobal(2,2);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(1,1);
+								subscribeGlobal(2,2);
+								Thread.sleep(wait_before_getrange);
 								int id = send_id.incrementAndGet();
-								Command cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								Command cmd = new Command(id,CommandType.GETRANGE,"user1,2","user2".getBytes(),5);
 								Response r = null;
 								long time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
-									logger.info("GETRANGE 1,2 " + lat1 + " " + lat2);
+									logger.info("GETRANGE 1 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(1);
-								unsubscribeGlobal(2);
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(3,1);
+								unsubscribeGlobal(4,2);
+								Thread.sleep(1000);
 								
 								// 1,3
 								Thread.sleep(6000);
 								time1 = System.nanoTime();
-								subscribeGlobal(1);
-								subscribeGlobal(3);
-								//Thread.sleep(1000);
+								prepareGlobal(5,1);
+								prepareGlobal(6,3);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(5,1);
+								subscribeGlobal(6,3);
+								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,3","user2".getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
 									logger.info("GETRANGE 1,3 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(1);
-								unsubscribeGlobal(3);
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(7,1);
+								unsubscribeGlobal(8,3);
+								Thread.sleep(1000);
 								
 								// 1,4
 								Thread.sleep(6000);
 								time1 = System.nanoTime();
-								subscribeGlobal(1);
-								subscribeGlobal(4);
-								//Thread.sleep(1000);
+								prepareGlobal(9,1);
+								prepareGlobal(10,4);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(9,1);
+								subscribeGlobal(10,4);
+								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,4","user2".getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
 									logger.info("GETRANGE 1,4 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(1);
-								unsubscribeGlobal(4);
-
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(11,1);
+								unsubscribeGlobal(12,4);
+								Thread.sleep(1000);
+								
 								// 2,3
 								Thread.sleep(6000);
 								time1 = System.nanoTime();
-								subscribeGlobal(2);
-								subscribeGlobal(3);
-								//Thread.sleep(1000);
+								prepareGlobal(13,2);
+								prepareGlobal(14,3);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(13,2);
+								subscribeGlobal(14,3);
+								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user2,3","user2".getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
 									logger.info("GETRANGE 2,3 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(2);
-								unsubscribeGlobal(3);
-
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(15,2);
+								unsubscribeGlobal(16,3);
+								Thread.sleep(1000);
+								
 								// 2,4
 								
 								// 3,4
@@ -291,25 +310,30 @@ public class Client implements Receiver {
 								// 1,2,3
 								Thread.sleep(6000);
 								time1 = System.nanoTime();
-								subscribeGlobal(1);
-								subscribeGlobal(2);
-								subscribeGlobal(3);								
-								//Thread.sleep(1000);
+								prepareGlobal(17,1);
+								prepareGlobal(18,2);
+								prepareGlobal(19,3);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(17,1);
+								subscribeGlobal(18,2);
+								subscribeGlobal(19,3);								
+								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3","user2".getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
 									logger.info("GETRANGE 1,2,3 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(1);
-								unsubscribeGlobal(2);								
-								unsubscribeGlobal(3);
-
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(20,1);
+								unsubscribeGlobal(21,2);								
+								unsubscribeGlobal(22,3);
+								Thread.sleep(1000);
+								
 								// 1,2,4
 								// 1,3,4
 								// 2,3,4
@@ -317,32 +341,37 @@ public class Client implements Receiver {
 								// 1,2,3,4
 								Thread.sleep(6000);
 								time1 = System.nanoTime();
-								subscribeGlobal(1);
-								subscribeGlobal(2);
-								subscribeGlobal(3);
-								subscribeGlobal(4);
-								//Thread.sleep(1000);
+								prepareGlobal(23,1);
+								prepareGlobal(24,2);
+								prepareGlobal(25,3);
+								prepareGlobal(26,4);
+								Thread.sleep(prepare_time);
+								subscribeGlobal(23,1);
+								subscribeGlobal(24,2);
+								subscribeGlobal(25,3);
+								subscribeGlobal(26,4);
+								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3,4","user2".getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
-									r.getResponse(5000); // wait response
+									r.getResponse(cmd_timeout); // wait response
 									long lat1 = System.nanoTime() - time1;
 									long lat2 = System.nanoTime() - time2;									
 									logger.info("GETRANGE 1,2,3,4 " + lat1 + " " + lat2);
 								}
-								//Thread.sleep(2000);
-								unsubscribeGlobal(1);
-								unsubscribeGlobal(2);
-								unsubscribeGlobal(3);
-								unsubscribeGlobal(4);
+								Thread.sleep(wait_before_subscribe);
+								unsubscribeGlobal(27,1);
+								unsubscribeGlobal(28,2);
+								unsubscribeGlobal(29,3);
+								unsubscribeGlobal(30,4);
 								
 							} catch (Exception e) {
 							}
 						}
 					};
-					c.start();*/
+					c.start();
 		    		for(int i=0;i<concurrent_cmd;i++){
 		    			Thread t = new Thread("Command Sender " + i){
 							@Override
@@ -435,10 +464,26 @@ public class Client implements Receiver {
 		udp.close();
 	}
 
-	public void subscribeGlobal(int groupID) throws Exception {
+	public void prepareGlobal(int cmdID, int groupID) throws Exception {
 		int oldRing = groupID;
 		int newRing  = partitions.getGlobalRing();
-    	Control c = new Control(1,ControlType.Subscribe,groupID,newRing);
+    	Control c = new Control(cmdID,ControlType.Prepare,groupID,newRing);
+		Response r1 = new Response(c);
+		commands.put(c.getID(),r1);
+		Message m = new Message(1,ip.getHostAddress() + ";" + port,"",null);
+		m.setControl(r1.getControl());
+		partitions.sendRing(oldRing,m);
+		Response r2 = new Response(c);
+		commands.put(c.getID(),r2);
+		Message m2 = new Message(1,ip.getHostAddress() + ";" + port,"",null);
+		m2.setControl(r2.getControl());
+		partitions.sendRing(newRing,m2);
+	}
+
+	public void subscribeGlobal(int cmdID, int groupID) throws Exception {
+		int oldRing = groupID;
+		int newRing  = partitions.getGlobalRing();
+    	Control c = new Control(cmdID,ControlType.Subscribe,groupID,newRing);
 		Response r1 = new Response(c);
 		commands.put(c.getID(),r1);
 		Message m = new Message(1,ip.getHostAddress() + ";" + port,"",null);
@@ -451,16 +496,16 @@ public class Client implements Receiver {
 		partitions.sendRing(newRing,m2);
 	}
 	
-	public void unsubscribeGlobal(int groupID) throws Exception {
+	public void unsubscribeGlobal(int cmdID, int groupID) throws Exception {
 		int removeRing  = partitions.getGlobalRing();
-    	//String c = "u," + groupID + "," + removeRing;
-    	Control c = new Control(1,ControlType.Unsubscribe,groupID,removeRing);
+    	Control c = new Control(cmdID,ControlType.Unsubscribe,groupID,removeRing);
 		Response r1 = new Response(c);
 		commands.put(c.getID(),r1);
 		Message m = new Message(1,ip.getHostAddress() + ";" + port,"",null);
 		m.setControl(r1.getControl());
 		partitions.sendRing(removeRing,m);
 	}
+
 	
 	/**
 	 * Send a command (use same ID if your Response ended in a timeout)
@@ -480,7 +525,7 @@ public class Client implements Receiver {
     		for(Partition p : partitions.getPartitions()){
     			await.add(p.getID());
     		}
-    		//FIXME: also subset of partition await_response.put(cmd.getID(),await);
+    		//TODO: also subset of partition await_response.put(cmd.getID(),await);
     	}else{
     		partition = partitions.getPartition(cmd.getKey());
 			// special case for EC2 inter-region app;
@@ -505,13 +550,13 @@ public class Client implements Receiver {
 		logger.debug("Client received ring " + m.getRing() + " instnace " + m.getInstnce() + " (" + m + ")");
 		
 		// filter away already received replica answers
-		//FIXME: disabled because of Hash collisions! 
-		/*if(delivered.contains(m.getID())){
-			logger.error("dublicate " + m);
+		long hash = MurmurHash.hash64(m.getID() + "-" + m.getInstnce());
+		if(delivered.contains(hash)){
+			//logger.debug("dublicate " + m);
 			return;
 		}else{
-			delivered.add(m.getID());
-		}*/
+			delivered.add(hash);
+		}
 		
 		// un-batch response (multiple responses per command_id)
 		for(Command c : m.getCommands()){

@@ -281,7 +281,7 @@ public class PartitionManager implements Watcher {
 		}
 	}
 
-	public void sendPartition(int partition,Message m) throws Exception {
+	public synchronized void sendPartition(int partition,Message m) throws Exception {
 		int ring = loadbalancer.get(partition).get(position-1);
 		position++;
 		if(position > loadbalancer.get(partition).size()){
@@ -291,7 +291,7 @@ public class PartitionManager implements Watcher {
 		sender.abroadcast(m);
 	}
 
-	public void sendRing(int ring,Message m) throws Exception {
+	public synchronized void sendRing(int ring,Message m) throws Exception {
 		ABSender sender = getThriftABSender(ring,connectMap.get(ring));
 		sender.abroadcast(m);
 	}
@@ -317,7 +317,7 @@ public class PartitionManager implements Watcher {
 			for(String s : ls){
 				int part = -1;
 				if(!s.equals("all")){
-					part = Integer.parseInt(s);
+					part = Integer.parseInt(s,16);
 				}
 				String rstring = new String(zoo.getData(path + "/" + s, true, null));
 				List<Integer> rings = new ArrayList<Integer>();
@@ -373,17 +373,17 @@ public class PartitionManager implements Watcher {
 		partitions.init();
 
 		// two partitions
-		//partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
-		//partitions.register(replicaID,2,InetAddress.getLocalHost(),"7FFFFFFF");
+		partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
+		partitions.register(replicaID,2,InetAddress.getLocalHost(),"7FFFFFFF");
 
 		// four partitions
 		//partitions.register(replicaID,3,InetAddress.getLocalHost(),"3FFFFFFF");
 		//partitions.register(replicaID,4,InetAddress.getLocalHost(),"-3FFFFFFF");		
 
 		// three partitions
-		partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
-		partitions.register(replicaID,2,InetAddress.getLocalHost(),"55555554");
-		partitions.register(replicaID,2,InetAddress.getLocalHost(),"-55555554");
+		//partitions.register(replicaID,1,InetAddress.getLocalHost(),"0");
+		//partitions.register(replicaID,2,InetAddress.getLocalHost(),"55555554");
+		//partitions.register(replicaID,2,InetAddress.getLocalHost(),"-55555554");
 		
 		List<String> ps = new ArrayList<String>();
 		for(Partition p : partitions.getPartitions()){

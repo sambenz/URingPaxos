@@ -124,12 +124,18 @@ public class ElasticLearnerRole extends Role implements Learner {
 									newRing = ring;
 									List<PaxosRole> rl = new ArrayList<PaxosRole>();
 									rl.add(PaxosRole.Learner);
-									RingDescription rd = new RingDescription(newRing,rl);
+									final RingDescription rd = new RingDescription(newRing,rl);
 									ringmap.put(newRing,rd);
-									if(!node.updateRing(rd)){
-										logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
-									}
-									startLearner(newRing);									
+									final Thread start = new Thread("Prepare " + newRing){		    			
+						    			@Override
+						    			public void run() {
+						    				if(!node.updateRing(rd)){
+												logger.error("ElasticLearnerRole failed to create Learner in ring " + newRing);
+											}
+											startLearner(newRing);
+						    			}
+									};
+									start.start();									
 								}
 								logger.info("ElasticLearner prepare end in " + (System.nanoTime()-time));
 							}else if(type == ControlType.Subscribe){
@@ -203,12 +209,22 @@ public class ElasticLearnerRole extends Role implements Learner {
 								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
 								if(learner[ring] != null && replication_group == group){
 									rings.remove(new Integer(ring)); // remove entry not index position
-									((LearnerRole)ringmap.get(ring).getRingManager().getNetwork().getLearner()).close();
-									ringmap.get(ring).getRingManager().close();
+									final int close = ring;
+									final Thread stop = new Thread("Prepare " + newRing){		    			
+						    			@Override
+						    			public void run() {
+											((LearnerRole)ringmap.get(close).getRingManager().getNetwork().getLearner()).close();
+											try {
+												ringmap.get(close).getRingManager().close();
+											} catch (InterruptedException e) {
+											}
+						    			}
+									};
+									stop.start();									
 									learner[ring] = null;
-									v_count[ring] = 0;
 									deliverRing = minRing(rings); 
 									logger.info("ElasticLearner removed ring " + ring + " at position " + v_count[ring]);
+									v_count[ring] = 0;
 								}								
 							}
 						}catch (NumberFormatException e) {

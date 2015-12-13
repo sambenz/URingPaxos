@@ -278,7 +278,7 @@ public class Replica implements Receiver {
 					String start_key = c.getKey();
 					String end_key = new String(c.getValue());
 					int count = c.getCount();
-					logger.debug("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
+					logger.info("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
 					//logger.debug("tailMap:" + db.tailMap(start_key).keySet() + " count:" + count);
 					int msg = 0;
 					int msg_size = 0;
