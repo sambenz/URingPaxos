@@ -56,11 +56,11 @@ public class Experiment2 implements Runnable {
 	
 	private final List<Long> latency = Collections.synchronizedList(new ArrayList<Long>());
 
-	private int concurrent_values = 20;
+	private int concurrent_values = 5;
 	
-	private int value_size = 8912;
+	private int value_size = 32768;
 		
-	private int value_count = 900000;
+	private int value_count = 9000000;
 	
 	private volatile boolean send1 = true;
 
@@ -78,7 +78,7 @@ public class Experiment2 implements Runnable {
 			throw(new RuntimeException());
 		}
 		
-		RingManager ring = paxos.getRings().get(0).getRingManager();
+		/*RingManager ring = paxos.getRings().get(0).getRingManager();
 		if(ring.getConfiguration().containsKey(ConfigKey.concurrent_values)){
 			concurrent_values = Integer.parseInt(ring.getConfiguration().get(ConfigKey.concurrent_values));
 			logger.info("Experiment concurrent_values: " + concurrent_values);
@@ -90,7 +90,7 @@ public class Experiment2 implements Runnable {
 		if(ring.getConfiguration().containsKey(ConfigKey.value_count)){
 			value_count = Integer.parseInt(ring.getConfiguration().get(ConfigKey.value_count));
 			logger.info("Experiment value_count: " + value_count);
-		}
+		}*/
 
 	}
 
@@ -132,12 +132,40 @@ public class Experiment2 implements Runnable {
 			public void run() {
 				try {
 
+					// curl -XPOST `heat output-show mdrp scale_up_url|tr -d '"\n'`
+					/*Process p = Runtime.getRuntime().exec("heat output-show mdrp scale_up_url");
+				    p.waitFor();
+				    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				    String up_url = reader.readLine().replace("\"","");
+				    logger.info("Heat scale up_url " + up_url);
+				    
+				    p = Runtime.getRuntime().exec("heat output-show mdrp scale_dn_url");
+				    p.waitFor();
+				    reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				    String dn_url = reader.readLine().replace("\"","");
+				    logger.info("Heat scale dn_url " + dn_url);
+		    
+				    // upscale
+				    p = Runtime.getRuntime().exec("curl -XPOST " + up_url);
+				    p.waitFor();
+				    reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				    String line = "";			
+				    while ((line = reader.readLine())!= null) {
+				    	logger.info(line);
+				    }
+				    reader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+				    line = "";			
+				    while ((line = reader.readLine())!= null) {
+				    	logger.warn(line);
+				    }
+				    
+					Thread.sleep(60000);*/
+					
 					Thread.sleep(15000);
 
 					Control c = new Control(1,ControlType.Subscribe,1,2);
 					paxos.getProposer(2).control(c);
 					paxos.getProposer(1).control(c);
-					paxos.getProposer(2).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){
 						Thread t = new Thread("Command Sender 2 " + i){
@@ -171,9 +199,7 @@ public class Experiment2 implements Runnable {
 
 					c = new Control(2,ControlType.Subscribe,1,3);
 					paxos.getProposer(3).control(c);
-					paxos.getProposer(2).control(c);
 					paxos.getProposer(1).control(c);
-					paxos.getProposer(3).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){
 						Thread t = new Thread("Command Sender 3 " + i){
@@ -206,10 +232,7 @@ public class Experiment2 implements Runnable {
 
 					c = new Control(3,ControlType.Subscribe,1,4);
 					paxos.getProposer(4).control(c);
-					paxos.getProposer(3).control(c);
-					paxos.getProposer(2).control(c);
 					paxos.getProposer(1).control(c);
-					paxos.getProposer(4).propose("trigger re-learn".getBytes());
 
 					for(int i=0;i<concurrent_values;i++){
 						Thread t = new Thread("Command Sender 4 " + i){
@@ -249,7 +272,8 @@ public class Experiment2 implements Runnable {
 					printHistogram();
 					logger.info("Finished experiment!");
 					
-				} catch (InterruptedException e) {
+				} catch (Exception e) {
+					e.printStackTrace();
 				}				
 			}
 		};
@@ -305,7 +329,7 @@ public class Experiment2 implements Runnable {
 			}else{
 				e++;
 			}
-			Long key = new Long(Math.round(l/1000/1000));
+			Long key = new Long(Math.round(l/1000));
 			if(histogram.containsKey(key)){
 				histogram.put(key,histogram.get(key)+1);
 			}else{
