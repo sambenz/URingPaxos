@@ -35,6 +35,8 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.Util;
+import ch.usi.da.paxos.message.Control;
+import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.CommandType;
 import ch.usi.da.smr.message.Message;
@@ -42,6 +44,7 @@ import ch.usi.da.smr.recovery.DfsRecovery;
 import ch.usi.da.smr.recovery.RecoveryInterface;
 import ch.usi.da.smr.recovery.SnapshotWriter;
 import ch.usi.da.smr.transport.ABListener;
+import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.Receiver;
 import ch.usi.da.smr.transport.UDPSender;
 
@@ -171,11 +174,13 @@ public class Replica implements Receiver {
 						m.setControl(c);
 						old_sender.abroadcast(m);
 						new_sender.abroadcast(m);
+						
+						Thread.sleep(5000);
 					
 						// register new partition
 						setPartition(partitions.register(nodeID, newRing, ip, token));
 						
-						//Thread.sleep(2000);
+						//Thread.sleep(4000);
 
 						// remove ring 1
 				    	c = new Control(2,ControlType.Unsubscribe,groupID,oldRing); 
