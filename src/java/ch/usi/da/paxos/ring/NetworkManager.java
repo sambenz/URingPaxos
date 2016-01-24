@@ -283,10 +283,6 @@ public class NetworkManager {
 	 */
 	public void connectClient(InetSocketAddress addr){
 		try {
-			Thread.sleep(1000); // give node time to start (zookeeper is fast!)
-		} catch (InterruptedException e) {
-		}
-		try {
 			client = SocketChannel.open();
 			client.setOption(StandardSocketOptions.SO_SNDBUF,buf_size);
 			client.setOption(StandardSocketOptions.SO_RCVBUF,buf_size);			

@@ -162,7 +162,7 @@ public class TopologyManager implements Watcher {
 	 */
 	public void init() throws IOException, KeeperException, InterruptedException {
 		zoo.register(this);
-		registerNode();
+		getConfig();
 	}
 	
 	/**
@@ -183,7 +183,7 @@ public class TopologyManager implements Watcher {
 	 * @throws InterruptedException 
 	 * @throws KeeperException 
 	 */
-	protected void registerNode() throws KeeperException, InterruptedException {
+	protected void getConfig() throws KeeperException, InterruptedException {
 
 		// create prefix
 		String p = "";
@@ -246,24 +246,6 @@ public class TopologyManager implements Watcher {
 			configuration.put(k,v);
 		}
 
-		// register and watch node ID
-		Util.checkThenCreateZooNode(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-		l = zoo.getChildren(path + "/" + id_path, true); // start watching
-		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
-		// special case for EC2 inter-region ring; publish public IP
-		String public_ip = System.getenv("EC2");
-		if(public_ip != null){
-			b = (public_ip + ";" + addr.getPort()).getBytes(); // store the SocketAddress
-			logger.warn("Publish env(EC2) in zookeeper: " + new String(b) + "!");
-		}
-		Util.checkThenCreateZooNode(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
-				new ExceptionListener() {
-			@Override
-			public void exceptionThrown(Exception e) {
-				logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
-			}
-		});
-
 		// get last_acceptor and current coordinator
 		try {
 			l = zoo.getChildren(path + "/" + acceptor_path, true);
@@ -283,6 +265,30 @@ public class TopologyManager implements Watcher {
 		}
 	}
 
+	/**
+	 * @throws InterruptedException 
+	 * @throws KeeperException 
+	 */
+	protected void registerNode() throws KeeperException, InterruptedException {
+		// register and watch node ID
+		Util.checkThenCreateZooNode(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
+		zoo.getChildren(path + "/" + id_path, true); // start watching
+		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
+		// special case for EC2 inter-region ring; publish public IP
+		String public_ip = System.getenv("EC2");
+		if(public_ip != null){
+			b = (public_ip + ";" + addr.getPort()).getBytes(); // store the SocketAddress
+			logger.warn("Publish env(EC2) in zookeeper: " + new String(b) + "!");
+		}
+		Util.checkThenCreateZooNode(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL, zoo,
+				new ExceptionListener() {
+			@Override
+			public void exceptionThrown(Exception e) {
+				logger.error("Node ID " + nodeID + " in topology " + topologyID + " already registred!");
+			}
+		});
+	}
+	
 	private void notifyTopologyChanged(){
 	}
 

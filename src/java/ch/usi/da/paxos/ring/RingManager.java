@@ -93,16 +93,18 @@ public class RingManager extends TopologyManager {
 	public void init() throws IOException, KeeperException, InterruptedException {
 		network = new NetworkManager(this);
 		zoo.register(this);
-		registerNode();
+		getConfig();
 		network.startServer();
+		//Thread.sleep(1000); // give server time to start-up
+		registerNode();		
 	}
 	
 	/**
 	 * @throws InterruptedException 
 	 * @throws KeeperException 
 	 */
-	protected void registerNode() throws KeeperException, InterruptedException {
-		super.registerNode();
+	protected void getConfig() throws KeeperException, InterruptedException {
+		super.getConfig();
 		
 		// get last_acceptor
 		try {
@@ -119,6 +121,13 @@ public class RingManager extends TopologyManager {
 		}
 	}
 
+	/**
+	 * @throws InterruptedException 
+	 * @throws KeeperException 
+	 */
+	protected void registerNode() throws KeeperException, InterruptedException {
+		super.registerNode();
+	}
 	private void notifyRingChanged(){
 		InetSocketAddress saddr = getNodeAddress(getRingSuccessor(nodeID));
 		logger.info("RingManager ring " + topologyID + " changed: " + nodes + " (succsessor: " + getRingSuccessor(nodeID) + " at " + saddr + ")");
