@@ -186,7 +186,7 @@ public class Client implements Receiver {
 		    						last_sent_count += sent_count;
 		    						last_sent_time += sent_time;
 		    						last_time = time;
-		    						Thread.sleep(1000);
+		    						Thread.sleep(100);
 		    					} catch (InterruptedException e) {
 		    						Thread.currentThread().interrupt();
 		    						break;				
@@ -203,8 +203,8 @@ public class Client implements Receiver {
 							try {
 								Thread.sleep(12000);
 								
-								int prepare_time = 2000;
-								int wait_before_getrange = 2000;
+								int prepare_time = 5000;
+								int wait_before_getrange = 0;
 								int wait_before_subscribe = 1000;
 								int cmd_timeout = 0;
 							
@@ -388,7 +388,7 @@ public class Client implements Receiver {
 											long lat = System.nanoTime() - time;
 											stat_latency.addAndGet(lat);
 											stat_command.incrementAndGet();
-											latency.add(lat);
+											//TODO: latency.add(lat);
 										}
 									} catch (Exception e){
 										logger.error("Error in send thread!",e);
@@ -588,6 +588,8 @@ public class Client implements Receiver {
 					commands.remove(e.getKey());
 					it.remove();
 				}
+			}else{
+				it.remove();
 			}
 		}
 	}
