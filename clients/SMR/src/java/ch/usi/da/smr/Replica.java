@@ -281,7 +281,7 @@ public class Replica implements Receiver {
 					count		The total number of keys to permit in the KeyRange.
 					 */
 					String start_key = c.getKey();
-					String end_key = new String(c.getValue());
+					String end_key = new String(c.getValue()).split(";")[0];
 					int count = c.getCount();
 					logger.info("getrange " + start_key + " -> " + end_key + " (" + MurmurHash.hash32(start_key) + "->" + MurmurHash.hash32(end_key) + ")");
 					//logger.debug("tailMap:" + db.tailMap(start_key).keySet() + " count:" + count);
@@ -298,6 +298,13 @@ public class Replica implements Receiver {
 					if(msg == 0){
 			    		Command cmd = new Command(c.getID(),CommandType.RESPONSE,"",null);
 			    		cmds.add(cmd);						
+					}
+					// signal
+					partitions.singal(token,c);
+					// wait until signal from every involved partition
+					boolean ret = partitions.waitSignal(c);
+					if(ret != true){
+						cmds.clear();
 					}
 					break;
 				default:

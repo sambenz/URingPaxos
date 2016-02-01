@@ -19,7 +19,10 @@ package ch.usi.da.smr;
  */
 
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +31,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.transport.TTransportException;
@@ -42,12 +47,14 @@ import org.apache.zookeeper.ZooKeeper;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.lab.DummyWatcher;
 import ch.usi.da.paxos.ring.RingDescription;
+import ch.usi.da.smr.message.Command;
 import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.transport.ABListener;
 import ch.usi.da.smr.transport.ABSender;
 import ch.usi.da.smr.transport.RawABListener;
 import ch.usi.da.smr.transport.ThriftABListener;
 import ch.usi.da.smr.transport.ThriftABSender;
+import ch.usi.da.smr.transport.UDPListener;
 
 /**
  * Name: PartitionManager<br>
@@ -77,6 +84,16 @@ public class PartitionManager implements Watcher {
 	private final Map<String,ABSender> proposers = new HashMap<String,ABSender>();
 
 	private final Map<Integer,List<Integer>> loadbalancer = new HashMap<Integer,List<Integer>>();
+	
+	private final int signalPort = 40444;
+	
+	private DatagramSocket signalSender;
+	
+	private UDPListener signalReceiver;
+	
+	private final Map<Command,CountDownLatch> signals = new HashMap<Command,CountDownLatch>();
+	
+	private final Map<Command,List<String>> wait = new HashMap<Command,List<String>>();
 	
 	int position = 1;
 
@@ -116,9 +133,23 @@ public class PartitionManager implements Watcher {
 		}
 		readPartitions();
 		readLBRings();
+		try {
+			signalSender = new DatagramSocket();
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Partition register(int replicaID, int ringID, InetAddress ip, String token){
+		try {
+			signalReceiver = new UDPListener(signalPort);
+			signalReceiver.registerReceiver(this);
+			Thread t = new Thread(signalReceiver);
+			t.setName("UDPListener");
+			t.start();
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 		try {
 			if(zoo.exists(path + "/" + token,false) == null){
 				zoo.create(path + "/" + token,Integer.toString(ringID).getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
@@ -403,6 +434,62 @@ public class PartitionManager implements Watcher {
 
 		for(String p : ps){
 			partitions.deregister(replicaID,p);
+		}
+	}
+
+	public void singal(String token, Command c) {
+		//TODO: set only subset
+		List<String> await = new ArrayList<String>();
+		String[] tokens = new String(c.getValue()).split(";");
+		if(tokens.length > 1){
+			for(int i=1;i<tokens.length;i++){
+				await.add(tokens[i]);
+			}
+		}else{
+			for(Partition p : getPartitions()){
+				await.add(p.getID());
+			}
+		}
+		logger.info("Getrange wait for partitions: " + await);
+		wait.put(c,await);
+		signals.put(c, new CountDownLatch(await.size()));
+		List<Command> cmds = new ArrayList<Command>();
+		cmds.add(c);
+		Message m = new Message(c.getID(),token,"",cmds);
+		for(Partition p : getPartitions()){
+			for(String replica : getReplicas(p.getID())){
+				try {
+					InetAddress address = InetAddress.getByName(replica);
+					byte[] buffer = Message.toByteArray(m);
+					DatagramPacket packet = new DatagramPacket(buffer,0,buffer.length,address,signalPort);
+					signalSender.send(packet);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}	
+		}
+	}
+
+	public boolean waitSignal(Command c) {
+		boolean ret = false;
+		try {
+			ret = signals.get(c).await(1,TimeUnit.SECONDS);
+			signals.remove(c);
+		} catch (InterruptedException e) {
+		}
+		return ret;
+	}
+
+	public void receive(Message m) {
+		Command c = m.getCommands().get(0);
+		if(c != null && signals.containsKey(c)){
+			if(wait.get(c).contains(m.getFrom())){
+				wait.get(c).remove(m.getFrom());
+				signals.get(m.getCommands().get(0)).countDown();
+				if(wait.get(c).isEmpty()){
+					wait.remove(c);
+				}
+			}
 		}
 	}
 

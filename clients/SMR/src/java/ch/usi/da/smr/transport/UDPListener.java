@@ -24,6 +24,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.Arrays;
 
+import ch.usi.da.smr.PartitionManager;
 import ch.usi.da.smr.message.Message;
 
 /**
@@ -41,6 +42,8 @@ public class UDPListener implements Runnable {
 	
 	private Receiver receiver = null;
 	
+	private PartitionManager receiver2 = null;
+	
 	public UDPListener(int port) throws SocketException{
 		socket = new DatagramSocket(port);
 	}
@@ -56,8 +59,12 @@ public class UDPListener implements Runnable {
 					Message m = Message.fromByteArray(Arrays.copyOfRange(packet.getData(),0,packet.getLength()));
 					receiver.receive(m);
 				}
+				if(receiver2 != null){
+					Message m = Message.fromByteArray(Arrays.copyOfRange(packet.getData(),0,packet.getLength()));
+					receiver2.receive(m);
+				}				
 			} catch (SocketException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -70,5 +77,9 @@ public class UDPListener implements Runnable {
 	
 	public void close(){
 		socket.close();
+	}
+
+	public void registerReceiver(PartitionManager partitionManager) {
+		this.receiver2 = partitionManager;
 	}
 }

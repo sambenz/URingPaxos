@@ -201,6 +201,12 @@ public class Client implements Receiver {
 						@Override
 						public void run(){
 							try {
+								
+								String token1 = "0";
+								String token2 = "7FFFFFFF";
+								String token3 = "3FFFFFFF";
+								String token4 = "-3FFFFFFF";
+								
 								Thread.sleep(12000);
 								
 								int prepare_time = 5000;
@@ -217,7 +223,7 @@ public class Client implements Receiver {
 								subscribeGlobal(2,2);
 								Thread.sleep(wait_before_getrange);
 								int id = send_id.incrementAndGet();
-								Command cmd = new Command(id,CommandType.GETRANGE,"user1,2","user2".getBytes(),5);
+								Command cmd = new Command(id,CommandType.GETRANGE,"user1,2",("user2;" + token1 + ";" + token2).getBytes(),5);
 								Response r = null;
 								long time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
@@ -241,7 +247,7 @@ public class Client implements Receiver {
 								subscribeGlobal(6,3);
 								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1,3","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,3",("user2;" + token1 + ";" + token3).getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
@@ -265,7 +271,7 @@ public class Client implements Receiver {
 								subscribeGlobal(10,4);
 								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1,4","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,4",("user2;" + token1 + ";" + token4).getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
@@ -289,7 +295,7 @@ public class Client implements Receiver {
 								subscribeGlobal(14,3);
 								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user2,3","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user2,3",("user2;" + token2 + ";" + token3).getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
@@ -319,7 +325,7 @@ public class Client implements Receiver {
 								subscribeGlobal(19,3);								
 								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3",("user2;" + token1 + ";" + token2 + ";" + token3).getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
@@ -352,7 +358,7 @@ public class Client implements Receiver {
 								subscribeGlobal(26,4);
 								Thread.sleep(wait_before_getrange);
 								id = send_id.incrementAndGet();
-								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3,4","user2".getBytes(),5);
+								cmd = new Command(id,CommandType.GETRANGE,"user1,2,3,4",("user2;" + token1 + ";" + token2 + ";" + token3 + ";" + token4).getBytes(),5);
 								r = null;
 								time2 = System.nanoTime();
 								if((r = send(cmd)) != null){
