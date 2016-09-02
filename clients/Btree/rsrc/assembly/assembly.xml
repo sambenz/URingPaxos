@@ -1,0 +1,25 @@
+<assembly>
+  <id></id>
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+  <baseDirectory>${project.name}-${project.version}</baseDirectory>
+  <files>
+    <file>
+      <source>rsrc/assembly/btree.sh</source>
+      <fileMode>0755</fileMode>
+    </file>   
+    <file>
+      <source>rsrc/java/log4j.xml</source>
+      <outputDirectory>/lib</outputDirectory>
+	  <fileMode>0644</fileMode>
+    </file>  
+  </files>
+  <dependencySets>
+    <dependencySet>
+     <scope>runtime</scope>
+     <outputDirectory>lib</outputDirectory>
+    </dependencySet>
+  </dependencySets>
+</assembly>
