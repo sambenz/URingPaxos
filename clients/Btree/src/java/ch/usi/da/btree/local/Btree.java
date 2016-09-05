@@ -2,6 +2,8 @@ package ch.usi.da.btree.local;
 
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 /*
  * Client
@@ -90,13 +92,12 @@ public class Btree<K extends Comparable<K>,V> {
 	@Override
     public String toString() {
         return TreePrinter.getString(this);
-		//return root.toString();
 	}
 	
     private static class TreePrinter {
 
         public static <K extends Comparable<K>,V> String getString(Btree<K,V> tree) {
-            return print(tree.root, "", true);
+            return print(tree.root,"",true);
         }
 
         private static <K extends Comparable<K>,V> String print(TreeNode<K,V> node, String prefix, boolean isTail) {
@@ -132,47 +133,43 @@ public class Btree<K extends Comparable<K>,V> {
 		Btree<Integer,String> tree = new Btree<Integer, String>(ID);
 		
 		/*tree.put(10,"10");
-		System.out.println(tree);
-		tree.put(20,"20");
-		System.out.println(tree);
-		tree.put(30,"30");
-		System.out.println(tree);
-		tree.put(40,"40");
-		System.out.println(tree);
-		tree.put(50,"50");
-		System.out.println(tree);
-		tree.put(60,"60");
-		System.out.println(tree);
+		tree.put(9,"9");
+		tree.put(8,"8");
+		tree.put(7,"7");
+		tree.put(6,"6");
 		tree.put(5,"5");
+		tree.put(4,"4");
+		tree.put(3,"3");
+		tree.put(2,"2");
+		tree.put(1,"1");
 		System.out.println(tree);
-		tree.put(70,"70");
-		System.out.println(tree);
-		tree.put(55,"55");
-		System.out.println(tree);
-		tree.put(56,"56");
-		System.out.println(tree);
-		
-		System.out.println(tree.get(10));
-		System.out.println(tree.get(20));
-		System.out.println(tree.get(30));
-		System.out.println(tree.get(40));
-		System.out.println(tree.get(50));
-		System.out.println(tree.get(60));
-		System.out.println(tree.get(70));
-		System.out.println(tree.get(55));
-		System.out.println(tree.get(56));
-		System.out.println(tree.get(5));
 		*/
 		
+		/*int[] in = {8930,693,1501,3259,6705,7357,3798,401,1947,5095,16,587,99};
+		for(int i : in){
+			tree.put(i,Integer.toString(i));
+			System.out.println(tree);
+		}
+		System.out.println(tree);
+		System.err.println(tree.get(16));*/
+		
 		Random rnd = new Random(System.currentTimeMillis());
-		for(int i=1;i<100;i++){
+		Set<Integer> in = new TreeSet<Integer>();
+		for(int i=1;i<1000;i++){
 			//System.err.println(i);
 			//System.err.println(tree);
-			int k = rnd.nextInt(1000);
+			int k = rnd.nextInt(10000);
+			//System.out.println(k);
+			in.add(k);
 			tree.put(k,Integer.toString(k));
 		}
 		System.out.println(tree);
-		//System.out.println(tree.get(80));
+		for(int i : in){
+			String s = tree.get(i);
+			if(s == null){
+				System.err.println(i);
+			}
+		}
 	}
 
 }

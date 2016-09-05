@@ -33,7 +33,9 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 	
 	public boolean put(K k,V v){
 		boolean valid = false;
-		if(minKey != null && k.compareTo(minKey) <= 0){
+		if(minKey == null){
+			minKey = k;
+		}else if(k.compareTo(minKey) <= 0){
 			minKey = k;
 		}
 		if(children.isEmpty()){ //TODO: test boundary and return false if not match 
@@ -46,10 +48,10 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = data.size()/2;
 				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> lmap = data.headMap(splitKey);
+				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
 				left.getData().putAll(lmap);
 				left.setMinKey(lmap.firstKey());
-				SortedMap<K,V> rmap = data.tailMap(splitKey);
+				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey));
 				right.getData().putAll(rmap);
 				right.setMinKey(rmap.firstKey());
 				children.add(left);
@@ -59,10 +61,10 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				TreeNode<K,V> left = new TreeNode<K,V>(parent,order);
 				int middle = data.size()/2;
 				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> lmap = data.headMap(splitKey);
+				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
 				left.getData().putAll(lmap);
 				left.setMinKey(lmap.firstKey());
-				data = data.tailMap(splitKey);
+				data = new TreeMap<K,V>(data.tailMap(splitKey));
 				minKey = data.firstKey();
 				parent.addChild(left);
 			}
@@ -120,13 +122,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 					n.setParent(right);
 				}
 				children = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
-				
-				/*for(TreeNode<K,V> n : children){
-					System.err.println("parent0 " + n);
-					n.setParent(this.parent);
-					System.err.println("parent1 " + n);					
-				}*/
-				
+				minKey = children.first().getMinKey();
 				parent.addChild(right);
 			}
 		}
@@ -140,9 +136,9 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 	public String toString(){
 		StringBuffer buffer = new StringBuffer();
 		if(data.size() > 0){
-			buffer.append("D: " + data);
+			buffer.append("D: " + data + "(" + minKey + ")");
 		}else{
-			buffer.append("I: " + children);
+			buffer.append("I: " + children + "(" + minKey + ")");
 		}
 		//buffer.append(" min:" + minKey);
 		return buffer.toString();
