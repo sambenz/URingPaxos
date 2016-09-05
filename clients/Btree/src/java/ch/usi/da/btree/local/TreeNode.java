@@ -56,7 +56,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				children.add(right);
 				data.clear();
 			}else{
-				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
+				TreeNode<K,V> left = new TreeNode<K,V>(parent,order);
 				int middle = data.size()/2;
 				K splitKey = (K) data.keySet().toArray()[middle];
 				SortedMap<K,V> lmap = data.headMap(splitKey);
@@ -94,13 +94,13 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> lset = children.headSet(splitKey);
+				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
 				left.getChildren().addAll(lset);
 				left.setMinKey(lset.first().getMinKey());
 				for(TreeNode<K,V> n : left.getChildren()){
 					n.setParent(left);
 				}
-				SortedSet<TreeNode<K,V>> rset = children.tailSet(splitKey);
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
 				for(TreeNode<K,V> n : right.getChildren()){
@@ -110,17 +110,24 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				children.add(left);
 				children.add(right);
 			}else{
-				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
+				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> rset = children.tailSet(splitKey);
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
 				for(TreeNode<K,V> n : right.getChildren()){
 					n.setParent(right);
 				}
-				children = children.headSet(splitKey);				
-				parent.getChildren().add(right);
+				children = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
+				
+				/*for(TreeNode<K,V> n : children){
+					System.err.println("parent0 " + n);
+					n.setParent(this.parent);
+					System.err.println("parent1 " + n);					
+				}*/
+				
+				parent.addChild(right);
 			}
 		}
 	}

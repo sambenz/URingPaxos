@@ -1,6 +1,7 @@
 package ch.usi.da.btree.local;
 
 import java.util.Iterator;
+import java.util.Random;
 
 /*
  * Client
@@ -95,38 +96,31 @@ public class Btree<K extends Comparable<K>,V> {
     private static class TreePrinter {
 
         public static <K extends Comparable<K>,V> String getString(Btree<K,V> tree) {
-            if (tree.root == null) return "Tree has no nodes.";
-            return getString(tree.root, "", true);
+            return print(tree.root, "", true);
         }
 
-        private static <K extends Comparable<K>,V> String getString(TreeNode<K,V> node, String prefix, boolean isTail) {
+        private static <K extends Comparable<K>,V> String print(TreeNode<K,V> node, String prefix, boolean isTail) {
             StringBuilder builder = new StringBuilder();
-
-            builder.append(prefix).append((isTail ? "└── " : "├── "));
+            builder.append(prefix).append((isTail ? "└──" : "├──"));
             if(node.getData().size() > 0){
             	builder.append(node.getData());
             }else{
+            	builder.append("─┐ ");
+            	/*builder.append("( ");
             	for(TreeNode<K,V> n : node.getChildren()){
             		builder.append(n.getMinKey() + " ");	
             	}
+            	builder.append(")");*/
             }
             builder.append("\n");
             if (node.getChildren().size() > 0) {
             	for(TreeNode<K,V> n : node.getChildren()){
             		if(n.equals(node.getChildren().last())){
-            			builder.append(getString(n, prefix + (isTail ? "    " : "│   "), true));
+            			builder.append(print(n, prefix + (isTail ? "    " : "│   "), true));
             			break;
             		}
-            		builder.append(getString(n, prefix + (isTail ? "    " : "│   "), false));
+            		builder.append(print(n, prefix + (isTail ? "    " : "│   "), false));
             	}
-                /*for (int i = 0; i < node.numberOfChildren() - 1; i++) {
-                    Node<T> obj = node.getChild(i);
-                    builder.append(getString(obj, prefix + (isTail ? "    " : "│   "), false));
-                }
-                if (node.numberOfChildren() >= 1) {
-                    Node<T> obj = node.getChild(node.numberOfChildren() - 1);
-                    builder.append(getString(obj, prefix + (isTail ? "    " : "│   "), true));
-                }*/
             }
             return builder.toString();
         }
@@ -137,7 +131,7 @@ public class Btree<K extends Comparable<K>,V> {
 		String ID = "d4e3eb95-5bd5-474f-a756-3f5d37dec1c8";
 		Btree<Integer,String> tree = new Btree<Integer, String>(ID);
 		
-		tree.put(10,"10");
+		/*tree.put(10,"10");
 		System.out.println(tree);
 		tree.put(20,"20");
 		System.out.println(tree);
@@ -168,7 +162,17 @@ public class Btree<K extends Comparable<K>,V> {
 		System.out.println(tree.get(55));
 		System.out.println(tree.get(56));
 		System.out.println(tree.get(5));
-
+		*/
+		
+		Random rnd = new Random(System.currentTimeMillis());
+		for(int i=1;i<100;i++){
+			//System.err.println(i);
+			//System.err.println(tree);
+			int k = rnd.nextInt(1000);
+			tree.put(k,Integer.toString(k));
+		}
+		System.out.println(tree);
+		//System.out.println(tree.get(80));
 	}
 
 }
