@@ -27,66 +27,43 @@ public class Btree<K extends Comparable<K>,V> {
 		return root;
 	}
 	
-	private TreeNode<K,V> lookupNode(K k){
-		// caching?
-		// start at root and navigate down
-		return root;
-	}
-
-	public void put(K k,V v){
-		TreeNode<K,V> node = lookupNode(k);
-		boolean done = false;
-		while(!done){
-			//TODO: should reload because of checked boundaries
+	public TreeNode<K,V> lookupNode(K k){
+		//TODO: caching?
+		
+		TreeNode<K,V> node = root;
+		while(true){
 			if(node.getChildren().isEmpty()){
-				done = node.put(k,v);
+				break; // is leaf
 			}else{
 				Iterator<TreeNode<K,V>> i = node.getChildren().iterator();
 				TreeNode<K,V> n0 = i.next();
 				if(k.compareTo(n0.getMinKey()) <= 0){
-					node = n0; // most left
+					node = n0; // go left
 					continue;
 				}
 				while(i.hasNext()){
 					TreeNode<K,V> n1 = i.next();
 					if(k.compareTo(n0.getMinKey()) >= 0 && k.compareTo(n1.getMinKey()) < 0){
-						node = n0;
+						node = n0; // inner node
 						break;
 					}
 					n0 = n1;
 				}
-				node = n0; // most right
+				node = n0; // go right
 			}
+		}
+		return node;
+	}
+
+	public void put(K k,V v){
+		boolean done = false;
+		while(!done){
+			done = lookupNode(k).put(k,v);
 		}
 	}
 	
 	public V get(K k){
-		TreeNode<K,V> node = lookupNode(k);
-		boolean done = false;
-		while(!done){ 
-			//TODO: should reload because of checked boundaries
-			if(!node.getData().isEmpty()){
-				done = true;
-				break;
-			}else{
-				Iterator<TreeNode<K,V>> i = node.getChildren().iterator();
-				TreeNode<K,V> n0 = i.next();
-				if(k.compareTo(n0.getMinKey()) <= 0){
-					node = n0;
-					continue;
-				}
-				while(i.hasNext()){
-					TreeNode<K,V> n1 = i.next();
-					if(k.compareTo(n0.getMinKey()) >= 0 && k.compareTo(n1.getMinKey()) < 0){
-						node = n0;
-						break;
-					}
-					n0 = n1;
-				}
-				node = n0;
-			}
-		}
-		return node.get(k);
+		return lookupNode(k).get(k);
 	}
 	
 	@Override
@@ -133,26 +110,19 @@ public class Btree<K extends Comparable<K>,V> {
 		Btree<Integer,String> tree = new Btree<Integer, String>(ID);
 		
 		/*tree.put(10,"10");
-		tree.put(9,"9");
-		tree.put(8,"8");
-		tree.put(7,"7");
-		tree.put(6,"6");
-		tree.put(5,"5");
-		tree.put(4,"4");
-		tree.put(3,"3");
 		tree.put(2,"2");
+		tree.put(9,"9");
+		tree.put(4,"4");
+		tree.put(8,"8");
+		tree.put(6,"6");
+		tree.put(7,"7");
+		tree.put(3,"3");
 		tree.put(1,"1");
-		System.out.println(tree);
-		*/
+		tree.put(5,"5");
+		System.out.println(tree);*/
 		
-		/*int[] in = {8930,693,1501,3259,6705,7357,3798,401,1947,5095,16,587,99};
-		for(int i : in){
-			tree.put(i,Integer.toString(i));
-			System.out.println(tree);
-		}
-		System.out.println(tree);
-		System.err.println(tree.get(16));*/
 		
+		// insert random values
 		Random rnd = new Random(System.currentTimeMillis());
 		Set<Integer> in = new TreeSet<Integer>();
 		for(int i=1;i<1000;i++){
@@ -164,11 +134,37 @@ public class Btree<K extends Comparable<K>,V> {
 			tree.put(k,Integer.toString(k));
 		}
 		System.out.println(tree);
+		
+		// test if all values can be found
 		for(int i : in){
 			String s = tree.get(i);
 			if(s == null){
 				System.err.println(i);
 			}
+		}
+		
+		// test navigation links
+		TreeNode<Integer,String> start = tree.lookupNode(1);
+		int n = -1;
+		for(int i : start.getData().keySet()){
+			in.remove(i);
+			if(i <= n){
+				System.err.println("violate order " + i);
+			}
+			n = i;
+		}
+		while(start.getNextNode() != null){
+			start = start.getNextNode();
+			for(int i : start.getData().keySet()){
+				in.remove(i);
+				if(i < n){
+					System.err.println("violate order " + i);
+				}
+				n = i;
+			}
+		}
+		if(in.size() > 0){
+			System.err.println(in);
 		}
 	}
 

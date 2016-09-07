@@ -14,6 +14,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 	private final int order;
 	private final int maxKeys;
 	private K minKey = null; // or splitKey
+	private TreeNode<K,V> nextNode = null;
 	private final int maxChildren;
 	private SortedSet<TreeNode<K,V>> children;
 	private SortedMap<K,V> data;
@@ -30,47 +31,6 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 	public void setParent(TreeNode<K,V> node){
 		parent = node;
 	}
-	
-	public boolean put(K k,V v){
-		boolean valid = false;
-		if(minKey == null){
-			minKey = k;
-		}else if(k.compareTo(minKey) <= 0){
-			minKey = k;
-		}
-		if(children.isEmpty()){ //TODO: test boundary and return false if not match 
-			data.put(k,v);
-			valid = true;
-		}
-		if(data.size() > maxKeys){ //split if bigger
-			if(parent == null){ // root
-				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
-				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
-				int middle = data.size()/2;
-				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
-				left.getData().putAll(lmap);
-				left.setMinKey(lmap.firstKey());
-				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey));
-				right.getData().putAll(rmap);
-				right.setMinKey(rmap.firstKey());
-				children.add(left);
-				children.add(right);
-				data.clear();
-			}else{
-				TreeNode<K,V> left = new TreeNode<K,V>(parent,order);
-				int middle = data.size()/2;
-				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
-				left.getData().putAll(lmap);
-				left.setMinKey(lmap.firstKey());
-				data = new TreeMap<K,V>(data.tailMap(splitKey));
-				minKey = data.firstKey();
-				parent.addChild(left);
-			}
-		}
-		return valid;
-	}
 
 	public V get(K k){
 		return data.get(k);
@@ -84,61 +44,113 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		minKey = k;
 	}
 	
+	public TreeNode<K,V> getNextNode(){
+		return nextNode;
+	}
+	
+	public void setNextNode(TreeNode<K,V> n){
+		nextNode = n;
+	}
+	
 	public SortedMap<K,V> getData(){
 		return data;
+	}
+	
+	public SortedSet<TreeNode<K, V>> getChildren(){
+		return children;
+	}
+	
+	public boolean put(K k,V v){
+		boolean valid = false;
+		if(minKey == null){
+			minKey = k;
+		}else if(k.compareTo(minKey) <= 0){
+			minKey = k;
+		}
+		if(children.isEmpty()){ //TODO: test boundary and return false if not match 
+			data.put(k,v);
+			valid = true;
+		}
+		if(data.size() > maxKeys){ // split data
+			if(parent == null){ // root
+				TreeNode<K,V> left = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> right = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
+				int middle = data.size()/2;
+				K splitKey = (K) data.keySet().toArray()[middle];
+				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey)); //TODO: recovery
+				left.getData().putAll(lmap);
+				left.setMinKey(lmap.firstKey());
+				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey)); //TODO: recovery
+				right.getData().putAll(rmap);
+				right.setMinKey(rmap.firstKey());
+				left.setNextNode(right);
+				children.add(left);
+				children.add(right);
+				data.clear();
+			}else{
+				TreeNode<K,V> right = new TreeNode<K,V>(parent,order); //TODO: start node; reconfiguration
+				int middle = data.size()/2;
+				K splitKey = (K) data.keySet().toArray()[middle];
+				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey)); //TODO: recovery
+				right.getData().putAll(rmap);
+				right.setMinKey(rmap.firstKey());
+				data = new TreeMap<K,V>(data.headMap(splitKey));
+				right.setNextNode(this.getNextNode());
+				this.setNextNode(right);
+				minKey = data.firstKey();
+				parent.addChild(right); //TODO: parent RPC
+			}
+		}
+		return valid;
 	}
 
 	public void addChild(TreeNode<K,V> node){
 		children.add(node);
-		if(children.size() > maxChildren){
-			if(parent == null){
-				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
-				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
+		if(children.size() > maxChildren){ // split inner node
+			if(parent == null){ // root
+				TreeNode<K,V> left = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> right = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
+				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey)); //TODO: recovery
 				left.getChildren().addAll(lset);
 				left.setMinKey(lset.first().getMinKey());
-				for(TreeNode<K,V> n : left.getChildren()){
+				for(TreeNode<K,V> n : left.getChildren()){ //TODO: RPC to all children
 					n.setParent(left);
 				}
-				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey)); //TODO: recovery
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
-				for(TreeNode<K,V> n : right.getChildren()){
+				for(TreeNode<K,V> n : right.getChildren()){ //TODO: RPC to all children
 					n.setParent(right);
 				}
 				children.clear();
 				children.add(left);
 				children.add(right);
 			}else{
-				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
+				TreeNode<K,V> right = new TreeNode<K,V>(parent,order); //TODO: start node; reconfiguration
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey)); //TODO: recovery
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
-				for(TreeNode<K,V> n : right.getChildren()){
+				for(TreeNode<K,V> n : right.getChildren()){ //TODO: RPC to all children
 					n.setParent(right);
 				}
 				children = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
 				minKey = children.first().getMinKey();
-				parent.addChild(right);
+				parent.addChild(right); //TODO: parent RPC
 			}
 		}
-	}
-	
-	public SortedSet<TreeNode<K, V>> getChildren(){
-		return children;
 	}
 
 	@Override
 	public String toString(){
 		StringBuffer buffer = new StringBuffer();
 		if(data.size() > 0){
-			buffer.append("D: " + data + "(" + minKey + ")");
+			buffer.append("D: " + data + "(" + minKey + "/" + nextNode + ")");
 		}else{
-			buffer.append("I: " + children + "(" + minKey + ")");
+			buffer.append("I: " + children + "(" + minKey + "/" + nextNode + ")");
 		}
 		//buffer.append(" min:" + minKey);
 		return buffer.toString();
