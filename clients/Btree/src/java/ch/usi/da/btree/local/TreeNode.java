@@ -32,8 +32,12 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		parent = node;
 	}
 
-	public V get(K k){
-		return data.get(k);
+	public Result<V> get(K k){
+		if(children.isEmpty() && (nextNode == null || k.compareTo(nextNode.minKey) < 0)){ 
+			return new Result<V>(true,data.get(k));
+		}else{
+			return new Result<V>(false,null);
+		}
 	}
 		
 	public K getMinKey(){
@@ -67,7 +71,8 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		}else if(k.compareTo(minKey) <= 0){
 			minKey = k;
 		}
-		if(children.isEmpty()){ //TODO: test boundary and return false if not match 
+		// test is leaf and max boundary (allow node split detection)
+		if(children.isEmpty() && (nextNode == null || k.compareTo(nextNode.minKey) < 0)){ 
 			data.put(k,v);
 			valid = true;
 		}

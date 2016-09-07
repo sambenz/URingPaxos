@@ -17,11 +17,11 @@ public class Btree<K extends Comparable<K>,V> {
 	}
 
 	private TreeNode<K,V> findRoot(String ID){
-		//FIXME: how to find root? (ask any node?; how to find nodes? multicast?)
-		/*
+		/* FIXME:
+		 * how to find root? (ask any node?; how to find nodes? multicast?)
 		 * maybe make a tree visible in zookeeper: /btree/<ID> (order)/nodes (RPC address)
 		 */
-		if(root == null){ //FIXME: testing only
+		if(root == null){
 			root = new TreeNode<K,V>(null,3);
 		}
 		return root;
@@ -63,7 +63,14 @@ public class Btree<K extends Comparable<K>,V> {
 	}
 	
 	public V get(K k){
-		return lookupNode(k).get(k);
+		while(true){
+			Result<V> r = lookupNode(k).get(k);
+			if(r.isValid()){
+				return r.getValue();
+			}else{
+				System.err.println(r);
+			}
+		}
 	}
 	
 	@Override
@@ -128,7 +135,7 @@ public class Btree<K extends Comparable<K>,V> {
 		for(int i=1;i<1000;i++){
 			//System.err.println(i);
 			//System.err.println(tree);
-			int k = rnd.nextInt(10000);
+			int k = rnd.nextInt(1000);
 			//System.out.println(k);
 			in.add(k);
 			tree.put(k,Integer.toString(k));
@@ -166,6 +173,11 @@ public class Btree<K extends Comparable<K>,V> {
 		if(in.size() > 0){
 			System.err.println(in);
 		}
+		
+		// test small bigger non existence key
+		if(tree.get(-1) != null){ System.err.println("non exists get error");}
+		if(tree.get(100000000) != null){ System.err.println("non exists get error");}
+		
 	}
 
 }
