@@ -32,6 +32,10 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		parent = node;
 	}
 
+	public TreeNode<K,V> getParent(){
+		return parent;
+	}
+	
 	public Result<V> get(K k){
 		if(children.isEmpty() && (nextNode == null || k.compareTo(nextNode.minKey) < 0)){ 
 			return new Result<V>(true,data.get(k));
@@ -78,14 +82,14 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		}
 		if(data.size() > maxKeys){ // split data
 			if(parent == null){ // root
-				TreeNode<K,V> left = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
-				TreeNode<K,V> right = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
+				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = data.size()/2;
 				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey)); //TODO: recovery
+				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
 				left.getData().putAll(lmap);
 				left.setMinKey(lmap.firstKey());
-				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey)); //TODO: recovery
+				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey));
 				right.getData().putAll(rmap);
 				right.setMinKey(rmap.firstKey());
 				left.setNextNode(right);
@@ -93,17 +97,17 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				children.add(right);
 				data.clear();
 			}else{
-				TreeNode<K,V> right = new TreeNode<K,V>(parent,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
 				int middle = data.size()/2;
 				K splitKey = (K) data.keySet().toArray()[middle];
-				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey)); //TODO: recovery
+				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey));
 				right.getData().putAll(rmap);
 				right.setMinKey(rmap.firstKey());
 				data = new TreeMap<K,V>(data.headMap(splitKey));
 				right.setNextNode(this.getNextNode());
 				this.setNextNode(right);
 				minKey = data.firstKey();
-				parent.addChild(right); //TODO: parent RPC
+				parent.addChild(right);
 			}
 		}
 		return valid;
@@ -113,38 +117,38 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 		children.add(node);
 		if(children.size() > maxChildren){ // split inner node
 			if(parent == null){ // root
-				TreeNode<K,V> left = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
-				TreeNode<K,V> right = new TreeNode<K,V>(this,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
+				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey)); //TODO: recovery
+				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
 				left.getChildren().addAll(lset);
 				left.setMinKey(lset.first().getMinKey());
-				for(TreeNode<K,V> n : left.getChildren()){ //TODO: RPC to all children
+				for(TreeNode<K,V> n : left.getChildren()){
 					n.setParent(left);
 				}
-				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey)); //TODO: recovery
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
-				for(TreeNode<K,V> n : right.getChildren()){ //TODO: RPC to all children
+				for(TreeNode<K,V> n : right.getChildren()){
 					n.setParent(right);
 				}
 				children.clear();
 				children.add(left);
 				children.add(right);
 			}else{
-				TreeNode<K,V> right = new TreeNode<K,V>(parent,order); //TODO: start node; reconfiguration
+				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
 				int middle = children.size()/2;
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
-				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey)); //TODO: recovery
+				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
 				right.getChildren().addAll(rset);
 				right.setMinKey(rset.first().getMinKey());
-				for(TreeNode<K,V> n : right.getChildren()){ //TODO: RPC to all children
+				for(TreeNode<K,V> n : right.getChildren()){
 					n.setParent(right);
 				}
 				children = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
 				minKey = children.first().getMinKey();
-				parent.addChild(right); //TODO: parent RPC
+				parent.addChild(right);
 			}
 		}
 	}
@@ -153,11 +157,11 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 	public String toString(){
 		StringBuffer buffer = new StringBuffer();
 		if(data.size() > 0){
-			buffer.append("D: " + data + "(" + minKey + "/" + nextNode + ")");
+			buffer.append("D: " + data);
 		}else{
-			buffer.append("I: " + children + "(" + minKey + "/" + nextNode + ")");
+			buffer.append("I: " + children);
 		}
-		//buffer.append(" min:" + minKey);
+		//buffer.append(" (" + minKey + "/" + nextNode.getMinKey() + ")");
 		return buffer.toString();
 	}
 

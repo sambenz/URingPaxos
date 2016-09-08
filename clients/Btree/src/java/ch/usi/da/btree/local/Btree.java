@@ -1,8 +1,11 @@
 package ch.usi.da.btree.local;
 
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /*
@@ -11,13 +14,17 @@ import java.util.TreeSet;
 public class Btree<K extends Comparable<K>,V> {
 	
 	private TreeNode<K,V> root = null;
+	private SortedMap<Range<K>,TreeNode<K,V>> cache = new TreeMap<Range<K>,TreeNode<K,V>>();
+	private final boolean usecache = true;
+	public int cachehit = 0;
+	public int treewalk = 0;
 	
 	public Btree(String ID){
 		root = findRoot(ID);
 	}
 
 	private TreeNode<K,V> findRoot(String ID){
-		/* FIXME:
+		/* TODO:
 		 * how to find root? (ask any node?; how to find nodes? multicast?)
 		 * maybe make a tree visible in zookeeper: /btree/<ID> (order)/nodes (RPC address)
 		 */
@@ -28,11 +35,40 @@ public class Btree<K extends Comparable<K>,V> {
 	}
 	
 	public TreeNode<K,V> lookupNode(K k){
-		//TODO: caching?
+		TreeNode<K,V> node = null;
 		
-		TreeNode<K,V> node = root;
+		// cache
+		//if(usecache && !cache.isEmpty() && k.compareTo(cache.firstKey().getMinKey()) <= 0){
+		//	  node = cache.get(cache.firstKey()); //TODO: most left cache only possible with double linked leafs
+		//}else{
+		if(usecache){
+			for(Entry<Range<K>,TreeNode<K,V>> e : cache.entrySet()){
+				if(k.compareTo(e.getKey().getMinKey()) >= 0 && (e.getKey().getMaxKey() == null || k.compareTo(e.getKey().getMaxKey()) < 0)){
+					node = e.getValue();
+					break;
+				}
+			}
+			if(node != null){
+				cachehit++;
+				return node;
+			}
+		}
+		
+		// tree walk
+		treewalk++;
+		node = root;
 		while(true){
 			if(node.getChildren().isEmpty()){
+				// fill cache
+				if(usecache && node != root){
+					Range<K> range;
+					if(node.getNextNode() != null){
+						range = new Range<K>(node.getMinKey(),node.getNextNode().getMinKey());
+					}else{
+						range = new Range<K>(node.getMinKey(),null);
+					}
+					cache.put(range,node);
+				}
 				break; // is leaf
 			}else{
 				Iterator<TreeNode<K,V>> i = node.getChildren().iterator();
@@ -58,7 +94,12 @@ public class Btree<K extends Comparable<K>,V> {
 	public void put(K k,V v){
 		boolean done = false;
 		while(!done){
-			done = lookupNode(k).put(k,v);
+			TreeNode<K,V> node = lookupNode(k);
+			done = node.put(k,v);
+			// clear cache
+			if(!done){
+				cache.clear(); //TODO: do more efficient
+			}
 		}
 	}
 	
@@ -68,7 +109,7 @@ public class Btree<K extends Comparable<K>,V> {
 			if(r.isValid()){
 				return r.getValue();
 			}else{
-				System.err.println(r);
+				cache.clear(); //TODO: do more efficient
 			}
 		}
 	}
@@ -132,7 +173,7 @@ public class Btree<K extends Comparable<K>,V> {
 		// insert random values
 		Random rnd = new Random(System.currentTimeMillis());
 		Set<Integer> in = new TreeSet<Integer>();
-		for(int i=1;i<1000;i++){
+		for(int i=1;i<100;i++){
 			//System.err.println(i);
 			//System.err.println(tree);
 			int k = rnd.nextInt(1000);
@@ -146,12 +187,12 @@ public class Btree<K extends Comparable<K>,V> {
 		for(int i : in){
 			String s = tree.get(i);
 			if(s == null){
-				System.err.println(i);
+				System.err.println("not found " + i);
 			}
 		}
 		
 		// test navigation links
-		TreeNode<Integer,String> start = tree.lookupNode(1);
+		TreeNode<Integer,String> start = tree.lookupNode(0);
 		int n = -1;
 		for(int i : start.getData().keySet()){
 			in.remove(i);
@@ -177,6 +218,8 @@ public class Btree<K extends Comparable<K>,V> {
 		// test small bigger non existence key
 		if(tree.get(-1) != null){ System.err.println("non exists get error");}
 		if(tree.get(100000000) != null){ System.err.println("non exists get error");}
+		
+		System.out.println("Cache hit: " + tree.cachehit + " / tree walk: " + tree.treewalk + " (" + (int)((float)tree.cachehit/((float)(tree.treewalk+tree.cachehit)/100)) + "%)");
 		
 	}
 
