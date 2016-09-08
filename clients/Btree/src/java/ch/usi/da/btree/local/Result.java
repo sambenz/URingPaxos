@@ -23,6 +23,8 @@ public class Result<V> {
 		return valid ? value.toString() : "false";
 	}
 	
+	//@SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object o) {
 		if(o instanceof Result){

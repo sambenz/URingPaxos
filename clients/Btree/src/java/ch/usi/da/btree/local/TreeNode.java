@@ -85,6 +85,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
 				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = data.size()/2;
+				@SuppressWarnings("unchecked")
 				K splitKey = (K) data.keySet().toArray()[middle];
 				SortedMap<K,V> lmap = new TreeMap<K,V>(data.headMap(splitKey));
 				left.getData().putAll(lmap);
@@ -99,6 +100,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 			}else{
 				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
 				int middle = data.size()/2;
+				@SuppressWarnings("unchecked")
 				K splitKey = (K) data.keySet().toArray()[middle];
 				SortedMap<K,V> rmap = new TreeMap<K,V>(data.tailMap(splitKey));
 				right.getData().putAll(rmap);
@@ -120,6 +122,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 				TreeNode<K,V> left = new TreeNode<K,V>(this,order);
 				TreeNode<K,V> right = new TreeNode<K,V>(this,order);
 				int middle = children.size()/2;
+				@SuppressWarnings("unchecked")
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
 				SortedSet<TreeNode<K,V>> lset = new TreeSet<TreeNode<K,V>>(children.headSet(splitKey));
 				left.getChildren().addAll(lset);
@@ -139,6 +142,7 @@ public class TreeNode<K extends Comparable<K>,V> implements Comparable<TreeNode<
 			}else{
 				TreeNode<K,V> right = new TreeNode<K,V>(parent,order);
 				int middle = children.size()/2;
+				@SuppressWarnings("unchecked")
 				TreeNode<K,V> splitKey = (TreeNode<K, V>) children.toArray()[middle];
 				SortedSet<TreeNode<K,V>> rset = new TreeSet<TreeNode<K,V>>(children.tailSet(splitKey));
 				right.getChildren().addAll(rset);
