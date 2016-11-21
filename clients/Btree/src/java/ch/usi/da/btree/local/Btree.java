@@ -78,7 +78,7 @@ public class Btree<K extends Comparable<K>,V> {
 					continue;
 				}
 				while(i.hasNext()){
-					TreeNode<K,V> n1 = i.next();
+					TreeNode<K,V> n1 = i.next(); //FIXME: can throw concurrent mod exception (even with fully synchronized TreeNode)
 					if(k.compareTo(n0.getMinKey()) >= 0 && k.compareTo(n1.getMinKey()) < 0){
 						node = n0; // inner node
 						break;
@@ -156,6 +156,15 @@ public class Btree<K extends Comparable<K>,V> {
 
 		String ID = "d4e3eb95-5bd5-474f-a756-3f5d37dec1c8";
 		Btree<Integer,String> tree = new Btree<Integer, String>(ID);
+		
+		/*Thread t1 = new Thread(new TreeRunner<Integer,String>(tree));
+		Thread t2 = new Thread(new TreeRunner<Integer,String>(tree));
+		Thread t3 = new Thread(new TreeRunner<Integer,String>(tree));
+		Thread t4 = new Thread(new TreeRunner<Integer,String>(tree));
+		t1.start();
+		t2.start();
+		t3.start();
+		t4.start();*/
 		
 		/*tree.put(10,"10");
 		tree.put(2,"2");
