@@ -1,4 +1,4 @@
-package ch.usi.da.btree.local;
+package ch.usi.da.dmap.local;
 
 public class Result<V> {
 

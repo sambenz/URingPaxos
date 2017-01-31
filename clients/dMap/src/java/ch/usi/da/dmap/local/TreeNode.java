@@ -1,4 +1,4 @@
-package ch.usi.da.btree.local;
+package ch.usi.da.dmap.local;
 
 import java.util.SortedMap;
 import java.util.SortedSet;

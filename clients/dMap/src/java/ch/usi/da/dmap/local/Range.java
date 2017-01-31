@@ -1,4 +1,4 @@
-package ch.usi.da.btree.local;
+package ch.usi.da.dmap.local;
 
 public class Range<K extends Comparable<K>> implements Comparable<Range<K>> {
 

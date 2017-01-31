@@ -3,9 +3,9 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.usi.da</groupId>
-	<artifactId>btree</artifactId>
+	<artifactId>dmap</artifactId>
 	<packaging>jar</packaging>
-	<name>Btree</name>
+	<name>dMap</name>
 	<version>trunk</version>
 
 	<properties>
