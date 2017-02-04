@@ -69,11 +69,12 @@ public class Client implements Receiver {
 		try {
 			Process proc = Runtime.getRuntime().exec("hostname");
 			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
+			proc.waitFor();
 			byte [] b = new byte[in.available()];
 			in.read(b);
 			in.close();
 			host = new String(b).replace("\n","");
-		} catch (IOException e) {
+		} catch (IOException | InterruptedException e) {
 		}
 		int pid = 0;
 		try {

@@ -145,10 +145,10 @@ public class PartitionManager implements Watcher {
 			signalReceiver = new UDPListener(signalPort);
 			signalReceiver.registerReceiver(this);
 			Thread t = new Thread(signalReceiver);
-			t.setName("UDPListener");
+			t.setName("SignalReceiver");
 			t.start();
 		} catch (SocketException e) {
-			e.printStackTrace();
+			logger.error("Error staritng signal receiver!",e);
 		}
 		try {
 			if(zoo.exists(path + "/" + token,false) == null){
