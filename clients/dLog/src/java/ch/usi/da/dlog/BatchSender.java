@@ -64,9 +64,9 @@ public class BatchSender implements Runnable {
 	public ABSender getThriftABSender(int ring, int clientID) throws TTransportException {
 		String host = "127.0.0.1";
 		try {
-			host = new String(client.getZooKeeper().getData("/ringpaxos/ring" + ring + "/nodes/" + clientID,false, null));
+			host = new String(client.getZooKeeper().getData("/ringpaxos/topology" + ring + "/nodes/" + clientID,false, null));
 			host = host.replaceAll("(;.*)","");
-			if(client.getZooKeeper().exists("/ringpaxos/ring" + ring + "/proposers/" + clientID,false) != null){
+			if(client.getZooKeeper().exists("/ringpaxos/topology" + ring + "/proposers/" + clientID,false) != null){
 				logger.debug("ABSender check for ring " + ring + ": OK!");
 			}else{
 				logger.warn("ABSender check for ring " + ring + ": Fail!");
