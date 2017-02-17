@@ -21,7 +21,6 @@ package ch.usi.da.dmap;
 
 import java.util.Map.Entry;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Name: DMap<br>
@@ -37,7 +36,7 @@ public class DMap {
 
 	public static void main(String[] args) {
 		
-		SortedMap<String, String> local = new TreeMap<String,String>();
+		/*SortedMap<String, String> local = new TreeMap<String,String>();
 		local.put("a","1");
 		local.put("b","2");
 		local.put("c","3");
@@ -52,7 +51,7 @@ public class DMap {
 		System.out.println(local.tailMap("b"));
 		System.out.println(local.headMap("b"));
 		
-		System.out.println("###########");
+		System.out.println("###########");*/
 		
 		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b","127.0.0.1:2181");
 		dmap.put("a","1");

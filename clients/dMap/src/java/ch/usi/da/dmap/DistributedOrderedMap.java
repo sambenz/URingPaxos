@@ -20,9 +20,11 @@ package ch.usi.da.dmap;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -50,7 +52,6 @@ import ch.usi.da.dmap.thrift.gen.Response;
 import ch.usi.da.dmap.utils.Pair;
 import ch.usi.da.dmap.utils.Utils;
 import ch.usi.da.paxos.lab.DummyWatcher;
-
 
 
 /**
@@ -127,6 +128,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	@SuppressWarnings("unchecked")
 	@Override
 	public V get(Object key) {
+		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -152,6 +154,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	@SuppressWarnings("unchecked")
 	@Override
 	public V put(K key, V value) {
+		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -178,6 +181,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(Object key) {
+		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -202,6 +206,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public boolean containsKey(Object key) {
+		if(key == null){ throw new NullPointerException(); }
 		V v = get(key);
 		if(v != null){
 			return true;
@@ -247,6 +252,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public boolean containsValue(Object value) {
+		if(value == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -300,7 +306,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 				logger.error(this,e);
 			}
 		}
-		return null;
+		throw new NoSuchElementException();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -324,7 +330,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 				logger.error(this,e);
 			}
 		}
-		return null;
+		throw new NoSuchElementException();
 	}
 
 	
@@ -379,7 +385,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		} catch (TException | IOException | ClassNotFoundException e) {
 			logger.error(this,e);
 		}
-		return submap;
+		return Collections.unmodifiableSortedMap(submap); //no operations on snapshots allowed
 	}
 
 	@Override
@@ -394,17 +400,17 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public Set<K> keySet() {
-		return subMap(null,null).keySet();
+		return subMap(null,null).keySet(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
 	}
 
 	@Override
 	public Collection<V> values() {
-		return subMap(null,null).values();
+		return subMap(null,null).values(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
 	}
 
 	@Override
 	public Set<java.util.Map.Entry<K,V>> entrySet() {
-		return subMap(null,null).entrySet();
+		return subMap(null,null).entrySet(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
 	}
 
 	

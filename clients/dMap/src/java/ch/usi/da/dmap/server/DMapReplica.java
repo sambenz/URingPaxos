@@ -91,7 +91,6 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 		Response response = new Response();
 		response.setId(cmd.id);
 		response.setCount(0);
-		
 		try {
 			K key = null;
 			if(cmd.isSetKey()){
@@ -109,8 +108,9 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 				db.clear();
 				break;
 			case CONTAINSVALUE:
-				db.containsValue(value);
-				response.setCount(1);
+				if(db.containsValue(value)){
+					response.setCount(1);
+				}
 				break;
 			case GET:
 				retV = db.get(key);
@@ -209,7 +209,7 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 							to = cmd.getToid();
 						}
 					}
-					List<Pair<K,V>> list = new ArrayList<Pair<K,V>>(); //sublist an TreeMap.Entry are not serializable!
+					List<Pair<K,V>> list = new ArrayList<Pair<K,V>>(); //sublist and TreeMap.Entry are not serializable!
 					for(Entry<K,V> e : snapshot.subList(from,to)){
 						list.add(new Pair<K,V>(e.getKey(),e.getValue()));
 					}
