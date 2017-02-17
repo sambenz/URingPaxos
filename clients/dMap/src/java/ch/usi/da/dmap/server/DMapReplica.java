@@ -21,9 +21,15 @@ package ch.usi.da.dmap.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -32,12 +38,15 @@ import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TNonblockingServerTransport;
 
-import ch.usi.da.dmap.Utils;
 import ch.usi.da.dmap.thrift.gen.Command;
 import ch.usi.da.dmap.thrift.gen.Dmap;
 import ch.usi.da.dmap.thrift.gen.Dmap.Iface;
 import ch.usi.da.dmap.thrift.gen.Dmap.Processor;
+import ch.usi.da.dmap.utils.Pair;
+import ch.usi.da.dmap.utils.Utils;
 import ch.usi.da.dmap.thrift.gen.MapError;
+import ch.usi.da.dmap.thrift.gen.RangeCommand;
+import ch.usi.da.dmap.thrift.gen.RangeResponse;
 import ch.usi.da.dmap.thrift.gen.Response;
 
 
@@ -55,6 +64,14 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 	private final static Logger logger = Logger.getLogger(DMapReplica.class);
 	
 	private volatile SortedMap<K,V> db;
+	
+	private final AtomicLong snapID = new AtomicLong(0); //TODO: will be replaced by instance
+	
+	private volatile Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
+		private static final long serialVersionUID = -2704400124020327063L;
+		protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
+			return size() > 10; // hold only 10 snapshots in memory!                                 
+		}};
 	
 	public DMapReplica(Comparator<? super K> comparator) {
 		//this.nodeID = nodeID;
@@ -123,6 +140,89 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 			if(retV != null){
 				response.setValue(Utils.getBuffer(retV));
 				response.setCount(1);
+			}
+		} catch (ClassNotFoundException | IOException e) {
+			logger.error("DMapReplica error: ",e);
+			MapError error = new MapError();
+			error.setErrorMsg(e.getMessage());
+			throw error;
+		}
+		return response;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public RangeResponse range(RangeCommand cmd) throws MapError, TException {
+		logger.info("DMapReplica received " + cmd);
+		RangeResponse response = new RangeResponse();
+		response.setId(cmd.getId());
+		List<Entry<K,V>> snapshot;
+		
+		try {
+			switch(cmd.type){
+			case PERSISTRANGE:
+				if(cmd.isSetIdetifier() && snapshots.containsKey(cmd.getIdetifier())){
+					//TODO: persist
+				}
+				break;
+			case CREATERANGE:
+				if(cmd.isSetFromkey() && cmd.isSetTokey()){
+					K from = (K) Utils.getObject(cmd.getFromkey());
+					K to = (K) Utils.getObject(cmd.getTokey());
+					snapshot = new ArrayList<Entry<K,V>>(db.subMap(from,to).entrySet());
+				}else if(cmd.isSetFromkey() && !cmd.isSetTokey()){
+					K from = (K) Utils.getObject(cmd.getFromkey());
+					snapshot = new ArrayList<Entry<K,V>>(db.tailMap(from).entrySet());
+				}else if(!cmd.isSetFromkey() && cmd.isSetTokey()){
+					K to = (K) Utils.getObject(cmd.getTokey());
+					snapshot = new ArrayList<Entry<K,V>>(db.headMap(to).entrySet());
+				}else{
+					snapshot = new ArrayList<Entry<K,V>>(db.entrySet());
+				}
+				long id = snapID.incrementAndGet(); //TODO: should be instance
+				snapshots.put(id,snapshot);
+				response.setCount(snapshot.size());
+				response.setIdetifier(id);
+				break;
+			case DELETERANGE:
+				if(cmd.isSetIdetifier()){
+					if(snapshots.containsKey(cmd.getIdetifier())){
+						snapshots.remove(cmd.getIdetifier());
+						response.setCount(1);
+					}else{
+						MapError e = new MapError();
+						e.setErrorMsg("Snaphost " + cmd.getIdetifier() + " does not exist!");
+						throw e;
+					}
+				}
+				break;
+			case GETRANGE:
+				id = cmd.getIdetifier();
+				if(snapshots.containsKey(id)){
+					snapshot = snapshots.get(id);  
+					int from = 0;
+					int size = snapshot.size();
+					int to = size;
+					if(cmd.isSetFromid() && cmd.getFromid() >= 0 && cmd.getFromid() <= size){
+						from = cmd.getFromid();
+						if(cmd.isSetToid() && cmd.getToid() > cmd.getFromid() && cmd.getToid() <= size){
+							to = cmd.getToid();
+						}
+					}
+					List<Pair<K,V>> list = new ArrayList<Pair<K,V>>(); //sublist an TreeMap.Entry are not serializable!
+					for(Entry<K,V> e : snapshot.subList(from,to)){
+						list.add(new Pair<K,V>(e.getKey(),e.getValue()));
+					}
+					response.setCount(list.size());
+					response.setValues(Utils.getBuffer(list));
+				}else{
+					MapError e = new MapError();
+					e.setErrorMsg("Snaphost " + cmd.getIdetifier() + " does not exist!");
+					throw e;					
+				}
+				break;
+			default:
+				break;
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			logger.error("DMapReplica error: ",e);

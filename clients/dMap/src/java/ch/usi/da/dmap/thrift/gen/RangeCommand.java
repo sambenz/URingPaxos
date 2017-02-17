@@ -39,8 +39,9 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
   private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
   private static final org.apache.thrift.protocol.TField FROMKEY_FIELD_DESC = new org.apache.thrift.protocol.TField("fromkey", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField TOKEY_FIELD_DESC = new org.apache.thrift.protocol.TField("tokey", org.apache.thrift.protocol.TType.STRING, (short)4);
-  private static final org.apache.thrift.protocol.TField FROMID_FIELD_DESC = new org.apache.thrift.protocol.TField("fromid", org.apache.thrift.protocol.TType.I64, (short)5);
-  private static final org.apache.thrift.protocol.TField TOID_FIELD_DESC = new org.apache.thrift.protocol.TField("toid", org.apache.thrift.protocol.TType.I64, (short)6);
+  private static final org.apache.thrift.protocol.TField FROMID_FIELD_DESC = new org.apache.thrift.protocol.TField("fromid", org.apache.thrift.protocol.TType.I32, (short)5);
+  private static final org.apache.thrift.protocol.TField TOID_FIELD_DESC = new org.apache.thrift.protocol.TField("toid", org.apache.thrift.protocol.TType.I32, (short)6);
+  private static final org.apache.thrift.protocol.TField IDETIFIER_FIELD_DESC = new org.apache.thrift.protocol.TField("idetifier", org.apache.thrift.protocol.TType.I64, (short)7);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -54,10 +55,11 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
    * @see RangeType
    */
   public RangeType type; // required
-  public ByteBuffer fromkey; // required
-  public ByteBuffer tokey; // required
-  public long fromid; // required
-  public long toid; // required
+  public ByteBuffer fromkey; // optional
+  public ByteBuffer tokey; // optional
+  public int fromid; // optional
+  public int toid; // optional
+  public long idetifier; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -70,7 +72,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     FROMKEY((short)3, "fromkey"),
     TOKEY((short)4, "tokey"),
     FROMID((short)5, "fromid"),
-    TOID((short)6, "toid");
+    TOID((short)6, "toid"),
+    IDETIFIER((short)7, "idetifier");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -97,6 +100,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
           return FROMID;
         case 6: // TOID
           return TOID;
+        case 7: // IDETIFIER
+          return IDETIFIER;
         default:
           return null;
       }
@@ -140,7 +145,9 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
   private static final int __ID_ISSET_ID = 0;
   private static final int __FROMID_ISSET_ID = 1;
   private static final int __TOID_ISSET_ID = 2;
+  private static final int __IDETIFIER_ISSET_ID = 3;
   private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.FROMKEY,_Fields.TOKEY,_Fields.FROMID,_Fields.TOID,_Fields.IDETIFIER};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -148,13 +155,15 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.TYPE, new org.apache.thrift.meta_data.FieldMetaData("type", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, RangeType.class)));
-    tmpMap.put(_Fields.FROMKEY, new org.apache.thrift.meta_data.FieldMetaData("fromkey", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.FROMKEY, new org.apache.thrift.meta_data.FieldMetaData("fromkey", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
-    tmpMap.put(_Fields.TOKEY, new org.apache.thrift.meta_data.FieldMetaData("tokey", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.TOKEY, new org.apache.thrift.meta_data.FieldMetaData("tokey", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
-    tmpMap.put(_Fields.FROMID, new org.apache.thrift.meta_data.FieldMetaData("fromid", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
-    tmpMap.put(_Fields.TOID, new org.apache.thrift.meta_data.FieldMetaData("toid", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.FROMID, new org.apache.thrift.meta_data.FieldMetaData("fromid", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.TOID, new org.apache.thrift.meta_data.FieldMetaData("toid", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.IDETIFIER, new org.apache.thrift.meta_data.FieldMetaData("idetifier", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(RangeCommand.class, metaDataMap);
@@ -165,22 +174,12 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
 
   public RangeCommand(
     long id,
-    RangeType type,
-    ByteBuffer fromkey,
-    ByteBuffer tokey,
-    long fromid,
-    long toid)
+    RangeType type)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.type = type;
-    this.fromkey = fromkey;
-    this.tokey = tokey;
-    this.fromid = fromid;
-    setFromidIsSet(true);
-    this.toid = toid;
-    setToidIsSet(true);
   }
 
   /**
@@ -202,6 +201,7 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     }
     this.fromid = other.fromid;
     this.toid = other.toid;
+    this.idetifier = other.idetifier;
   }
 
   public RangeCommand deepCopy() {
@@ -219,6 +219,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     this.fromid = 0;
     setToidIsSet(false);
     this.toid = 0;
+    setIdetifierIsSet(false);
+    this.idetifier = 0;
   }
 
   public long getId() {
@@ -344,11 +346,11 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     }
   }
 
-  public long getFromid() {
+  public int getFromid() {
     return this.fromid;
   }
 
-  public RangeCommand setFromid(long fromid) {
+  public RangeCommand setFromid(int fromid) {
     this.fromid = fromid;
     setFromidIsSet(true);
     return this;
@@ -367,11 +369,11 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __FROMID_ISSET_ID, value);
   }
 
-  public long getToid() {
+  public int getToid() {
     return this.toid;
   }
 
-  public RangeCommand setToid(long toid) {
+  public RangeCommand setToid(int toid) {
     this.toid = toid;
     setToidIsSet(true);
     return this;
@@ -388,6 +390,29 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
 
   public void setToidIsSet(boolean value) {
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __TOID_ISSET_ID, value);
+  }
+
+  public long getIdetifier() {
+    return this.idetifier;
+  }
+
+  public RangeCommand setIdetifier(long idetifier) {
+    this.idetifier = idetifier;
+    setIdetifierIsSet(true);
+    return this;
+  }
+
+  public void unsetIdetifier() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
+  }
+
+  /** Returns true if field idetifier is set (has been assigned a value) and false otherwise */
+  public boolean isSetIdetifier() {
+    return EncodingUtils.testBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
+  }
+
+  public void setIdetifierIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __IDETIFIER_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, Object value) {
@@ -428,7 +453,7 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (value == null) {
         unsetFromid();
       } else {
-        setFromid((Long)value);
+        setFromid((Integer)value);
       }
       break;
 
@@ -436,7 +461,15 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (value == null) {
         unsetToid();
       } else {
-        setToid((Long)value);
+        setToid((Integer)value);
+      }
+      break;
+
+    case IDETIFIER:
+      if (value == null) {
+        unsetIdetifier();
+      } else {
+        setIdetifier((Long)value);
       }
       break;
 
@@ -458,10 +491,13 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       return getTokey();
 
     case FROMID:
-      return Long.valueOf(getFromid());
+      return Integer.valueOf(getFromid());
 
     case TOID:
-      return Long.valueOf(getToid());
+      return Integer.valueOf(getToid());
+
+    case IDETIFIER:
+      return Long.valueOf(getIdetifier());
 
     }
     throw new IllegalStateException();
@@ -486,6 +522,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       return isSetFromid();
     case TOID:
       return isSetToid();
+    case IDETIFIER:
+      return isSetIdetifier();
     }
     throw new IllegalStateException();
   }
@@ -539,8 +577,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         return false;
     }
 
-    boolean this_present_fromid = true;
-    boolean that_present_fromid = true;
+    boolean this_present_fromid = true && this.isSetFromid();
+    boolean that_present_fromid = true && that.isSetFromid();
     if (this_present_fromid || that_present_fromid) {
       if (!(this_present_fromid && that_present_fromid))
         return false;
@@ -548,12 +586,21 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         return false;
     }
 
-    boolean this_present_toid = true;
-    boolean that_present_toid = true;
+    boolean this_present_toid = true && this.isSetToid();
+    boolean that_present_toid = true && that.isSetToid();
     if (this_present_toid || that_present_toid) {
       if (!(this_present_toid && that_present_toid))
         return false;
       if (this.toid != that.toid)
+        return false;
+    }
+
+    boolean this_present_idetifier = true && this.isSetIdetifier();
+    boolean that_present_idetifier = true && that.isSetIdetifier();
+    if (this_present_idetifier || that_present_idetifier) {
+      if (!(this_present_idetifier && that_present_idetifier))
+        return false;
+      if (this.idetifier != that.idetifier)
         return false;
     }
 
@@ -633,6 +680,16 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetIdetifier()).compareTo(other.isSetIdetifier());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetIdetifier()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.idetifier, other.idetifier);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -664,30 +721,44 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       sb.append(this.type);
     }
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("fromkey:");
-    if (this.fromkey == null) {
-      sb.append("null");
-    } else {
-      org.apache.thrift.TBaseHelper.toString(this.fromkey, sb);
+    if (isSetFromkey()) {
+      if (!first) sb.append(", ");
+      sb.append("fromkey:");
+      if (this.fromkey == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.fromkey, sb);
+      }
+      first = false;
     }
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("tokey:");
-    if (this.tokey == null) {
-      sb.append("null");
-    } else {
-      org.apache.thrift.TBaseHelper.toString(this.tokey, sb);
+    if (isSetTokey()) {
+      if (!first) sb.append(", ");
+      sb.append("tokey:");
+      if (this.tokey == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.tokey, sb);
+      }
+      first = false;
     }
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("fromid:");
-    sb.append(this.fromid);
-    first = false;
-    if (!first) sb.append(", ");
-    sb.append("toid:");
-    sb.append(this.toid);
-    first = false;
+    if (isSetFromid()) {
+      if (!first) sb.append(", ");
+      sb.append("fromid:");
+      sb.append(this.fromid);
+      first = false;
+    }
+    if (isSetToid()) {
+      if (!first) sb.append(", ");
+      sb.append("toid:");
+      sb.append(this.toid);
+      first = false;
+    }
+    if (isSetIdetifier()) {
+      if (!first) sb.append(", ");
+      sb.append("idetifier:");
+      sb.append(this.idetifier);
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -766,17 +837,25 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
             }
             break;
           case 5: // FROMID
-            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
-              struct.fromid = iprot.readI64();
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.fromid = iprot.readI32();
               struct.setFromidIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
           case 6: // TOID
-            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
-              struct.toid = iprot.readI64();
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.toid = iprot.readI32();
               struct.setToidIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 7: // IDETIFIER
+            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+              struct.idetifier = iprot.readI64();
+              struct.setIdetifierIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -805,21 +884,34 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         oprot.writeFieldEnd();
       }
       if (struct.fromkey != null) {
-        oprot.writeFieldBegin(FROMKEY_FIELD_DESC);
-        oprot.writeBinary(struct.fromkey);
-        oprot.writeFieldEnd();
+        if (struct.isSetFromkey()) {
+          oprot.writeFieldBegin(FROMKEY_FIELD_DESC);
+          oprot.writeBinary(struct.fromkey);
+          oprot.writeFieldEnd();
+        }
       }
       if (struct.tokey != null) {
-        oprot.writeFieldBegin(TOKEY_FIELD_DESC);
-        oprot.writeBinary(struct.tokey);
+        if (struct.isSetTokey()) {
+          oprot.writeFieldBegin(TOKEY_FIELD_DESC);
+          oprot.writeBinary(struct.tokey);
+          oprot.writeFieldEnd();
+        }
+      }
+      if (struct.isSetFromid()) {
+        oprot.writeFieldBegin(FROMID_FIELD_DESC);
+        oprot.writeI32(struct.fromid);
         oprot.writeFieldEnd();
       }
-      oprot.writeFieldBegin(FROMID_FIELD_DESC);
-      oprot.writeI64(struct.fromid);
-      oprot.writeFieldEnd();
-      oprot.writeFieldBegin(TOID_FIELD_DESC);
-      oprot.writeI64(struct.toid);
-      oprot.writeFieldEnd();
+      if (struct.isSetToid()) {
+        oprot.writeFieldBegin(TOID_FIELD_DESC);
+        oprot.writeI32(struct.toid);
+        oprot.writeFieldEnd();
+      }
+      if (struct.isSetIdetifier()) {
+        oprot.writeFieldBegin(IDETIFIER_FIELD_DESC);
+        oprot.writeI64(struct.idetifier);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -856,7 +948,10 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (struct.isSetToid()) {
         optionals.set(5);
       }
-      oprot.writeBitSet(optionals, 6);
+      if (struct.isSetIdetifier()) {
+        optionals.set(6);
+      }
+      oprot.writeBitSet(optionals, 7);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
@@ -870,17 +965,20 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         oprot.writeBinary(struct.tokey);
       }
       if (struct.isSetFromid()) {
-        oprot.writeI64(struct.fromid);
+        oprot.writeI32(struct.fromid);
       }
       if (struct.isSetToid()) {
-        oprot.writeI64(struct.toid);
+        oprot.writeI32(struct.toid);
+      }
+      if (struct.isSetIdetifier()) {
+        oprot.writeI64(struct.idetifier);
       }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, RangeCommand struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(6);
+      BitSet incoming = iprot.readBitSet(7);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -898,12 +996,16 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         struct.setTokeyIsSet(true);
       }
       if (incoming.get(4)) {
-        struct.fromid = iprot.readI64();
+        struct.fromid = iprot.readI32();
         struct.setFromidIsSet(true);
       }
       if (incoming.get(5)) {
-        struct.toid = iprot.readI64();
+        struct.toid = iprot.readI32();
         struct.setToidIsSet(true);
+      }
+      if (incoming.get(6)) {
+        struct.idetifier = iprot.readI64();
+        struct.setIdetifierIsSet(true);
       }
     }
   }

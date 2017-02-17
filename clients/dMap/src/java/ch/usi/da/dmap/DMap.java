@@ -19,7 +19,9 @@ package ch.usi.da.dmap;
  */
 
 
+import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Name: DMap<br>
@@ -35,16 +37,42 @@ public class DMap {
 
 	public static void main(String[] args) {
 		
-		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b","127.0.0.1:2181");
+		SortedMap<String, String> local = new TreeMap<String,String>();
+		local.put("a","1");
+		local.put("b","2");
+		local.put("c","3");
+		local.put("d","4");
+		local.put("e","5");
+		local.put("f","6");
+		local.put("g","7");
+		local.put("z","8");
+		System.out.println(local.subMap("a","b"));
+		System.out.println(local.subMap("a","z"));
+		System.out.println(local.subMap("b","e"));
+		System.out.println(local.tailMap("b"));
+		System.out.println(local.headMap("b"));
 		
-		//dmap.clear();
-		System.out.println(dmap.put("Key1","9"));
-		System.out.println(dmap.get("Key1"));
-		dmap.put("Key2","9");
-		dmap.put("Key3","10");
-		System.out.println(dmap.containsValue("9"));
-		System.out.println(dmap.firstKey());
-		System.out.println(dmap.lastKey());
+		System.out.println("###########");
+		
+		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b","127.0.0.1:2181");
+		dmap.put("a","1");
+		dmap.put("b","2");
+		dmap.put("c","3");
+		dmap.put("d","4");
+		dmap.put("e","5");
+		dmap.put("f","6");
+		dmap.put("g","7");
+		dmap.put("z","8");
+		System.out.println(dmap.subMap("a","b"));
+		System.out.println(dmap.subMap("a","z"));
+		System.out.println(dmap.subMap("b","e"));
+		System.out.println(dmap.tailMap("b"));
+		System.out.println(dmap.headMap("b"));
+		
+		
+		for(Entry<String,String> e : dmap.entrySet()){
+			System.out.println(e);
+		}
 
 	}
 

@@ -13,8 +13,9 @@ import org.apache.thrift.TEnum;
 
 public enum RangeType implements org.apache.thrift.TEnum {
   CREATERANGE(1),
-  GETRANGE(2),
-  DELETERANGE(3);
+  PERSISTRANGE(2),
+  GETRANGE(3),
+  DELETERANGE(4);
 
   private final int value;
 
@@ -38,8 +39,10 @@ public enum RangeType implements org.apache.thrift.TEnum {
       case 1:
         return CREATERANGE;
       case 2:
-        return GETRANGE;
+        return PERSISTRANGE;
       case 3:
+        return GETRANGE;
+      case 4:
         return DELETERANGE;
       default:
         return null;

@@ -32,31 +32,32 @@ struct Response {
 
 enum RangeType {
     CREATERANGE = 1,
-    GETRANGE = 2,
-    DELETERANGE = 3
+    PERSISTRANGE = 2,
+    GETRANGE = 3,
+    DELETERANGE = 4
 }
 
 struct RangeCommand {
   1: i64 id,
   2: RangeType type,
-  3: binary fromkey,
-  4: binary tokey,
-  5: i64 fromid,
-  6: i64 toid,
-  //7: range idetifier 
+  3: optional binary fromkey,
+  4: optional binary tokey,
+  5: optional i32 fromid,
+  6: optional i32 toid,
+  7: optional i64 idetifier 
 }
 
 struct RangeResponse {
   1: i64 id,
   2: i64 count,
-  3: list<binary> values,
-  //4: range idetifier 
+  3: i64 idetifier,
+  4: optional binary values
 }
 
 
 service Dmap {
 	Response execute(1: Command cmd) throws (1: MapError e),
-	//range rangecmd, persistence
+	RangeResponse range(1: RangeCommand cmd) throws (1: MapError e),
 	//partition
 		
 }

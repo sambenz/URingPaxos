@@ -1,4 +1,4 @@
-package ch.usi.da.dmap;
+package ch.usi.da.dmap.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

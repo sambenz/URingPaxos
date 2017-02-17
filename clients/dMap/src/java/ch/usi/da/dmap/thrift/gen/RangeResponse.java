@@ -37,7 +37,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
   private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.I64, (short)1);
   private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I64, (short)2);
-  private static final org.apache.thrift.protocol.TField VALUES_FIELD_DESC = new org.apache.thrift.protocol.TField("values", org.apache.thrift.protocol.TType.LIST, (short)3);
+  private static final org.apache.thrift.protocol.TField IDETIFIER_FIELD_DESC = new org.apache.thrift.protocol.TField("idetifier", org.apache.thrift.protocol.TType.I64, (short)3);
+  private static final org.apache.thrift.protocol.TField VALUES_FIELD_DESC = new org.apache.thrift.protocol.TField("values", org.apache.thrift.protocol.TType.STRING, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -47,13 +48,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
   public long id; // required
   public long count; // required
-  public List<ByteBuffer> values; // required
+  public long idetifier; // required
+  public ByteBuffer values; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
     COUNT((short)2, "count"),
-    VALUES((short)3, "values");
+    IDETIFIER((short)3, "idetifier"),
+    VALUES((short)4, "values");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,7 +75,9 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
           return ID;
         case 2: // COUNT
           return COUNT;
-        case 3: // VALUES
+        case 3: // IDETIFIER
+          return IDETIFIER;
+        case 4: // VALUES
           return VALUES;
         default:
           return null;
@@ -116,7 +121,9 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
   private static final int __COUNT_ISSET_ID = 1;
+  private static final int __IDETIFIER_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.VALUES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -124,9 +131,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.COUNT, new org.apache.thrift.meta_data.FieldMetaData("count", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
-    tmpMap.put(_Fields.VALUES, new org.apache.thrift.meta_data.FieldMetaData("values", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING            , true))));
+    tmpMap.put(_Fields.IDETIFIER, new org.apache.thrift.meta_data.FieldMetaData("idetifier", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
+    tmpMap.put(_Fields.VALUES, new org.apache.thrift.meta_data.FieldMetaData("values", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(RangeResponse.class, metaDataMap);
   }
@@ -137,14 +145,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   public RangeResponse(
     long id,
     long count,
-    List<ByteBuffer> values)
+    long idetifier)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.count = count;
     setCountIsSet(true);
-    this.values = values;
+    this.idetifier = idetifier;
+    setIdetifierIsSet(true);
   }
 
   /**
@@ -154,9 +163,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     __isset_bitfield = other.__isset_bitfield;
     this.id = other.id;
     this.count = other.count;
+    this.idetifier = other.idetifier;
     if (other.isSetValues()) {
-      List<ByteBuffer> __this__values = new ArrayList<ByteBuffer>(other.values);
-      this.values = __this__values;
+      this.values = org.apache.thrift.TBaseHelper.copyBinary(other.values);
+;
     }
   }
 
@@ -170,6 +180,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     this.id = 0;
     setCountIsSet(false);
     this.count = 0;
+    setIdetifierIsSet(false);
+    this.idetifier = 0;
     this.values = null;
   }
 
@@ -219,26 +231,44 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __COUNT_ISSET_ID, value);
   }
 
-  public int getValuesSize() {
-    return (this.values == null) ? 0 : this.values.size();
+  public long getIdetifier() {
+    return this.idetifier;
   }
 
-  public java.util.Iterator<ByteBuffer> getValuesIterator() {
-    return (this.values == null) ? null : this.values.iterator();
+  public RangeResponse setIdetifier(long idetifier) {
+    this.idetifier = idetifier;
+    setIdetifierIsSet(true);
+    return this;
   }
 
-  public void addToValues(ByteBuffer elem) {
-    if (this.values == null) {
-      this.values = new ArrayList<ByteBuffer>();
-    }
-    this.values.add(elem);
+  public void unsetIdetifier() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
   }
 
-  public List<ByteBuffer> getValues() {
-    return this.values;
+  /** Returns true if field idetifier is set (has been assigned a value) and false otherwise */
+  public boolean isSetIdetifier() {
+    return EncodingUtils.testBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
   }
 
-  public RangeResponse setValues(List<ByteBuffer> values) {
+  public void setIdetifierIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __IDETIFIER_ISSET_ID, value);
+  }
+
+  public byte[] getValues() {
+    setValues(org.apache.thrift.TBaseHelper.rightSize(values));
+    return values == null ? null : values.array();
+  }
+
+  public ByteBuffer bufferForValues() {
+    return values;
+  }
+
+  public RangeResponse setValues(byte[] values) {
+    setValues(values == null ? (ByteBuffer)null : ByteBuffer.wrap(values));
+    return this;
+  }
+
+  public RangeResponse setValues(ByteBuffer values) {
     this.values = values;
     return this;
   }
@@ -276,11 +306,19 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       }
       break;
 
+    case IDETIFIER:
+      if (value == null) {
+        unsetIdetifier();
+      } else {
+        setIdetifier((Long)value);
+      }
+      break;
+
     case VALUES:
       if (value == null) {
         unsetValues();
       } else {
-        setValues((List<ByteBuffer>)value);
+        setValues((ByteBuffer)value);
       }
       break;
 
@@ -294,6 +332,9 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
     case COUNT:
       return Long.valueOf(getCount());
+
+    case IDETIFIER:
+      return Long.valueOf(getIdetifier());
 
     case VALUES:
       return getValues();
@@ -313,6 +354,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       return isSetId();
     case COUNT:
       return isSetCount();
+    case IDETIFIER:
+      return isSetIdetifier();
     case VALUES:
       return isSetValues();
     }
@@ -347,6 +390,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (!(this_present_count && that_present_count))
         return false;
       if (this.count != that.count)
+        return false;
+    }
+
+    boolean this_present_idetifier = true;
+    boolean that_present_idetifier = true;
+    if (this_present_idetifier || that_present_idetifier) {
+      if (!(this_present_idetifier && that_present_idetifier))
+        return false;
+      if (this.idetifier != that.idetifier)
         return false;
     }
 
@@ -395,6 +447,16 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetIdetifier()).compareTo(other.isSetIdetifier());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetIdetifier()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.idetifier, other.idetifier);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetValues()).compareTo(other.isSetValues());
     if (lastComparison != 0) {
       return lastComparison;
@@ -433,13 +495,19 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     sb.append(this.count);
     first = false;
     if (!first) sb.append(", ");
-    sb.append("values:");
-    if (this.values == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.values);
-    }
+    sb.append("idetifier:");
+    sb.append(this.idetifier);
     first = false;
+    if (isSetValues()) {
+      if (!first) sb.append(", ");
+      sb.append("values:");
+      if (this.values == null) {
+        sb.append("null");
+      } else {
+        org.apache.thrift.TBaseHelper.toString(this.values, sb);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -501,19 +569,17 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // VALUES
-            if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
-              {
-                org.apache.thrift.protocol.TList _list0 = iprot.readListBegin();
-                struct.values = new ArrayList<ByteBuffer>(_list0.size);
-                for (int _i1 = 0; _i1 < _list0.size; ++_i1)
-                {
-                  ByteBuffer _elem2;
-                  _elem2 = iprot.readBinary();
-                  struct.values.add(_elem2);
-                }
-                iprot.readListEnd();
-              }
+          case 3: // IDETIFIER
+            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+              struct.idetifier = iprot.readI64();
+              struct.setIdetifierIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 4: // VALUES
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.values = iprot.readBinary();
               struct.setValuesIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -540,17 +606,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       oprot.writeFieldBegin(COUNT_FIELD_DESC);
       oprot.writeI64(struct.count);
       oprot.writeFieldEnd();
+      oprot.writeFieldBegin(IDETIFIER_FIELD_DESC);
+      oprot.writeI64(struct.idetifier);
+      oprot.writeFieldEnd();
       if (struct.values != null) {
-        oprot.writeFieldBegin(VALUES_FIELD_DESC);
-        {
-          oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, struct.values.size()));
-          for (ByteBuffer _iter3 : struct.values)
-          {
-            oprot.writeBinary(_iter3);
-          }
-          oprot.writeListEnd();
+        if (struct.isSetValues()) {
+          oprot.writeFieldBegin(VALUES_FIELD_DESC);
+          oprot.writeBinary(struct.values);
+          oprot.writeFieldEnd();
         }
-        oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -576,31 +640,31 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (struct.isSetCount()) {
         optionals.set(1);
       }
-      if (struct.isSetValues()) {
+      if (struct.isSetIdetifier()) {
         optionals.set(2);
       }
-      oprot.writeBitSet(optionals, 3);
+      if (struct.isSetValues()) {
+        optionals.set(3);
+      }
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
       if (struct.isSetCount()) {
         oprot.writeI64(struct.count);
       }
+      if (struct.isSetIdetifier()) {
+        oprot.writeI64(struct.idetifier);
+      }
       if (struct.isSetValues()) {
-        {
-          oprot.writeI32(struct.values.size());
-          for (ByteBuffer _iter4 : struct.values)
-          {
-            oprot.writeBinary(_iter4);
-          }
-        }
+        oprot.writeBinary(struct.values);
       }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, RangeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(3);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -610,16 +674,11 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         struct.setCountIsSet(true);
       }
       if (incoming.get(2)) {
-        {
-          org.apache.thrift.protocol.TList _list5 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-          struct.values = new ArrayList<ByteBuffer>(_list5.size);
-          for (int _i6 = 0; _i6 < _list5.size; ++_i6)
-          {
-            ByteBuffer _elem7;
-            _elem7 = iprot.readBinary();
-            struct.values.add(_elem7);
-          }
-        }
+        struct.idetifier = iprot.readI64();
+        struct.setIdetifierIsSet(true);
+      }
+      if (incoming.get(3)) {
+        struct.values = iprot.readBinary();
         struct.setValuesIsSet(true);
       }
     }

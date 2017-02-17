@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
@@ -42,7 +43,12 @@ import ch.usi.da.dmap.thrift.gen.Command;
 import ch.usi.da.dmap.thrift.gen.CommandType;
 import ch.usi.da.dmap.thrift.gen.Dmap;
 import ch.usi.da.dmap.thrift.gen.MapError;
+import ch.usi.da.dmap.thrift.gen.RangeCommand;
+import ch.usi.da.dmap.thrift.gen.RangeResponse;
+import ch.usi.da.dmap.thrift.gen.RangeType;
 import ch.usi.da.dmap.thrift.gen.Response;
+import ch.usi.da.dmap.utils.Pair;
+import ch.usi.da.dmap.utils.Utils;
 import ch.usi.da.paxos.lab.DummyWatcher;
 
 
@@ -76,8 +82,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	public final String mapID;
 	
-	//map of connected thrift clients...??
-	Dmap.Client client
+	Dmap.Client client //TODO: partitioning
 ;	
 	public DistributedOrderedMap(String mapID, String zookeeper_host) {
 		this(mapID,zookeeper_host,null);
@@ -326,34 +331,80 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	// global snapshot/iterator commands
 
 	
+	@SuppressWarnings("unchecked")
 	@Override
-	public SortedMap<K, V> subMap(K fromKey, K toKey) {
-		throw new UnsupportedOperationException();
+	public SortedMap<K,V> subMap(K fromKey, K toKey) {
+		RangeResponse ret = null;
+		SortedMap<K,V> submap = new TreeMap<K,V>();
+		try {
+			RangeCommand cmd = new RangeCommand();
+			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setType(RangeType.CREATERANGE);
+			if(fromKey != null){
+				cmd.setFromkey(Utils.getBuffer(fromKey));
+			}
+			if(toKey != null){
+				cmd.setTokey(Utils.getBuffer(toKey));
+			}
+			ret = client.range(cmd);
+			long snapshotID = 0;
+			if(ret.isSetIdetifier()){
+				snapshotID = ret.getIdetifier();
+				logger.debug(this + " created iterator " + snapshotID);
+			}
+			if(snapshotID > 0 && ret.getCount() > 0){
+				cmd = new RangeCommand();
+				cmd.setId(cmdCount.incrementAndGet());
+				cmd.setType(RangeType.GETRANGE);
+				cmd.setIdetifier(snapshotID);
+				cmd.setFromid(0); //TODO: paging?
+				cmd.setToid((int)ret.getCount()); //TODO: paging?
+				ret = client.range(cmd);
+				if(ret != null && ret.isSetValues()){
+					List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
+					for(Pair<K,V> e : sublist){
+						submap.put(e.getKey(),e.getValue());
+					}
+				}
+			}
+			if(snapshotID > 0){
+				cmd = new RangeCommand();
+				cmd.setId(cmdCount.incrementAndGet());
+				cmd.setType(RangeType.DELETERANGE);
+				cmd.setIdetifier(snapshotID);
+				logger.debug(this + " released iterator " + snapshotID);				
+			}
+		} catch (MapError e){
+			logger.error(this + " " + e.errorMsg);
+		} catch (TException | IOException | ClassNotFoundException e) {
+			logger.error(this,e);
+		}
+		return submap;
 	}
 
 	@Override
-	public SortedMap<K, V> headMap(K toKey) {
-		throw new UnsupportedOperationException();
+	public SortedMap<K,V> headMap(K toKey) {
+		return subMap(null,toKey);
 	}
 
 	@Override
-	public SortedMap<K, V> tailMap(K fromKey) {
-		throw new UnsupportedOperationException();
+	public SortedMap<K,V> tailMap(K fromKey) {
+		return subMap(fromKey,null);
 	}
 
 	@Override
 	public Set<K> keySet() {
-		throw new UnsupportedOperationException();
+		return subMap(null,null).keySet();
 	}
 
 	@Override
 	public Collection<V> values() {
-		throw new UnsupportedOperationException();
+		return subMap(null,null).values();
 	}
 
 	@Override
-	public Set<java.util.Map.Entry<K, V>> entrySet() {
-		throw new UnsupportedOperationException();
+	public Set<java.util.Map.Entry<K,V>> entrySet() {
+		return subMap(null,null).entrySet();
 	}
 
 	
