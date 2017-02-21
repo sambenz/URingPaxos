@@ -37,7 +37,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
   private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", org.apache.thrift.protocol.TType.I64, (short)1);
   private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I64, (short)2);
-  private static final org.apache.thrift.protocol.TField IDETIFIER_FIELD_DESC = new org.apache.thrift.protocol.TField("idetifier", org.apache.thrift.protocol.TType.I64, (short)3);
+  private static final org.apache.thrift.protocol.TField SNAPSHOT_FIELD_DESC = new org.apache.thrift.protocol.TField("snapshot", org.apache.thrift.protocol.TType.I64, (short)3);
   private static final org.apache.thrift.protocol.TField VALUES_FIELD_DESC = new org.apache.thrift.protocol.TField("values", org.apache.thrift.protocol.TType.STRING, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -48,14 +48,14 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
   public long id; // required
   public long count; // required
-  public long idetifier; // required
+  public long snapshot; // required
   public ByteBuffer values; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
     COUNT((short)2, "count"),
-    IDETIFIER((short)3, "idetifier"),
+    SNAPSHOT((short)3, "snapshot"),
     VALUES((short)4, "values");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -75,8 +75,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
           return ID;
         case 2: // COUNT
           return COUNT;
-        case 3: // IDETIFIER
-          return IDETIFIER;
+        case 3: // SNAPSHOT
+          return SNAPSHOT;
         case 4: // VALUES
           return VALUES;
         default:
@@ -121,7 +121,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
   private static final int __COUNT_ISSET_ID = 1;
-  private static final int __IDETIFIER_ISSET_ID = 2;
+  private static final int __SNAPSHOT_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
   private _Fields optionals[] = {_Fields.VALUES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
@@ -131,7 +131,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.COUNT, new org.apache.thrift.meta_data.FieldMetaData("count", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
-    tmpMap.put(_Fields.IDETIFIER, new org.apache.thrift.meta_data.FieldMetaData("idetifier", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+    tmpMap.put(_Fields.SNAPSHOT, new org.apache.thrift.meta_data.FieldMetaData("snapshot", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.VALUES, new org.apache.thrift.meta_data.FieldMetaData("values", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
@@ -145,15 +145,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   public RangeResponse(
     long id,
     long count,
-    long idetifier)
+    long snapshot)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.count = count;
     setCountIsSet(true);
-    this.idetifier = idetifier;
-    setIdetifierIsSet(true);
+    this.snapshot = snapshot;
+    setSnapshotIsSet(true);
   }
 
   /**
@@ -163,7 +163,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     __isset_bitfield = other.__isset_bitfield;
     this.id = other.id;
     this.count = other.count;
-    this.idetifier = other.idetifier;
+    this.snapshot = other.snapshot;
     if (other.isSetValues()) {
       this.values = org.apache.thrift.TBaseHelper.copyBinary(other.values);
 ;
@@ -180,8 +180,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     this.id = 0;
     setCountIsSet(false);
     this.count = 0;
-    setIdetifierIsSet(false);
-    this.idetifier = 0;
+    setSnapshotIsSet(false);
+    this.snapshot = 0;
     this.values = null;
   }
 
@@ -231,27 +231,27 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __COUNT_ISSET_ID, value);
   }
 
-  public long getIdetifier() {
-    return this.idetifier;
+  public long getSnapshot() {
+    return this.snapshot;
   }
 
-  public RangeResponse setIdetifier(long idetifier) {
-    this.idetifier = idetifier;
-    setIdetifierIsSet(true);
+  public RangeResponse setSnapshot(long snapshot) {
+    this.snapshot = snapshot;
+    setSnapshotIsSet(true);
     return this;
   }
 
-  public void unsetIdetifier() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
+  public void unsetSnapshot() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __SNAPSHOT_ISSET_ID);
   }
 
-  /** Returns true if field idetifier is set (has been assigned a value) and false otherwise */
-  public boolean isSetIdetifier() {
-    return EncodingUtils.testBit(__isset_bitfield, __IDETIFIER_ISSET_ID);
+  /** Returns true if field snapshot is set (has been assigned a value) and false otherwise */
+  public boolean isSetSnapshot() {
+    return EncodingUtils.testBit(__isset_bitfield, __SNAPSHOT_ISSET_ID);
   }
 
-  public void setIdetifierIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __IDETIFIER_ISSET_ID, value);
+  public void setSnapshotIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SNAPSHOT_ISSET_ID, value);
   }
 
   public byte[] getValues() {
@@ -306,11 +306,11 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       }
       break;
 
-    case IDETIFIER:
+    case SNAPSHOT:
       if (value == null) {
-        unsetIdetifier();
+        unsetSnapshot();
       } else {
-        setIdetifier((Long)value);
+        setSnapshot((Long)value);
       }
       break;
 
@@ -333,8 +333,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     case COUNT:
       return Long.valueOf(getCount());
 
-    case IDETIFIER:
-      return Long.valueOf(getIdetifier());
+    case SNAPSHOT:
+      return Long.valueOf(getSnapshot());
 
     case VALUES:
       return getValues();
@@ -354,8 +354,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       return isSetId();
     case COUNT:
       return isSetCount();
-    case IDETIFIER:
-      return isSetIdetifier();
+    case SNAPSHOT:
+      return isSetSnapshot();
     case VALUES:
       return isSetValues();
     }
@@ -393,12 +393,12 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         return false;
     }
 
-    boolean this_present_idetifier = true;
-    boolean that_present_idetifier = true;
-    if (this_present_idetifier || that_present_idetifier) {
-      if (!(this_present_idetifier && that_present_idetifier))
+    boolean this_present_snapshot = true;
+    boolean that_present_snapshot = true;
+    if (this_present_snapshot || that_present_snapshot) {
+      if (!(this_present_snapshot && that_present_snapshot))
         return false;
-      if (this.idetifier != that.idetifier)
+      if (this.snapshot != that.snapshot)
         return false;
     }
 
@@ -447,12 +447,12 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetIdetifier()).compareTo(other.isSetIdetifier());
+    lastComparison = Boolean.valueOf(isSetSnapshot()).compareTo(other.isSetSnapshot());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetIdetifier()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.idetifier, other.idetifier);
+    if (isSetSnapshot()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.snapshot, other.snapshot);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -495,8 +495,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     sb.append(this.count);
     first = false;
     if (!first) sb.append(", ");
-    sb.append("idetifier:");
-    sb.append(this.idetifier);
+    sb.append("snapshot:");
+    sb.append(this.snapshot);
     first = false;
     if (isSetValues()) {
       if (!first) sb.append(", ");
@@ -569,10 +569,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // IDETIFIER
+          case 3: // SNAPSHOT
             if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
-              struct.idetifier = iprot.readI64();
-              struct.setIdetifierIsSet(true);
+              struct.snapshot = iprot.readI64();
+              struct.setSnapshotIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -606,8 +606,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       oprot.writeFieldBegin(COUNT_FIELD_DESC);
       oprot.writeI64(struct.count);
       oprot.writeFieldEnd();
-      oprot.writeFieldBegin(IDETIFIER_FIELD_DESC);
-      oprot.writeI64(struct.idetifier);
+      oprot.writeFieldBegin(SNAPSHOT_FIELD_DESC);
+      oprot.writeI64(struct.snapshot);
       oprot.writeFieldEnd();
       if (struct.values != null) {
         if (struct.isSetValues()) {
@@ -640,7 +640,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (struct.isSetCount()) {
         optionals.set(1);
       }
-      if (struct.isSetIdetifier()) {
+      if (struct.isSetSnapshot()) {
         optionals.set(2);
       }
       if (struct.isSetValues()) {
@@ -653,8 +653,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (struct.isSetCount()) {
         oprot.writeI64(struct.count);
       }
-      if (struct.isSetIdetifier()) {
-        oprot.writeI64(struct.idetifier);
+      if (struct.isSetSnapshot()) {
+        oprot.writeI64(struct.snapshot);
       }
       if (struct.isSetValues()) {
         oprot.writeBinary(struct.values);
@@ -674,8 +674,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         struct.setCountIsSet(true);
       }
       if (incoming.get(2)) {
-        struct.idetifier = iprot.readI64();
-        struct.setIdetifierIsSet(true);
+        struct.snapshot = iprot.readI64();
+        struct.setSnapshotIsSet(true);
       }
       if (incoming.get(3)) {
         struct.values = iprot.readBinary();

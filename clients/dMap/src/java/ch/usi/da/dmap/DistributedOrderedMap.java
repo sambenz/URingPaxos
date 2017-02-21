@@ -19,15 +19,18 @@ package ch.usi.da.dmap;
  */
 
 import java.io.IOException;
+import java.util.AbstractSet;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.Spliterator;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
@@ -78,23 +81,24 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	private ZooKeeper zoo;
 		
 	private final AtomicLong cmdCount = new AtomicLong(0);
-	
-	//TODO: private SortedMap<Integer, Integer> partitions = new TreeMap<Integer, Integer>();
+
+	private final int get_range_size = 1;
+
+	//private SortedMap<Integer, Integer> partitions = new TreeMap<Integer, Integer>();
 
 	public final String mapID;
 	
-	Dmap.Client client //TODO: partitioning
-;	
+	Dmap.Client client;
+
 	public DistributedOrderedMap(String mapID, String zookeeper_host) {
 		this(mapID,zookeeper_host,null);
 	}
 	
 	public DistributedOrderedMap(String mapID, String zookeeper_host, Comparator<? super K> comparator) {
-		this.comparator = comparator; //TODO: comparator should be at replica?
+		this.comparator = comparator; // important at replica
 		this.mapID = mapID;
 		final String path = "/dmap/" + mapID;
 		try {
-			//TODO: later ....
 			zoo = new ZooKeeper(zookeeper_host,3000,new DummyWatcher());
 			// lookup one replica to initialize the partitions map
 			List<String> replicas = zoo.getChildren(path,false);
@@ -114,7 +118,6 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			TProtocol protocol = new TBinaryProtocol(transport);
 		    client = new Dmap.Client(protocol);
 		    transport.open();
-
 		} catch (IOException | KeeperException | InterruptedException e) {
 			logger.error(this + " ZooKeeper init error!",e);
 		} catch (TTransportException e) {
@@ -225,9 +228,8 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	
 	// multi-partition commands
 	
-	
-	@Override
-	public int size() {
+
+	public long sizeLong() {
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -240,11 +242,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			logger.error(this,e);
 		}
 		if(ret != null && ret.isSetCount()){
-				return (int) ret.getCount();
+				return ret.getCount();
 		}
 		return 0;
 	}
 
+	@Override
+	public int size() {
+		return (int) sizeLong();
+	}
+	
 	@Override
 	public boolean isEmpty() {
 		return size() == 0;
@@ -336,12 +343,11 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	
 	// global snapshot/iterator commands
 
-	
-	@SuppressWarnings("unchecked")
+
 	@Override
 	public SortedMap<K,V> subMap(K fromKey, K toKey) {
 		RangeResponse ret = null;
-		SortedMap<K,V> submap = new TreeMap<K,V>();
+		SortedMap<K,V> submap = null;		
 		try {
 			RangeCommand cmd = new RangeCommand();
 			cmd.setId(cmdCount.incrementAndGet());
@@ -354,38 +360,17 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			}
 			ret = client.range(cmd);
 			long snapshotID = 0;
-			if(ret.isSetIdetifier()){
-				snapshotID = ret.getIdetifier();
+			if(ret.isSetSnapshot()){
+				snapshotID = ret.getSnapshot();
+				submap = new SnapshotView(snapshotID, ret.getCount());
 				logger.debug(this + " created iterator " + snapshotID);
-			}
-			if(snapshotID > 0 && ret.getCount() > 0){
-				cmd = new RangeCommand();
-				cmd.setId(cmdCount.incrementAndGet());
-				cmd.setType(RangeType.GETRANGE);
-				cmd.setIdetifier(snapshotID);
-				cmd.setFromid(0); //TODO: paging?
-				cmd.setToid((int)ret.getCount()); //TODO: paging?
-				ret = client.range(cmd);
-				if(ret != null && ret.isSetValues()){
-					List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
-					for(Pair<K,V> e : sublist){
-						submap.put(e.getKey(),e.getValue());
-					}
-				}
-			}
-			if(snapshotID > 0){
-				cmd = new RangeCommand();
-				cmd.setId(cmdCount.incrementAndGet());
-				cmd.setType(RangeType.DELETERANGE);
-				cmd.setIdetifier(snapshotID);
-				logger.debug(this + " released iterator " + snapshotID);				
 			}
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
-		} catch (TException | IOException | ClassNotFoundException e) {
+		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
-		return Collections.unmodifiableSortedMap(submap); //no operations on snapshots allowed
+		return submap;
 	}
 
 	@Override
@@ -400,17 +385,17 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public Set<K> keySet() {
-		return subMap(null,null).keySet(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
+		return subMap(null,null).keySet();
 	}
 
 	@Override
 	public Collection<V> values() {
-		return subMap(null,null).values(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
+		return subMap(null,null).values();
 	}
 
 	@Override
 	public Set<java.util.Map.Entry<K,V>> entrySet() {
-		return subMap(null,null).entrySet(); //TODO: allow operations? maybe on db? but getrange could return inconsistency?
+		return subMap(null,null).entrySet();
 	}
 
 	
@@ -441,5 +426,270 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	public int hashCode() {
 		return mapID.hashCode();
 	}
+
+	
+	// view and iterators on a snapshot
+	
+	
+	class SnapshotView implements SortedMap<K,V> {
+
+		public final long snapshotID;
+		
+		public final long size;
+		
+		public SnapshotView(long snapshotID, long size){
+			this.snapshotID = snapshotID;
+			this.size = size;
+		}
+		
+		@Override
+		public int size() {
+			return (int) size;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return size > 0 ? false : true;
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean containsValue(Object value) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public V put(K key, V value) {
+			throw new IllegalArgumentException();
+		}
+
+		@Override
+		public V remove(Object key) {
+			throw new IllegalArgumentException();
+		}
+
+		@Override
+		public void putAll(Map<? extends K, ? extends V> m) {
+			throw new IllegalArgumentException();
+		}
+
+		@Override
+		public void clear() {
+			RangeCommand cmd = new RangeCommand();
+			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setType(RangeType.DELETERANGE);
+			cmd.setSnapshot(snapshotID);
+			try {
+				client.range(cmd);
+				logger.debug(this + " released iterator " + snapshotID);	
+			} catch (MapError e) {
+				logger.error(this + " error!",e);
+			} catch (TException e) {
+				logger.error(this + " error!",e);
+			}				
+		}
+
+		@Override
+		public Comparator<? super K> comparator() {
+			return DistributedOrderedMap.this.comparator();
+		}
+
+		@Override
+		public SortedMap<K, V> subMap(K fromKey, K toKey) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public SortedMap<K, V> headMap(K toKey) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public SortedMap<K, V> tailMap(K fromKey) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public K firstKey() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public K lastKey() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Set<K> keySet() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Collection<V> values() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Set<java.util.Map.Entry<K,V>> entrySet() {
+			return new EntrySet(this);
+		}
+
+		@Override
+		public String toString(){
+			return DistributedOrderedMap.this + " snapshot: " + snapshotID + " size: " + size;
+		}
+	}
+
+	
+    class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+
+    	private final SnapshotView view;
+    	
+    	private final BlockingQueue<Map.Entry<K,V>> queue = new LinkedBlockingQueue<Map.Entry<K,V>>();
+    		
+    	public EntrySet(SnapshotView view){
+    		this.view = view;
+    		Thread t = new Thread(new QueueFiller(view,queue));
+    		t.start();
+    	}
+    	
+        public Iterator<Map.Entry<K,V>> iterator() {
+            return new EntryIterator<Map.Entry<K,V>>(this,queue);
+        }
+
+        public boolean contains(Object o) {
+            if (!(o instanceof Map.Entry))
+                return false;
+            Map.Entry<?,?> entry = (Map.Entry<?,?>) o;
+            Object value = entry.getValue();
+            V p = view.get(entry.getKey());
+            return p != null && p.equals(value);
+        }
+
+        public boolean remove(Object o) {
+            if (!(o instanceof Map.Entry))
+                return false;
+            Map.Entry<?,?> entry = (Map.Entry<?,?>) o;
+            Object value = entry.getValue();
+            V p = view.get(entry.getKey());
+            if (p != null && p.equals(value)) {
+                view.remove(entry.getKey());
+                return true;
+            }
+            return false;
+        }
+
+        public int size() {
+            return view.size();
+        }
+
+        public void clear() {
+        	view.clear();
+        }
+
+        public Spliterator<Map.Entry<K,V>> spliterator() {
+        	throw new UnsupportedOperationException();
+        }
+    }
+
+    class EntryIterator<T> implements Iterator<T> {
+        
+    	private final EntrySet set;
+    	
+        private final BlockingQueue<T> queue;
+        
+        T last = null;
+
+        EntryIterator(EntrySet set, BlockingQueue<T> queue) {
+        	this.set = set;
+        	this.queue = queue;
+        }
+
+        public final boolean hasNext() {
+        	try {
+				Thread.sleep(100); //FIXME: improve!!
+			} catch (InterruptedException e) {
+			}
+        	return queue.peek() != null ? true : false;
+        }
+
+        public void remove() {
+        	if(last == null){
+        		throw new IllegalStateException();
+        	}
+        	set.remove(last);
+        }
+        
+		@Override
+		public T next() {
+			T o = queue.poll(); //FIXME: improve!!
+			last = o;
+			if(o != null){
+				return o;
+			}else{
+				throw new NoSuchElementException();
+			}
+		}
+    }
+    
+    class QueueFiller implements Runnable {
+    	
+    	private final SnapshotView view;
+
+    	private final BlockingQueue<Map.Entry<K,V>> queue;
+    	
+    	public QueueFiller(SnapshotView view,BlockingQueue<Map.Entry<K,V>> queue){
+    		this.view = view;
+    		this.queue = queue;
+    	}
+    	
+    	@Override
+    	public void run() {
+    		long snapshotID = view.snapshotID;
+    		long size = view.size;
+    		long retreived = 0;
+    		int from = 0;
+    		while(retreived < size){
+				try {
+	    			RangeCommand cmd = new RangeCommand();
+	    			cmd.setId(cmdCount.incrementAndGet());
+	    			cmd.setType(RangeType.GETRANGE);
+	    			cmd.setSnapshot(snapshotID);
+	    			cmd.setFromid(from);
+	    			cmd.setToid(from+get_range_size);
+	    			from = from+get_range_size;
+	    			RangeResponse ret = client.range(cmd);
+	    			if(ret != null && ret.isSetValues()){
+	    				@SuppressWarnings("unchecked")
+						List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
+	    				for(Pair<K,V> e : sublist){
+	    					queue.add(e);
+	    					retreived++;
+	    				}
+	    			}
+				} catch (MapError e){
+					logger.error(view + " error!",e);
+				} catch (TException | ClassNotFoundException | IOException e) {
+					logger.error(view + " error!",e);
+				}
+    		}
+    	}
+    }
 
 }

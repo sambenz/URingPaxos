@@ -161,7 +161,7 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 		try {
 			switch(cmd.type){
 			case PERSISTRANGE:
-				if(cmd.isSetIdetifier() && snapshots.containsKey(cmd.getIdetifier())){
+				if(cmd.isSetSnapshot() && snapshots.containsKey(cmd.getSnapshot())){
 					//TODO: persist
 				}
 				break;
@@ -182,22 +182,22 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 				long id = snapID.incrementAndGet(); //TODO: should be instance
 				snapshots.put(id,snapshot);
 				response.setCount(snapshot.size());
-				response.setIdetifier(id);
+				response.setSnapshot(id);
 				break;
 			case DELETERANGE:
-				if(cmd.isSetIdetifier()){
-					if(snapshots.containsKey(cmd.getIdetifier())){
-						snapshots.remove(cmd.getIdetifier());
+				if(cmd.isSetSnapshot()){
+					if(snapshots.containsKey(cmd.getSnapshot())){
+						snapshots.remove(cmd.getSnapshot());
 						response.setCount(1);
 					}else{
 						MapError e = new MapError();
-						e.setErrorMsg("Snaphost " + cmd.getIdetifier() + " does not exist!");
+						e.setErrorMsg("Snaphost " + cmd.getSnapshot() + " does not exist!");
 						throw e;
 					}
 				}
 				break;
 			case GETRANGE:
-				id = cmd.getIdetifier();
+				id = cmd.getSnapshot();
 				if(snapshots.containsKey(id)){
 					snapshot = snapshots.get(id);  
 					int from = 0;
@@ -217,7 +217,7 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 					response.setValues(Utils.getBuffer(list));
 				}else{
 					MapError e = new MapError();
-					e.setErrorMsg("Snaphost " + cmd.getIdetifier() + " does not exist!");
+					e.setErrorMsg("Snaphost " + cmd.getSnapshot() + " does not exist!");
 					throw e;					
 				}
 				break;

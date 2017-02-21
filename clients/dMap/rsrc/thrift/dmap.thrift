@@ -44,13 +44,13 @@ struct RangeCommand {
   4: optional binary tokey,
   5: optional i32 fromid,
   6: optional i32 toid,
-  7: optional i64 idetifier 
+  7: optional i64 snapshot 
 }
 
 struct RangeResponse {
   1: i64 id,
   2: i64 count,
-  3: i64 idetifier,
+  3: i64 snapshot,
   4: optional binary values
 }
 
