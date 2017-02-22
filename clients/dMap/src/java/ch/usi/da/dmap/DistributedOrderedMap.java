@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -82,7 +81,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		
 	private final AtomicLong cmdCount = new AtomicLong(0);
 
-	private final int get_range_size = 1;
+	private final int get_range_size = 100;
 
 	//private SortedMap<Integer, Integer> partitions = new TreeMap<Integer, Integer>();
 
@@ -128,9 +127,13 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	
 	// single partition commands
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public V get(Object key) {
+		return get(key,null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private V get(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
@@ -138,6 +141,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.GET);
 			cmd.setKey(Utils.getBuffer(key));
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -154,9 +160,13 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public V put(K key, V value) {
+	public V put(K key,V value) {
+		return put(key,value,null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private V put(K key,V value,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
@@ -165,6 +175,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setType(CommandType.PUT);
 			cmd.setKey(Utils.getBuffer(key));
 			cmd.setValue(Utils.getBuffer(value));
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -181,9 +194,13 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(Object key) {
+		return remove(key,null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private V remove(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
@@ -191,6 +208,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.REMOVE);
 			cmd.setKey(Utils.getBuffer(key));
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -209,8 +229,12 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public boolean containsKey(Object key) {
+		return containsKey(key,null);
+	}
+	
+	private boolean containsKey(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
-		V v = get(key);
+		V v = get(key,snapshotID);
 		if(v != null){
 			return true;
 		}else{
@@ -220,8 +244,12 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
+		putAll(m,null);
+	}
+	
+	private void putAll(Map<? extends K, ? extends V> m,Long snapshotID) {
 		for(Map.Entry<? extends K, ? extends V> e : m.entrySet()){
-			put(e.getKey(),e.getValue());
+			put(e.getKey(),e.getValue(),snapshotID);
 		}
 	}
 
@@ -229,12 +257,15 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	// multi-partition commands
 	
 
-	public long sizeLong() {
+	private long sizeLong(Long snapshotID) {
 		Response ret = null;
 		try {
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.SIZE);
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -249,7 +280,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public int size() {
-		return (int) sizeLong();
+		return (int) sizeLong(null);
 	}
 	
 	@Override
@@ -259,6 +290,10 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public boolean containsValue(Object value) {
+		return containsValue(value,null);
+	}
+	
+	private boolean containsValue(Object value,Long snapshotID) {
 		if(value == null){ throw new NullPointerException(); }
 		Response ret = null;
 		try {
@@ -266,6 +301,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.CONTAINSVALUE);
 			cmd.setValue(Utils.getBuffer(value));
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -280,10 +318,17 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	@Override
 	public void clear() {
+		clear(null);
+	}
+	
+	private void clear(Long snapshotID){
 		try {
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.CLEAR);
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -292,14 +337,21 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public K firstKey() {
+		return firstKey(null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private K firstKey(Long snapshotID){
 		Response ret = null;
 		try {
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.FIRSTKEY);
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -316,14 +368,21 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		throw new NoSuchElementException();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public K lastKey() {
+		return lastKey(null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private K lastKey(Long snapshotID){
 		Response ret = null;
 		try {
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.LASTKEY);
+			if(snapshotID != null){
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -344,8 +403,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	// global snapshot/iterator commands
 
 
-	@Override
-	public SortedMap<K,V> subMap(K fromKey, K toKey) {
+	private SortedMap<K,V> subMap(K fromKey,K toKey,Long snapshotID) {
 		RangeResponse ret = null;
 		SortedMap<K,V> submap = null;		
 		try {
@@ -358,8 +416,10 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			if(toKey != null){
 				cmd.setTokey(Utils.getBuffer(toKey));
 			}
+			if(snapshotID != null){ // snapshot of a snapshot?
+				cmd.setSnapshot(snapshotID);
+			}
 			ret = client.range(cmd);
-			long snapshotID = 0;
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
 				submap = new SnapshotView(snapshotID, ret.getCount());
@@ -373,29 +433,49 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		return submap;
 	}
 
+	public void removeSnapshot(Long snapshotID){
+		RangeCommand cmd = new RangeCommand();
+		cmd.setId(cmdCount.incrementAndGet());
+		cmd.setType(RangeType.DELETERANGE);
+		cmd.setSnapshot(snapshotID);
+		try {
+			client.range(cmd);
+			logger.debug(this + " released iterator " + snapshotID);	
+		} catch (MapError e) {
+			logger.error(this + " error!",e);
+		} catch (TException e) {
+			logger.error(this + " error!",e);
+		}				
+	}
+
+	@Override
+	public SortedMap<K,V> subMap(K fromKey, K toKey) {
+		return subMap(fromKey,toKey,null);
+	}
+	
 	@Override
 	public SortedMap<K,V> headMap(K toKey) {
-		return subMap(null,toKey);
+		return subMap(null,toKey,null);
 	}
 
 	@Override
 	public SortedMap<K,V> tailMap(K fromKey) {
-		return subMap(fromKey,null);
+		return subMap(fromKey,null,null);
 	}
 
 	@Override
 	public Set<K> keySet() {
-		return subMap(null,null).keySet();
+		return subMap(null,null,null).keySet();
 	}
 
 	@Override
 	public Collection<V> values() {
-		return subMap(null,null).values();
+		return subMap(null,null,null).values();
 	}
 
 	@Override
 	public Set<java.util.Map.Entry<K,V>> entrySet() {
-		return subMap(null,null).entrySet();
+		return subMap(null,null,null).entrySet();
 	}
 
 	
@@ -454,51 +534,45 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 		@Override
 		public boolean containsKey(Object key) {
-			// TODO Auto-generated method stub
-			return false;
+			return DistributedOrderedMap.this.containsKey(key,snapshotID);
 		}
 
 		@Override
 		public boolean containsValue(Object value) {
-			// TODO Auto-generated method stub
-			return false;
+			return DistributedOrderedMap.this.containsValue(value,snapshotID);
 		}
 
 		@Override
 		public V get(Object key) {
-			// TODO Auto-generated method stub
-			return null;
+			return DistributedOrderedMap.this.get(key,snapshotID);
 		}
 
 		@Override
-		public V put(K key, V value) {
+		public V put(K key,V value) {
 			throw new IllegalArgumentException();
+			//return DistributedOrderedMap.this.put(key,value,snapshotID);
 		}
 
 		@Override
 		public V remove(Object key) {
 			throw new IllegalArgumentException();
+			//return DistributedOrderedMap.this.remove(key,snapshotID);
 		}
 
 		@Override
 		public void putAll(Map<? extends K, ? extends V> m) {
 			throw new IllegalArgumentException();
+			//DistributedOrderedMap.this.putAll(m,snapshotID);
 		}
 
 		@Override
 		public void clear() {
-			RangeCommand cmd = new RangeCommand();
-			cmd.setId(cmdCount.incrementAndGet());
-			cmd.setType(RangeType.DELETERANGE);
-			cmd.setSnapshot(snapshotID);
-			try {
-				client.range(cmd);
-				logger.debug(this + " released iterator " + snapshotID);	
-			} catch (MapError e) {
-				logger.error(this + " error!",e);
-			} catch (TException e) {
-				logger.error(this + " error!",e);
-			}				
+			removeSnapshot();
+			//DistributedOrderedMap.this.clear(snapshotID);
+		}
+		
+		public void removeSnapshot(){
+			DistributedOrderedMap.this.removeSnapshot(snapshotID);
 		}
 
 		@Override
@@ -507,41 +581,39 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		}
 
 		@Override
-		public SortedMap<K, V> subMap(K fromKey, K toKey) {
-			throw new UnsupportedOperationException();
+		public SortedMap<K, V> subMap(K fromKey,K toKey) {
+			return DistributedOrderedMap.this.subMap(fromKey,toKey,snapshotID);
 		}
 
 		@Override
 		public SortedMap<K, V> headMap(K toKey) {
-			throw new UnsupportedOperationException();
+			return DistributedOrderedMap.this.subMap(null,toKey,snapshotID);
 		}
 
 		@Override
 		public SortedMap<K, V> tailMap(K fromKey) {
-			throw new UnsupportedOperationException();
+			return DistributedOrderedMap.this.subMap(fromKey,null,snapshotID);
 		}
 
 		@Override
 		public K firstKey() {
-			// TODO Auto-generated method stub
-			return null;
+			return DistributedOrderedMap.this.firstKey(snapshotID);
 		}
 
 		@Override
 		public K lastKey() {
-			// TODO Auto-generated method stub
-			return null;
+			return DistributedOrderedMap.this.lastKey(snapshotID);
 		}
 
 		@Override
 		public Set<K> keySet() {
-			// TODO Auto-generated method stub
+			//TODO:
 			return null;
 		}
 
 		@Override
 		public Collection<V> values() {
-			// TODO Auto-generated method stub
+			//TODO:
 			return null;
 		}
 
@@ -602,15 +674,14 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
         public void clear() {
         	view.clear();
         }
-
-        public Spliterator<Map.Entry<K,V>> spliterator() {
-        	throw new UnsupportedOperationException();
-        }
+        
     }
 
     class EntryIterator<T> implements Iterator<T> {
         
     	private final EntrySet set;
+    	
+    	private long delivered = 0;
     	
         private final BlockingQueue<T> queue;
         
@@ -622,11 +693,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
         }
 
         public final boolean hasNext() {
-        	try {
-				Thread.sleep(100); //FIXME: improve!!
-			} catch (InterruptedException e) {
-			}
-        	return queue.peek() != null ? true : false;
+        	return delivered < set.view.size ? true : false;
         }
 
         public void remove() {
@@ -638,9 +705,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
         
 		@Override
 		public T next() {
-			T o = queue.poll(); //FIXME: improve!!
-			last = o;
+			T o = null;
+			if(delivered < set.view.size){
+				try {
+					o = queue.take();
+					last = o;	
+				} catch (InterruptedException e) {
+				}	
+			}
 			if(o != null){
+				delivered++;
 				return o;
 			}else{
 				throw new NoSuchElementException();

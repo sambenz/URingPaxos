@@ -21,6 +21,7 @@ struct Command {
   2: CommandType type,
   3: optional binary key,
   4: optional binary value,
+  5: optional i64 snapshot,
 }
 
 struct Response {

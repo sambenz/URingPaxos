@@ -19,8 +19,12 @@ package ch.usi.da.dmap;
  */
 
 
+import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.SortedMap;
+
+import ch.usi.da.dmap.utils.Pair;
 
 /**
  * Name: DMap<br>
@@ -68,10 +72,26 @@ public class DMap {
 		System.out.println(dmap.tailMap("b"));
 		System.out.println(dmap.headMap("b"));
 		
-		
-		for(Entry<String,String> e : dmap.entrySet()){
+
+		Set<Entry<String, String>> entries = dmap.entrySet();
+		for(Entry<String,String> e : entries){
 			System.out.println(e);
 		}
+		
+		System.out.println(entries.contains("a"));
+		System.out.println(entries.contains(new Pair<String,String>("a","1")));
+
+		entries = dmap.subMap("b","e").entrySet();
+		Iterator<Entry<String,String>> i = entries.iterator();
+		while(i.hasNext()){
+			Entry<String,String> e = i.next();
+			//i.remove();
+			System.out.println(e);
+		}
+				
+		//entries.remove(new Pair<String,String>("b","2"));
+		
+		//entries.clear(); //close snapshot
 
 	}
 

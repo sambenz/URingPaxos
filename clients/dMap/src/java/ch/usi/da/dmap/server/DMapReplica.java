@@ -67,12 +67,18 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 	
 	private final AtomicLong snapID = new AtomicLong(0); //TODO: will be replaced by instance
 	
-	private volatile Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
+	private final Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
 		private static final long serialVersionUID = -2704400124020327063L;
 		protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
 			return size() > 10; // hold only 10 snapshots in memory!                                 
 		}};
-	
+
+	private final Map<Long,SortedMap<K,V>> snapshotsDB = new LinkedHashMap<Long,SortedMap<K,V>>(){
+		private static final long serialVersionUID = -2704400124020327063L;
+		protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
+			return size() > 10; // hold only 10 snapshots in memory!                                 
+		}};
+
 	public DMapReplica(Comparator<? super K> comparator) {
 		//this.nodeID = nodeID;
 		//this.token = token;
@@ -103,32 +109,43 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 			K retK = null;
 			V retV = null; 
 
+			SortedMap<K,V> snapshotDB = db;
+			if(cmd.isSetSnapshot()){
+				long snapshot = cmd.getSnapshot();
+				if(snapshotsDB.containsKey(snapshot)){
+					snapshotDB = snapshotsDB.get(snapshot);
+				}else{
+					MapError e = new MapError();
+					e.setErrorMsg("Snaphost " + cmd.getSnapshot() + " does not exist!");
+					throw e;
+				}
+			}
 			switch(cmd.type){
 			case CLEAR:
-				db.clear();
+				snapshotDB.clear();
 				break;
 			case CONTAINSVALUE:
-				if(db.containsValue(value)){
+				if(snapshotDB.containsValue(value)){
 					response.setCount(1);
 				}
 				break;
 			case GET:
-				retV = db.get(key);
+				retV = snapshotDB.get(key);
 				break;
 			case PUT:
-				retV = db.put(key,value);
+				retV = snapshotDB.put(key,value);
 				break;
 			case REMOVE:
-				retV = db.remove(key);
+				retV = snapshotDB.remove(key);
 				break;
 			case SIZE:
-				response.setCount(db.size());
+				response.setCount(snapshotDB.size());
 				break;
 			case FIRSTKEY:
-				retK = db.firstKey();
+				retK = snapshotDB.firstKey();
 				break;
 			case LASTKEY:
-				retK = db.lastKey();
+				retK = snapshotDB.lastKey();
 				break;	
 			default:
 				break;
@@ -157,6 +174,7 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 		RangeResponse response = new RangeResponse();
 		response.setId(cmd.getId());
 		List<Entry<K,V>> snapshot;
+		SortedMap<K,V> snapshotDB;
 		
 		try {
 			switch(cmd.type){
@@ -169,25 +187,27 @@ public class DMapReplica<K,V> implements Dmap.Iface {
 				if(cmd.isSetFromkey() && cmd.isSetTokey()){
 					K from = (K) Utils.getObject(cmd.getFromkey());
 					K to = (K) Utils.getObject(cmd.getTokey());
-					snapshot = new ArrayList<Entry<K,V>>(db.subMap(from,to).entrySet());
+					snapshotDB = new TreeMap<K,V>(db.subMap(from,to));
 				}else if(cmd.isSetFromkey() && !cmd.isSetTokey()){
 					K from = (K) Utils.getObject(cmd.getFromkey());
-					snapshot = new ArrayList<Entry<K,V>>(db.tailMap(from).entrySet());
+					snapshotDB = new TreeMap<K,V>(db.tailMap(from));
 				}else if(!cmd.isSetFromkey() && cmd.isSetTokey()){
 					K to = (K) Utils.getObject(cmd.getTokey());
-					snapshot = new ArrayList<Entry<K,V>>(db.headMap(to).entrySet());
+					snapshotDB = new TreeMap<K,V>(db.headMap(to));
 				}else{
-					snapshot = new ArrayList<Entry<K,V>>(db.entrySet());
+					snapshotDB = new TreeMap<K,V>(db);
 				}
-				long id = snapID.incrementAndGet(); //TODO: should be instance
-				snapshots.put(id,snapshot);
-				response.setCount(snapshot.size());
+				long id = snapID.incrementAndGet();
+				snapshots.put(id,new ArrayList<Entry<K,V>>(snapshotDB.entrySet()));
+				snapshotsDB.put(id,snapshotDB);
+				response.setCount(snapshotDB.size());
 				response.setSnapshot(id);
 				break;
 			case DELETERANGE:
 				if(cmd.isSetSnapshot()){
 					if(snapshots.containsKey(cmd.getSnapshot())){
 						snapshots.remove(cmd.getSnapshot());
+						snapshotsDB.remove(cmd.getSnapshot());
 						response.setCount(1);
 					}else{
 						MapError e = new MapError();
