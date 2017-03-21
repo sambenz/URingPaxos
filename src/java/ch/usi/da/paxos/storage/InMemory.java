@@ -21,8 +21,6 @@ package ch.usi.da.paxos.storage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 import ch.usi.da.paxos.api.StableStorage;
 
 
@@ -36,8 +34,6 @@ import ch.usi.da.paxos.api.StableStorage;
  * @author Samuel Benz benz@geoid.ch
  */
 public class InMemory implements StableStorage {
-
-	private final static Logger logger = Logger.getLogger(StableStorage.class);
 	
 	private final Map<Long, Integer> promised = new LinkedHashMap<Long,Integer>(10000,0.75F,false){
 		private static final long serialVersionUID = -2704400128020327063L;
@@ -71,7 +67,6 @@ public class InMemory implements StableStorage {
 	@Override
 	public void putDecision(Long instance, Decision decision) {
 		decided.put(instance, decision);
-		logger.trace("InMemory stored " + decision);
 	}
 
 	@Override

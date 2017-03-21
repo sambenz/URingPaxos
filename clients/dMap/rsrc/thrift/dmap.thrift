@@ -5,6 +5,10 @@ exception MapError {
 	1: string errorMsg,
 }
 
+exception WrongPartition {
+	1: string errorMsg,
+}
+
 enum CommandType {
     GET = 0,
     PUT = 1,
@@ -22,6 +26,7 @@ struct Command {
   3: optional binary key,
   4: optional binary value,
   5: optional i64 snapshot,
+  6: i64 partition_version,
 }
 
 struct Response {
@@ -45,7 +50,8 @@ struct RangeCommand {
   4: optional binary tokey,
   5: optional i32 fromid,
   6: optional i32 toid,
-  7: optional i64 snapshot 
+  7: optional i64 snapshot,
+  8: i64 partition_version,
 }
 
 struct RangeResponse {
@@ -55,31 +61,13 @@ struct RangeResponse {
   4: optional binary values
 }
 
-
-service Dmap {
-	Response execute(1: Command cmd) throws (1: MapError e),
-	RangeResponse range(1: RangeCommand cmd) throws (1: MapError e),
-	//partition
-		
+struct Partition {
+  1: i64 version,
+  2: map<i32,set<string>> partitions
 }
 
-
-//	// single-partition
-//	V get(Object key)
-//	V put(K key, V value)
-//	V remove(Object key)
-//	
-//	// multi-partition commands
-//	int size()
-//	boolean containsValue(Object value)
-//	void clear()
-//
-//	// global snapshot/iterator commands
-//	K firstKey()
-//	K lastKey()
-//	SortedMap<K, V> subMap(K fromKey, K toKey)
-//	SortedMap<K, V> headMap(K toKey)
-//	SortedMap<K, V> tailMap(K fromKey)
-//	Set<K> keySet()
-//	Collection<V> values()
-//	Set<java.util.Map.Entry<K, V>> entrySet()
+service Dmap {
+	Response execute(1: Command cmd) throws (1: MapError e, 2: WrongPartition p),
+	RangeResponse range(1: RangeCommand cmd) throws (1: MapError e, 2: WrongPartition p),
+	Partition partition(1: i64 id)
+}

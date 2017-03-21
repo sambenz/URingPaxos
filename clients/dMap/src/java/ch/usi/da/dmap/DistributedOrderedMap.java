@@ -20,14 +20,18 @@ package ch.usi.da.dmap;
 
 import java.io.IOException;
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,7 +40,6 @@ import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -47,10 +50,12 @@ import ch.usi.da.dmap.thrift.gen.Command;
 import ch.usi.da.dmap.thrift.gen.CommandType;
 import ch.usi.da.dmap.thrift.gen.Dmap;
 import ch.usi.da.dmap.thrift.gen.MapError;
+import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
 import ch.usi.da.dmap.thrift.gen.RangeType;
 import ch.usi.da.dmap.thrift.gen.Response;
+import ch.usi.da.dmap.thrift.gen.WrongPartition;
 import ch.usi.da.dmap.utils.Pair;
 import ch.usi.da.dmap.utils.Utils;
 import ch.usi.da.paxos.lab.DummyWatcher;
@@ -76,6 +81,8 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	private final static Logger logger = Logger.getLogger(DistributedOrderedMap.class);
 	
 	private final Comparator<? super K> comparator;
+	
+	private final Random rand = new Random();
 		
 	private ZooKeeper zoo;
 		
@@ -83,11 +90,13 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	private final int get_range_size = 100;
 
-	//private SortedMap<Integer, Integer> partitions = new TreeMap<Integer, Integer>();
+	private long partition_version = 0;
+	
+	private SortedMap<Integer,Set<String>> partitions = new TreeMap<Integer,Set<String>>();
+	
+	private Map<Integer,List<Dmap.Client>> clients = new HashMap<Integer,List<Dmap.Client>>();
 
 	public final String mapID;
-	
-	Dmap.Client client;
 
 	public DistributedOrderedMap(String mapID, String zookeeper_host) {
 		this(mapID,zookeeper_host,null);
@@ -102,21 +111,24 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			// lookup one replica to initialize the partitions map
 			List<String> replicas = zoo.getChildren(path,false);
 			if(replicas.isEmpty()){
-				// logger.error(this + " can not locate any replica!");
+				logger.error(this + " can not locate any replica!");
 			}else{
-				for(String r : replicas){
-					System.out.println(r);
-					// readPartitions();
-					// if download partitions ok; break;				
-					// logger.info(this + " initialized.");
-					// else ERROR
-				}				
+				int pos = rand.nextInt(replicas.size());
+				byte[] a = zoo.getData(path + "/" + replicas.get(pos),false,null);
+				String[] as = new String(a).split(";");
+				String ip = as[0];
+				int port = Integer.parseInt(as[1]);
+				TTransport transport = new TSocket(ip,port);
+				TProtocol protocol = new TBinaryProtocol(transport);
+				Dmap.Client client = new Dmap.Client(protocol);
+			    transport.open();
+				readPartitions(client);
+				if(!partitions.isEmpty()){
+					logger.info(this + " initialized.");
+				}else{
+					logger.error(this + " could not initalze the partition map!");
+				}
 			}
-
-			TTransport transport = new TFramedTransport(new TSocket("127.0.0.1",5800));
-			TProtocol protocol = new TBinaryProtocol(transport);
-		    client = new Dmap.Client(protocol);
-		    transport.open();
 		} catch (IOException | KeeperException | InterruptedException e) {
 			logger.error(this + " ZooKeeper init error!",e);
 		} catch (TTransportException e) {
@@ -125,8 +137,71 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	}
 	
+	private Dmap.Client getClient(){
+		return getClient(null);
+	}
+	
+	private Dmap.Client getClient(Object key){
+		Dmap.Client client = null;
+		int partition = 0;
+		int hash;
+		if(key == null){ // random partition
+			hash = rand.nextInt();
+		}else{
+			hash = key.hashCode();
+		}
+		SortedMap<Integer,Set<String>> tailMap = partitions.tailMap(hash);
+		partition = tailMap.isEmpty() ? partitions.firstKey() : tailMap.firstKey();
+
+		if(!clients.containsKey(partition)){
+			clients.put(partition,new ArrayList<Dmap.Client>());
+		}
+		List<Dmap.Client> c = clients.get(partition);
+		if(c.isEmpty()){
+			Set<String> caddrs = partitions.get(partition);
+			for(String addr : caddrs){
+				String[] as = new String(addr).split(";");
+				String ip = as[0];
+				int port = Integer.parseInt(as[1]);
+				TTransport transport = new TSocket(ip,port);
+				TProtocol protocol = new TBinaryProtocol(transport);
+				client = new Dmap.Client(protocol);
+				try {
+					//TODO: how to handle broken connections
+					transport.open();
+				} catch (TTransportException e) {
+					logger.error(this,e);
+				}
+				c.add(client);				
+			}
+		}else{
+			int pos = rand.nextInt(c.size());			
+			client = c.get(pos);
+		}
+		return client;
+	}
+	
+	private void readPartitions(Dmap.Client client){
+		try {
+			logger.info(this + " request partition map.");
+			Partition p = client.partition(cmdCount.incrementAndGet());
+			if(p.getVersion() != partition_version){
+				partitions.clear();
+				partitions.putAll(p.getPartitions());
+				partition_version = p.getVersion();
+				logger.info(this + " installed new partition map version " + partition_version + " (" + partitions + ")");
+			}else{
+				logger.info(this + " reveived same version partition map.");
+			}
+		} catch (TException e) {
+			logger.error(this,e);
+		}
+	}
+	
+	
 	// single partition commands
 
+	
 	@Override
 	public V get(Object key) {
 		return get(key,null);
@@ -141,12 +216,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.GET);
 			cmd.setKey(Utils.getBuffer(key));
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient(key).execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return get(key,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
@@ -175,12 +254,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setType(CommandType.PUT);
 			cmd.setKey(Utils.getBuffer(key));
 			cmd.setValue(Utils.getBuffer(value));
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient(key).execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return put(key,value,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
@@ -208,12 +291,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.REMOVE);
 			cmd.setKey(Utils.getBuffer(key));
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient(key).execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return remove(key,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
@@ -263,12 +350,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.SIZE);
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient().execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return sizeLong(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
 		}
@@ -301,12 +392,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.CONTAINSVALUE);
 			cmd.setValue(Utils.getBuffer(value));
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient().execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return containsValue(value,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
@@ -326,12 +421,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.CLEAR);
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			client.execute(cmd);
+			getClient().execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			clear(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
 		}
@@ -349,12 +448,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.FIRSTKEY);
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient().execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return firstKey(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
 		}
@@ -380,12 +483,16 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			Command cmd = new Command();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(CommandType.LASTKEY);
+			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.execute(cmd);
+			ret = getClient().execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return lastKey(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
 		}
@@ -410,6 +517,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			RangeCommand cmd = new RangeCommand();
 			cmd.setId(cmdCount.incrementAndGet());
 			cmd.setType(RangeType.CREATERANGE);
+			cmd.setPartition_version(partition_version);
 			if(fromKey != null){
 				cmd.setFromkey(Utils.getBuffer(fromKey));
 			}
@@ -419,7 +527,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			if(snapshotID != null){ // snapshot of a snapshot?
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = client.range(cmd);
+			ret = getClient().range(cmd);
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
 				submap = new SnapshotView(snapshotID, ret.getCount());
@@ -427,6 +535,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			}
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			return subMap(fromKey,toKey,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
 		}
@@ -438,11 +549,15 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		cmd.setId(cmdCount.incrementAndGet());
 		cmd.setType(RangeType.DELETERANGE);
 		cmd.setSnapshot(snapshotID);
+		cmd.setPartition_version(partition_version);
 		try {
-			client.range(cmd);
+			getClient().range(cmd);
 			logger.debug(this + " released iterator " + snapshotID);	
 		} catch (MapError e) {
 			logger.error(this + " error!",e);
+		} catch (WrongPartition p){
+			readPartitions(getClient());
+			removeSnapshot(snapshotID);
 		} catch (TException e) {
 			logger.error(this + " error!",e);
 		}				
@@ -747,8 +862,9 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	    			cmd.setSnapshot(snapshotID);
 	    			cmd.setFromid(from);
 	    			cmd.setToid(from+get_range_size);
+	    			cmd.setPartition_version(partition_version);
 	    			from = from+get_range_size;
-	    			RangeResponse ret = client.range(cmd);
+	    			RangeResponse ret = getClient().range(cmd); //FIXME: special -> direct call to multiple replicas in multiple partitions!
 	    			if(ret != null && ret.isSetValues()){
 	    				@SuppressWarnings("unchecked")
 						List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
@@ -759,6 +875,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	    			}
 				} catch (MapError e){
 					logger.error(view + " error!",e);
+				} catch (WrongPartition p){
 				} catch (TException | ClassNotFoundException | IOException e) {
 					logger.error(view + " error!",e);
 				}

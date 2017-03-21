@@ -219,6 +219,15 @@ public class Node implements PaxosNode {
 	@Override
 	public boolean updateRing(RingDescription ring) {
 		try {
+			for(RingDescription r : rings){
+				if(r.getRingID() == ring.getRingID()){
+					r.getRoles().addAll(ring.getRoles());
+					ring.setRingManager(r.getRingManager());
+					ring.getRoles().clear();
+					ring.getRoles().addAll(r.getRoles());
+					return true;
+				}
+			}
 			update(ring);
 			rings.add(ring);
 			return true;

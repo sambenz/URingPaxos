@@ -40,6 +40,7 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
   private static final org.apache.thrift.protocol.TField KEY_FIELD_DESC = new org.apache.thrift.protocol.TField("key", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRING, (short)4);
   private static final org.apache.thrift.protocol.TField SNAPSHOT_FIELD_DESC = new org.apache.thrift.protocol.TField("snapshot", org.apache.thrift.protocol.TType.I64, (short)5);
+  private static final org.apache.thrift.protocol.TField PARTITION_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("partition_version", org.apache.thrift.protocol.TType.I64, (short)6);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -56,6 +57,7 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
   public ByteBuffer key; // optional
   public ByteBuffer value; // optional
   public long snapshot; // optional
+  public long partition_version; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -67,7 +69,8 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
     TYPE((short)2, "type"),
     KEY((short)3, "key"),
     VALUE((short)4, "value"),
-    SNAPSHOT((short)5, "snapshot");
+    SNAPSHOT((short)5, "snapshot"),
+    PARTITION_VERSION((short)6, "partition_version");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -92,6 +95,8 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
           return VALUE;
         case 5: // SNAPSHOT
           return SNAPSHOT;
+        case 6: // PARTITION_VERSION
+          return PARTITION_VERSION;
         default:
           return null;
       }
@@ -134,6 +139,7 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
   private static final int __SNAPSHOT_ISSET_ID = 1;
+  private static final int __PARTITION_VERSION_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
   private _Fields optionals[] = {_Fields.KEY,_Fields.VALUE,_Fields.SNAPSHOT};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
@@ -149,6 +155,8 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
     tmpMap.put(_Fields.SNAPSHOT, new org.apache.thrift.meta_data.FieldMetaData("snapshot", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
+    tmpMap.put(_Fields.PARTITION_VERSION, new org.apache.thrift.meta_data.FieldMetaData("partition_version", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Command.class, metaDataMap);
   }
@@ -158,12 +166,15 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
 
   public Command(
     long id,
-    CommandType type)
+    CommandType type,
+    long partition_version)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.type = type;
+    this.partition_version = partition_version;
+    setPartition_versionIsSet(true);
   }
 
   /**
@@ -184,6 +195,7 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
 ;
     }
     this.snapshot = other.snapshot;
+    this.partition_version = other.partition_version;
   }
 
   public Command deepCopy() {
@@ -199,6 +211,8 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
     this.value = null;
     setSnapshotIsSet(false);
     this.snapshot = 0;
+    setPartition_versionIsSet(false);
+    this.partition_version = 0;
   }
 
   public long getId() {
@@ -347,6 +361,29 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SNAPSHOT_ISSET_ID, value);
   }
 
+  public long getPartition_version() {
+    return this.partition_version;
+  }
+
+  public Command setPartition_version(long partition_version) {
+    this.partition_version = partition_version;
+    setPartition_versionIsSet(true);
+    return this;
+  }
+
+  public void unsetPartition_version() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __PARTITION_VERSION_ISSET_ID);
+  }
+
+  /** Returns true if field partition_version is set (has been assigned a value) and false otherwise */
+  public boolean isSetPartition_version() {
+    return EncodingUtils.testBit(__isset_bitfield, __PARTITION_VERSION_ISSET_ID);
+  }
+
+  public void setPartition_versionIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PARTITION_VERSION_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -389,6 +426,14 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       }
       break;
 
+    case PARTITION_VERSION:
+      if (value == null) {
+        unsetPartition_version();
+      } else {
+        setPartition_version((Long)value);
+      }
+      break;
+
     }
   }
 
@@ -408,6 +453,9 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
 
     case SNAPSHOT:
       return Long.valueOf(getSnapshot());
+
+    case PARTITION_VERSION:
+      return Long.valueOf(getPartition_version());
 
     }
     throw new IllegalStateException();
@@ -430,6 +478,8 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       return isSetValue();
     case SNAPSHOT:
       return isSetSnapshot();
+    case PARTITION_VERSION:
+      return isSetPartition_version();
     }
     throw new IllegalStateException();
   }
@@ -489,6 +539,15 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       if (!(this_present_snapshot && that_present_snapshot))
         return false;
       if (this.snapshot != that.snapshot)
+        return false;
+    }
+
+    boolean this_present_partition_version = true;
+    boolean that_present_partition_version = true;
+    if (this_present_partition_version || that_present_partition_version) {
+      if (!(this_present_partition_version && that_present_partition_version))
+        return false;
+      if (this.partition_version != that.partition_version)
         return false;
     }
 
@@ -558,6 +617,16 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetPartition_version()).compareTo(other.isSetPartition_version());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetPartition_version()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.partition_version, other.partition_version);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -615,6 +684,10 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       sb.append(this.snapshot);
       first = false;
     }
+    if (!first) sb.append(", ");
+    sb.append("partition_version:");
+    sb.append(this.partition_version);
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -700,6 +773,14 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 6: // PARTITION_VERSION
+            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+              struct.partition_version = iprot.readI64();
+              struct.setPartition_versionIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -742,6 +823,9 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
         oprot.writeI64(struct.snapshot);
         oprot.writeFieldEnd();
       }
+      oprot.writeFieldBegin(PARTITION_VERSION_FIELD_DESC);
+      oprot.writeI64(struct.partition_version);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -775,7 +859,10 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       if (struct.isSetSnapshot()) {
         optionals.set(4);
       }
-      oprot.writeBitSet(optionals, 5);
+      if (struct.isSetPartition_version()) {
+        optionals.set(5);
+      }
+      oprot.writeBitSet(optionals, 6);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
@@ -791,12 +878,15 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       if (struct.isSetSnapshot()) {
         oprot.writeI64(struct.snapshot);
       }
+      if (struct.isSetPartition_version()) {
+        oprot.writeI64(struct.partition_version);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, Command struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(5);
+      BitSet incoming = iprot.readBitSet(6);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -816,6 +906,10 @@ public class Command implements org.apache.thrift.TBase<Command, Command._Fields
       if (incoming.get(4)) {
         struct.snapshot = iprot.readI64();
         struct.setSnapshotIsSet(true);
+      }
+      if (incoming.get(5)) {
+        struct.partition_version = iprot.readI64();
+        struct.setPartition_versionIsSet(true);
       }
     }
   }

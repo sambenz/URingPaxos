@@ -1,4 +1,4 @@
-package ch.usi.da.paxos.ring;
+package ch.usi.da.dmap.server;
 /* 
  * Copyright (c) 2013 Università della Svizzera italiana (USI)
  * 
@@ -18,50 +18,53 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.List;
-
-import ch.usi.da.paxos.api.PaxosRole;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Name: Ring<br>
+ * Name: FutureResponse<br>
  * Description: <br>
  * 
- * Creation date: Mar 04, 2013<br>
+ * See Java Concurrency in Practice p. 187
+ *  
+ * Creation date: Mar 03, 2017<br>
  * $Id$
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class RingDescription {
-
-	private final int ringID;
+public class FutureResponse {
 	
-	private final List<PaxosRole> roles;
+	private Object repsonse = null;
 	
-	private RingManager ring;
+	private final CountDownLatch done = new CountDownLatch(1);
 	
-	public RingDescription(int ringID,List<PaxosRole> roles){
-		this.ringID = ringID;
-		this.roles = roles;
+	public FutureResponse(){
+		
+	}
+	
+	public boolean isDecided(){
+		return (done.getCount() == 0);
+	}
+	
+	public synchronized void setResponse(Object repsonse){
+		if(!isDecided()){
+			this.repsonse = repsonse;
+			done.countDown();
+		}
+	}
+	
+	public Object getResponse() throws InterruptedException {
+		done.await();
+		synchronized (this) {
+			return repsonse;
+		}
+	}
+	
+	public Object getResponse(int timeout) throws InterruptedException {
+		done.await(timeout,TimeUnit.MILLISECONDS);
+		synchronized (this) {
+			return repsonse;
+		}
 	}
 
-	public int getRingID() {
-		return ringID;
-	}
-
-	public List<PaxosRole> getRoles() {
-		return roles;
-	}
-	
-	public synchronized void setRingManager(RingManager ring){
-		this.ring = ring;
-	}
-	
-	public synchronized RingManager getRingManager(){
-		return ring;
-	}
-	
-	public String toString(){
-		return "ringID:" + ringID + " " + roles;
-	}
 }

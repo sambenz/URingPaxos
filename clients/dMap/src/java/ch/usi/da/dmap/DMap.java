@@ -66,6 +66,7 @@ public class DMap {
 		dmap.put("f","6");
 		dmap.put("g","7");
 		dmap.put("z","8");
+		System.out.println(dmap.get("g"));
 		System.out.println(dmap.subMap("a","b"));
 		System.out.println(dmap.subMap("a","z"));
 		System.out.println(dmap.subMap("b","e"));

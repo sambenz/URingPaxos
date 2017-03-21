@@ -109,7 +109,7 @@ public class Util {
 					Enumeration<InetAddress> ia = n.getInetAddresses();
 					while(ia.hasMoreElements()){
 						InetAddress addr = ia.nextElement();
-						if(!(addr.isLinkLocalAddress() || addr.isLoopbackAddress() || addr.toString().contains("192.168.122"))){
+						if(!(addr.isLinkLocalAddress() || addr.isLoopbackAddress() || addr.toString().contains("172.17"))){
 							if(addr instanceof Inet6Address && ipv6){
 								return addr;
 							}else if (addr instanceof Inet4Address && !ipv6){

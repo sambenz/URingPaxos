@@ -32,8 +32,20 @@
 		<!-- <appender-ref ref="FILE" />  -->
 	</category>
 
+	<category name="ch.usi.da.paxos.message.Value" additivity="false">
+		<priority value="error" />
+		<appender-ref ref="STDOUT" />
+		<!-- <appender-ref ref="VALUES-FILE" /> -->
+	</category>
+
+	<category name="ch.usi.da.paxos.storage.Proposal" additivity="false">
+		<priority value="error" />
+		<appender-ref ref="STDOUT" />
+		<!-- <appender-ref ref="PROPOSAL-FILE" /> -->
+	</category>
+
 	<root>
-		<priority value="info" />
+		<priority value="debug" />
 		<appender-ref ref="STDOUT" />
 		<!-- <appender-ref ref="FILE" /> -->
 	</root>
