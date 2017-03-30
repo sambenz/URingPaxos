@@ -19,6 +19,7 @@ package ch.usi.da.dmap.server;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -42,36 +43,115 @@ import ch.usi.da.dmap.utils.Utils;
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class ABSender implements Iface {
+public class ABSender<K extends Comparable<K>,V> implements Iface {
 
 	private final static Logger logger = Logger.getLogger(ABSender.class);
 	
-	private final DMapReplica<?,?> replica;
+	private final DMapReplica<K,V> replica;
 	
-	public ABSender(DMapReplica<?,?> replica){
+	public ABSender(DMapReplica<K,V> replica){
 		this.replica = replica;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public Response execute(Command cmd) throws MapError, WrongPartition, TException {
 		logger.debug("ABSender received " + cmd);
-		FutureResponse r = new FutureResponse();
+		FutureResponse r = null;
+		int send_ring = replica.partition_ring;
+		switch(cmd.type){
+		case CLEAR:
+		case CONTAINSVALUE:
+		case FIRSTKEY:
+		case LASTKEY:
+		case SIZE:
+			r = new FutureResponse(replica.partitions.keySet());
+			send_ring = replica.default_ring;
+			break;
+		case GET:
+		case PUT:
+		case REMOVE:
+			r = new FutureResponse();
+			break;
+		}
 		replica.getResponses().put(cmd.id,r);
 		Response response = null;
 		try {
-			replica.getNode().getProposer(replica.partition_ring).propose(Utils.getBuffer(cmd).array());
-			Object o = r.getResponse();
-			if(o instanceof MapError){
-				throw (MapError)o;
-			}else if(o instanceof WrongPartition){
-				throw (WrongPartition)o;
-			}else if(o instanceof TException){
-				throw (TException)o;
+			replica.getNode().getProposer(send_ring).propose(Utils.getBuffer(cmd).array());
+			//logger.debug("ABSender wait on response ..." + cmd);
+			List<Object> ol = r.getResponse();
+			//logger.debug("... got response");
+			for(Object o : ol){
+				if(o instanceof MapError){
+					throw (MapError)o;
+				}else if(o instanceof WrongPartition){
+					throw (WrongPartition)o;
+				}else if(o instanceof TException){
+					throw (TException)o;
+				}
 			}
-			response = (Response)o;
+			switch(cmd.type){
+			case CONTAINSVALUE:
+				response = ((Response)ol.get(0));
+				for(Object o : ol){
+					Response ret = (Response)o;
+					if(ret.getCount() > 0){
+						response = ret;
+					}
+				}
+				break;
+			case FIRSTKEY:
+				response = ((Response)ol.get(0));
+				try {
+					for(Object o : ol){
+						Response ret = (Response)o;
+						if(response.getKey() != null && ret.getKey() != null){
+							K o1 = (K)Utils.getObject(response.getKey());
+							K o2 = (K)Utils.getObject(ret.getKey());
+							if(o1 != null && o2 != null && o1.compareTo(o2) > 0){
+								response = ret;
+							}
+						}
+					}
+				} catch (ClassNotFoundException e) {
+					logger.error(e);
+				}
+				break;
+			case LASTKEY:
+				response = ((Response)ol.get(0));
+				try {
+					for(Object o : ol){
+						Response ret = (Response)o;
+						if(response.getKey() != null && ret.getKey() != null){
+							K o1 = (K)Utils.getObject(response.getKey());
+							K o2 = (K)Utils.getObject(ret.getKey());
+							if(o1 != null && o2 != null && o1.compareTo(o2) < 0){
+								response = ret;
+							}
+						}
+					}
+				} catch (ClassNotFoundException e) {
+					logger.error(e);
+				}
+				break;
+			case SIZE:
+				long size = 0;
+				for(Object o : ol){
+					size += ((Response)o).getCount();
+				}
+				response = ((Response)ol.get(0)).setCount(size);
+				break;
+			case GET:
+			case PUT:
+			case REMOVE:
+			case CLEAR:
+				response = (Response)ol.get(0);
+				break;
+			}
 		} catch (InterruptedException | IOException e) {
 			throw new TException(e);
 		}
+		//logger.debug("ABSender return " + response);
 		return response;
 	}
 
@@ -83,7 +163,7 @@ public class ABSender implements Iface {
 		RangeResponse response = null;
 		try {
 			replica.getNode().getProposer(replica.default_ring).propose(Utils.getBuffer(cmd).array());
-			Object o = r.getResponse();
+			Object o = r.getResponse().get(0);
 			if(o instanceof MapError){
 				throw (MapError)o;
 			}else if(o instanceof WrongPartition){

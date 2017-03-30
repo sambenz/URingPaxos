@@ -18,6 +18,9 @@ package ch.usi.da.dmap.server;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -34,36 +37,40 @@ import java.util.concurrent.TimeUnit;
  */
 public class FutureResponse {
 	
-	private Object repsonse = null;
+	private List<Object> responses = new ArrayList<Object>();
 	
-	private final CountDownLatch done = new CountDownLatch(1);
+	private final CountDownLatch done;
 	
 	public FutureResponse(){
-		
+		done = new CountDownLatch(1);
 	}
 	
+	public FutureResponse(Set<Integer> keySet) {
+		done = new CountDownLatch(keySet.size());
+	}
+
 	public boolean isDecided(){
 		return (done.getCount() == 0);
 	}
 	
-	public synchronized void setResponse(Object repsonse){
-		if(!isDecided()){
-			this.repsonse = repsonse;
+	public synchronized void addResponse(Object repsonse){
+		if(!isDecided() && !responses.contains(repsonse)){
+			this.responses.add(repsonse);
 			done.countDown();
 		}
 	}
 	
-	public Object getResponse() throws InterruptedException {
+	public List<Object> getResponse() throws InterruptedException {
 		done.await();
 		synchronized (this) {
-			return repsonse;
+			return responses;
 		}
 	}
 	
-	public Object getResponse(int timeout) throws InterruptedException {
+	public List<Object> getResponse(int timeout) throws InterruptedException {
 		done.await(timeout,TimeUnit.MILLISECONDS);
 		synchronized (this) {
-			return repsonse;
+			return responses;
 		}
 	}
 

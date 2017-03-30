@@ -39,6 +39,7 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
   private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I64, (short)2);
   private static final org.apache.thrift.protocol.TField KEY_FIELD_DESC = new org.apache.thrift.protocol.TField("key", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField PARTITION_FIELD_DESC = new org.apache.thrift.protocol.TField("partition", org.apache.thrift.protocol.TType.I32, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -50,13 +51,15 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
   public long count; // required
   public ByteBuffer key; // optional
   public ByteBuffer value; // optional
+  public int partition; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
     COUNT((short)2, "count"),
     KEY((short)3, "key"),
-    VALUE((short)4, "value");
+    VALUE((short)4, "value"),
+    PARTITION((short)5, "partition");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -79,6 +82,8 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
           return KEY;
         case 4: // VALUE
           return VALUE;
+        case 5: // PARTITION
+          return PARTITION;
         default:
           return null;
       }
@@ -121,6 +126,7 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
   // isset id assignments
   private static final int __ID_ISSET_ID = 0;
   private static final int __COUNT_ISSET_ID = 1;
+  private static final int __PARTITION_ISSET_ID = 2;
   private byte __isset_bitfield = 0;
   private _Fields optionals[] = {_Fields.KEY,_Fields.VALUE};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
@@ -134,6 +140,8 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
     tmpMap.put(_Fields.VALUE, new org.apache.thrift.meta_data.FieldMetaData("value", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
+    tmpMap.put(_Fields.PARTITION, new org.apache.thrift.meta_data.FieldMetaData("partition", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Response.class, metaDataMap);
   }
@@ -143,13 +151,16 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
 
   public Response(
     long id,
-    long count)
+    long count,
+    int partition)
   {
     this();
     this.id = id;
     setIdIsSet(true);
     this.count = count;
     setCountIsSet(true);
+    this.partition = partition;
+    setPartitionIsSet(true);
   }
 
   /**
@@ -167,6 +178,7 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       this.value = org.apache.thrift.TBaseHelper.copyBinary(other.value);
 ;
     }
+    this.partition = other.partition;
   }
 
   public Response deepCopy() {
@@ -181,6 +193,8 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
     this.count = 0;
     this.key = null;
     this.value = null;
+    setPartitionIsSet(false);
+    this.partition = 0;
   }
 
   public long getId() {
@@ -297,6 +311,29 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
     }
   }
 
+  public int getPartition() {
+    return this.partition;
+  }
+
+  public Response setPartition(int partition) {
+    this.partition = partition;
+    setPartitionIsSet(true);
+    return this;
+  }
+
+  public void unsetPartition() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __PARTITION_ISSET_ID);
+  }
+
+  /** Returns true if field partition is set (has been assigned a value) and false otherwise */
+  public boolean isSetPartition() {
+    return EncodingUtils.testBit(__isset_bitfield, __PARTITION_ISSET_ID);
+  }
+
+  public void setPartitionIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PARTITION_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -331,6 +368,14 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       }
       break;
 
+    case PARTITION:
+      if (value == null) {
+        unsetPartition();
+      } else {
+        setPartition((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -347,6 +392,9 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
 
     case VALUE:
       return getValue();
+
+    case PARTITION:
+      return Integer.valueOf(getPartition());
 
     }
     throw new IllegalStateException();
@@ -367,6 +415,8 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       return isSetKey();
     case VALUE:
       return isSetValue();
+    case PARTITION:
+      return isSetPartition();
     }
     throw new IllegalStateException();
   }
@@ -417,6 +467,15 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       if (!(this_present_value && that_present_value))
         return false;
       if (!this.value.equals(that.value))
+        return false;
+    }
+
+    boolean this_present_partition = true;
+    boolean that_present_partition = true;
+    if (this_present_partition || that_present_partition) {
+      if (!(this_present_partition && that_present_partition))
+        return false;
+      if (this.partition != that.partition)
         return false;
     }
 
@@ -476,6 +535,16 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetPartition()).compareTo(other.isSetPartition());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetPartition()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.partition, other.partition);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -523,6 +592,10 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       }
       first = false;
     }
+    if (!first) sb.append(", ");
+    sb.append("partition:");
+    sb.append(this.partition);
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -600,6 +673,14 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 5: // PARTITION
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.partition = iprot.readI32();
+              struct.setPartitionIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -635,6 +716,9 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
           oprot.writeFieldEnd();
         }
       }
+      oprot.writeFieldBegin(PARTITION_FIELD_DESC);
+      oprot.writeI32(struct.partition);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -665,7 +749,10 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       if (struct.isSetValue()) {
         optionals.set(3);
       }
-      oprot.writeBitSet(optionals, 4);
+      if (struct.isSetPartition()) {
+        optionals.set(4);
+      }
+      oprot.writeBitSet(optionals, 5);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
@@ -678,12 +765,15 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       if (struct.isSetValue()) {
         oprot.writeBinary(struct.value);
       }
+      if (struct.isSetPartition()) {
+        oprot.writeI32(struct.partition);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, Response struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(4);
+      BitSet incoming = iprot.readBitSet(5);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -699,6 +789,10 @@ public class Response implements org.apache.thrift.TBase<Response, Response._Fie
       if (incoming.get(3)) {
         struct.value = iprot.readBinary();
         struct.setValueIsSet(true);
+      }
+      if (incoming.get(4)) {
+        struct.partition = iprot.readI32();
+        struct.setPartitionIsSet(true);
       }
     }
   }

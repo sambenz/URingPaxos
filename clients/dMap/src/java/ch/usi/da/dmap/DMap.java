@@ -39,7 +39,7 @@ import ch.usi.da.dmap.utils.Pair;
 public class DMap {
 
 	public static void main(String[] args) {
-		
+				
 		/*SortedMap<String, String> local = new TreeMap<String,String>();
 		local.put("a","1");
 		local.put("b","2");
@@ -65,30 +65,45 @@ public class DMap {
 		dmap.put("e","5");
 		dmap.put("f","6");
 		dmap.put("g","7");
-		dmap.put("z","8");
-		System.out.println(dmap.get("g"));
-		System.out.println(dmap.subMap("a","b"));
-		System.out.println(dmap.subMap("a","z"));
-		System.out.println(dmap.subMap("b","e"));
-		System.out.println(dmap.tailMap("b"));
-		System.out.println(dmap.headMap("b"));
 		
-
-		Set<Entry<String, String>> entries = dmap.entrySet();
-		for(Entry<String,String> e : entries){
-			System.out.println(e);
-		}
+		System.out.println(dmap.get("a"));
+		System.out.println(dmap.get("b"));
+		System.out.println(dmap.get("c"));
+		System.out.println(dmap.get("d"));
+		System.out.println(dmap.get("gh"));
 		
-		System.out.println(entries.contains("a"));
-		System.out.println(entries.contains(new Pair<String,String>("a","1")));
-
-		entries = dmap.subMap("b","e").entrySet();
-		Iterator<Entry<String,String>> i = entries.iterator();
-		while(i.hasNext()){
-			Entry<String,String> e = i.next();
-			//i.remove();
-			System.out.println(e);
-		}
+		System.out.println(dmap.size());
+		System.out.println(dmap.containsValue("2"));
+		System.out.println(dmap.containsValue("18"));		
+		System.out.println(dmap.containsKey("a"));
+		System.out.println(dmap.containsKey("not"));
+		
+		System.out.println(dmap.firstKey());
+		System.out.println(dmap.lastKey());
+		
+		
+//		System.out.println(dmap.subMap("a","b"));
+//		System.out.println(dmap.subMap("a","z"));
+//		System.out.println(dmap.subMap("b","e"));
+//		System.out.println(dmap.tailMap("b"));
+//		System.out.println(dmap.headMap("b"));
+//		
+//
+//		Set<Entry<String, String>> entries = dmap.entrySet();
+//		for(Entry<String,String> e : entries){
+//			System.out.println(e);
+//		}
+//		
+//		System.out.println(entries.contains("a"));
+//		System.out.println(entries.contains(new Pair<String,String>("a","1")));
+//
+//		entries = dmap.subMap("b","e").entrySet();
+//		Iterator<Entry<String,String>> i = entries.iterator();
+//		while(i.hasNext()){
+//			Entry<String,String> e = i.next();
+//			//i.remove();
+//			System.out.println(e);
+//		}
 				
 		//entries.remove(new Pair<String,String>("b","2"));
 		

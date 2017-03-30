@@ -18,11 +18,8 @@ package ch.usi.da.dmap.server;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.IOException;
-
 import org.apache.log4j.Logger;
 
-import ch.usi.da.dmap.utils.Utils;
 import ch.usi.da.paxos.storage.Decision;
 
 /**
@@ -50,12 +47,8 @@ public class ABReceiver implements Runnable {
 			try {
 				Decision d = replica.getNode().getLearner().getDecisions().take();
 				logger.debug("ABReceiver received " + d);
-				if(d != null && d.getValue() != null){					
-					try {
-						replica.receive(d.getInstance(),Utils.getObject(d.getValue().getValue()));
-					} catch (ClassNotFoundException | IOException e) {
-						logger.error(e);
-					}
+				if(d != null){					
+					replica.receive(d);
 				}
 			} catch (InterruptedException | RuntimeException e) {
 				break;

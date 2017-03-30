@@ -34,7 +34,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -86,8 +85,6 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		
 	private ZooKeeper zoo;
 		
-	private final AtomicLong cmdCount = new AtomicLong(0);
-
 	private final int get_range_size = 100;
 
 	private long partition_version = 0;
@@ -181,10 +178,14 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		return client;
 	}
 	
+	private long getCmdID(){
+		return rand.nextLong();
+	}
+	
 	private void readPartitions(Dmap.Client client){
 		try {
 			logger.info(this + " request partition map.");
-			Partition p = client.partition(cmdCount.incrementAndGet());
+			Partition p = client.partition(getCmdID());
 			if(p.getVersion() != partition_version){
 				partitions.clear();
 				partitions.putAll(p.getPartitions());
@@ -213,7 +214,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.GET);
 			cmd.setKey(Utils.getBuffer(key));
 			cmd.setPartition_version(partition_version);
@@ -250,7 +251,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.PUT);
 			cmd.setKey(Utils.getBuffer(key));
 			cmd.setValue(Utils.getBuffer(value));
@@ -288,7 +289,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.REMOVE);
 			cmd.setKey(Utils.getBuffer(key));
 			cmd.setPartition_version(partition_version);
@@ -318,7 +319,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	public boolean containsKey(Object key) {
 		return containsKey(key,null);
 	}
-	
+
 	private boolean containsKey(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
 		V v = get(key,snapshotID);
@@ -348,7 +349,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.SIZE);
 			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
@@ -389,7 +390,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.CONTAINSVALUE);
 			cmd.setValue(Utils.getBuffer(value));
 			cmd.setPartition_version(partition_version);
@@ -419,7 +420,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	private void clear(Long snapshotID){
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.CLEAR);
 			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
@@ -446,7 +447,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.FIRSTKEY);
 			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
@@ -481,7 +482,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		Response ret = null;
 		try {
 			Command cmd = new Command();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(CommandType.LASTKEY);
 			cmd.setPartition_version(partition_version);
 			if(snapshotID != null){
@@ -515,7 +516,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		SortedMap<K,V> submap = null;		
 		try {
 			RangeCommand cmd = new RangeCommand();
-			cmd.setId(cmdCount.incrementAndGet());
+			cmd.setId(getCmdID());
 			cmd.setType(RangeType.CREATERANGE);
 			cmd.setPartition_version(partition_version);
 			if(fromKey != null){
@@ -546,7 +547,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
 	public void removeSnapshot(Long snapshotID){
 		RangeCommand cmd = new RangeCommand();
-		cmd.setId(cmdCount.incrementAndGet());
+		cmd.setId(getCmdID());
 		cmd.setType(RangeType.DELETERANGE);
 		cmd.setSnapshot(snapshotID);
 		cmd.setPartition_version(partition_version);
@@ -857,7 +858,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
     		while(retreived < size){
 				try {
 	    			RangeCommand cmd = new RangeCommand();
-	    			cmd.setId(cmdCount.incrementAndGet());
+	    			cmd.setId(getCmdID());
 	    			cmd.setType(RangeType.GETRANGE);
 	    			cmd.setSnapshot(snapshotID);
 	    			cmd.setFromid(from);

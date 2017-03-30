@@ -39,6 +39,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   private static final org.apache.thrift.protocol.TField COUNT_FIELD_DESC = new org.apache.thrift.protocol.TField("count", org.apache.thrift.protocol.TType.I64, (short)2);
   private static final org.apache.thrift.protocol.TField SNAPSHOT_FIELD_DESC = new org.apache.thrift.protocol.TField("snapshot", org.apache.thrift.protocol.TType.I64, (short)3);
   private static final org.apache.thrift.protocol.TField VALUES_FIELD_DESC = new org.apache.thrift.protocol.TField("values", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField PARTITION_FIELD_DESC = new org.apache.thrift.protocol.TField("partition", org.apache.thrift.protocol.TType.I32, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -50,13 +51,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   public long count; // required
   public long snapshot; // required
   public ByteBuffer values; // optional
+  public int partition; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ID((short)1, "id"),
     COUNT((short)2, "count"),
     SNAPSHOT((short)3, "snapshot"),
-    VALUES((short)4, "values");
+    VALUES((short)4, "values"),
+    PARTITION((short)5, "partition");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -79,6 +82,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
           return SNAPSHOT;
         case 4: // VALUES
           return VALUES;
+        case 5: // PARTITION
+          return PARTITION;
         default:
           return null;
       }
@@ -122,6 +127,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   private static final int __ID_ISSET_ID = 0;
   private static final int __COUNT_ISSET_ID = 1;
   private static final int __SNAPSHOT_ISSET_ID = 2;
+  private static final int __PARTITION_ISSET_ID = 3;
   private byte __isset_bitfield = 0;
   private _Fields optionals[] = {_Fields.VALUES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
@@ -135,6 +141,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.VALUES, new org.apache.thrift.meta_data.FieldMetaData("values", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
+    tmpMap.put(_Fields.PARTITION, new org.apache.thrift.meta_data.FieldMetaData("partition", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(RangeResponse.class, metaDataMap);
   }
@@ -145,7 +153,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
   public RangeResponse(
     long id,
     long count,
-    long snapshot)
+    long snapshot,
+    int partition)
   {
     this();
     this.id = id;
@@ -154,6 +163,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     setCountIsSet(true);
     this.snapshot = snapshot;
     setSnapshotIsSet(true);
+    this.partition = partition;
+    setPartitionIsSet(true);
   }
 
   /**
@@ -168,6 +179,7 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       this.values = org.apache.thrift.TBaseHelper.copyBinary(other.values);
 ;
     }
+    this.partition = other.partition;
   }
 
   public RangeResponse deepCopy() {
@@ -183,6 +195,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     setSnapshotIsSet(false);
     this.snapshot = 0;
     this.values = null;
+    setPartitionIsSet(false);
+    this.partition = 0;
   }
 
   public long getId() {
@@ -288,6 +302,29 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
     }
   }
 
+  public int getPartition() {
+    return this.partition;
+  }
+
+  public RangeResponse setPartition(int partition) {
+    this.partition = partition;
+    setPartitionIsSet(true);
+    return this;
+  }
+
+  public void unsetPartition() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __PARTITION_ISSET_ID);
+  }
+
+  /** Returns true if field partition is set (has been assigned a value) and false otherwise */
+  public boolean isSetPartition() {
+    return EncodingUtils.testBit(__isset_bitfield, __PARTITION_ISSET_ID);
+  }
+
+  public void setPartitionIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PARTITION_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -322,6 +359,14 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       }
       break;
 
+    case PARTITION:
+      if (value == null) {
+        unsetPartition();
+      } else {
+        setPartition((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -338,6 +383,9 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
 
     case VALUES:
       return getValues();
+
+    case PARTITION:
+      return Integer.valueOf(getPartition());
 
     }
     throw new IllegalStateException();
@@ -358,6 +406,8 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       return isSetSnapshot();
     case VALUES:
       return isSetValues();
+    case PARTITION:
+      return isSetPartition();
     }
     throw new IllegalStateException();
   }
@@ -408,6 +458,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (!(this_present_values && that_present_values))
         return false;
       if (!this.values.equals(that.values))
+        return false;
+    }
+
+    boolean this_present_partition = true;
+    boolean that_present_partition = true;
+    if (this_present_partition || that_present_partition) {
+      if (!(this_present_partition && that_present_partition))
+        return false;
+      if (this.partition != that.partition)
         return false;
     }
 
@@ -467,6 +526,16 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetPartition()).compareTo(other.isSetPartition());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetPartition()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.partition, other.partition);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -508,6 +577,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       }
       first = false;
     }
+    if (!first) sb.append(", ");
+    sb.append("partition:");
+    sb.append(this.partition);
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -585,6 +658,14 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 5: // PARTITION
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.partition = iprot.readI32();
+              struct.setPartitionIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -616,6 +697,9 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
           oprot.writeFieldEnd();
         }
       }
+      oprot.writeFieldBegin(PARTITION_FIELD_DESC);
+      oprot.writeI32(struct.partition);
+      oprot.writeFieldEnd();
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -646,7 +730,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (struct.isSetValues()) {
         optionals.set(3);
       }
-      oprot.writeBitSet(optionals, 4);
+      if (struct.isSetPartition()) {
+        optionals.set(4);
+      }
+      oprot.writeBitSet(optionals, 5);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
@@ -659,12 +746,15 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (struct.isSetValues()) {
         oprot.writeBinary(struct.values);
       }
+      if (struct.isSetPartition()) {
+        oprot.writeI32(struct.partition);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, RangeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(4);
+      BitSet incoming = iprot.readBitSet(5);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -680,6 +770,10 @@ public class RangeResponse implements org.apache.thrift.TBase<RangeResponse, Ran
       if (incoming.get(3)) {
         struct.values = iprot.readBinary();
         struct.setValuesIsSet(true);
+      }
+      if (incoming.get(4)) {
+        struct.partition = iprot.readI32();
+        struct.setPartitionIsSet(true);
       }
     }
   }

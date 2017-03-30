@@ -34,6 +34,7 @@ struct Response {
   2: i64 count,
   3: optional binary key,
   4: optional binary value,
+  5: i32 partition,
 }
 
 enum RangeType {
@@ -58,7 +59,8 @@ struct RangeResponse {
   1: i64 id,
   2: i64 count,
   3: i64 snapshot,
-  4: optional binary values
+  4: optional binary values,
+  5: i32 partition,
 }
 
 struct Partition {

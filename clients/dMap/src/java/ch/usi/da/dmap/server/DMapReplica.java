@@ -21,9 +21,13 @@ package ch.usi.da.dmap.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,6 +68,7 @@ import ch.usi.da.paxos.message.ControlType;
 import ch.usi.da.paxos.ring.ElasticLearnerRole;
 import ch.usi.da.paxos.ring.Node;
 import ch.usi.da.paxos.ring.RingDescription;
+import ch.usi.da.paxos.storage.Decision;
 
 
 /**
@@ -86,6 +91,16 @@ public class DMapReplica<K,V> {
 	public int default_ring;
 	
 	public int partition_ring;
+	
+	public int token;
+	
+	private DatagramSocket signalSender;
+	
+	private DatagramSocket signalReceiver;
+	
+	private final Map<Long,FutureResponse> signals = new HashMap<Long,FutureResponse>();
+	
+	private final boolean linearizable = true;
 		
 	public long partition_version = 0;
 	public final Map<Integer,Set<String>> partitions = new HashMap<Integer,Set<String>>();
@@ -125,9 +140,20 @@ public class DMapReplica<K,V> {
 		return responses;
 	}
 	
-	public void registerPartition(int ring_id,String thrift_address,int token){
+	public void registerPartition(int ring_id,InetSocketAddress addr,int token){
 		// register (propose) this partition
+		this.token = token;
 		partition_ring = ring_id;
+		String thrift_address = addr.getHostString() + ";" + addr.getPort();
+		try {
+			signalSender = new DatagramSocket();
+			signalReceiver = new DatagramSocket(addr.getPort());
+			Thread t = new Thread(new SignalReceiver(signalReceiver));
+			t.setName("SignalReceiver");
+			t.start();
+		} catch (SocketException e) {
+			logger.error(e);
+		}
 		String cmd = (ring_id + "," + thrift_address + "," + token);
 		try {
 			node.getProposer(default_ring).propose(Utils.getBuffer(cmd).array());
@@ -142,55 +168,104 @@ public class DMapReplica<K,V> {
 		}
 	}
 	
-	public void receive(long instance, Object o) {
-		if(o instanceof Command){
-			Command cmd = (Command)o;
-			logger.debug("DMapReplica execute " + cmd);
-			Object r = null;
+	public synchronized void receive(Decision d) {
+		if(d.getValue() != null){
+			long instance = d.getInstance();
+			Object o = null;
 			try {
-				r = execute(cmd);
-			} catch (TException e) {
-				r = e;
+				o = Utils.getObject(d.getValue().getValue());
+			} catch (ClassNotFoundException | IOException e1) {
+				logger.error(e1);
 			}
-			if(responses.containsKey(cmd.id)){
-				responses.get(cmd.id).setResponse(r);
-				responses.remove(cmd.id);
+			if(o instanceof Command){
+				Command cmd = (Command)o;
+				logger.debug("DMapReplica execute " + cmd);
+				Object r = null;
+				try {
+					r = execute(cmd);
+				} catch (TException e) {
+					r = e;
+				}
+				// send/wait for signal
+				if(d.getRing() == default_ring){
+					singal(cmd.id,r);
+					if(responses.containsKey(cmd.id) || linearizable) {
+						try {
+							List<Object> rl = signals.get(cmd.id).getResponse(); // wait
+							logger.debug("... release wait lock!");
+							if(responses.containsKey(cmd.id)){
+								for(Object orl : rl){
+									responses.get(cmd.id).addResponse(orl);
+								}
+							}
+						} catch (InterruptedException e) {
+						}
+					}
+					signals.remove(cmd.id);
+				}
+				if(responses.containsKey(cmd.id)){
+					responses.get(cmd.id).addResponse(r);
+					responses.remove(cmd.id);
+				}
+			} else if(o instanceof RangeCommand){
+				RangeCommand cmd = (RangeCommand)o;
+				logger.debug("DMapReplica execute " + cmd);
+				Object r = null;
+				try {
+					r = range(instance,cmd);
+				} catch (TException e) {
+					r = e;
+				}
+				if(responses.containsKey(cmd.id)){
+					responses.get(cmd.id).addResponse(r);
+					responses.remove(cmd.id);
+				}
+			/*} else if(o instanceof Long){ // get partition
+				Partition p = new Partition();
+				p.setVersion(partition_version);
+				p.setPartitions(partitions);
+				responses.get((Long)o).setResponse(p);
+				responses.remove((Long)o);*/
+			} else if(o instanceof String){ // set partition
+				String[] cmd = ((String)o).split(",");
+				int ring = Integer.parseInt(cmd[0]);
+				String address = cmd[1];
+				int token = Integer.parseInt(cmd[2]);
+				if(partitions.containsKey(token)){
+					partitions.get(token).add(address);
+				}else{
+					Set<String> s = new HashSet<String>();
+					s.add(address);
+					partitions.put(token,s);
+				}
+				partition_version = instance;			
+				rings.put(token,ring);
+				logger.info("Install new partition map " + partition_version + ":" + partitions + "(" + rings + ")");
 			}
-		} else if(o instanceof RangeCommand){
-			RangeCommand cmd = (RangeCommand)o;
-			logger.debug("DMapReplica execute " + cmd);
-			Object r = null;
-			try {
-				r = range(instance,cmd);
-			} catch (TException e) {
-				r = e;
+		}
+	}
+
+	private void singal(Long id, Object o) {
+		synchronized (signals){
+			if(!signals.containsKey(id)){
+				signals.put(id,new FutureResponse(partitions.keySet()));
+				logger.debug("Global command wait for partitions: " + partitions.keySet() + " ...");
 			}
-			if(responses.containsKey(cmd.id)){
-				responses.get(cmd.id).setResponse(r);
-				responses.remove(cmd.id);
+		}
+		for(Entry<Integer,Set<String>> e : partitions.entrySet()){
+			for(String s : e.getValue()){
+				try {
+					String[] addr = s.split(";");
+					InetAddress ip = InetAddress.getByName(addr[0]);
+					int port = Integer.parseInt(addr[1]);
+					byte[] buffer = Utils.getBuffer(o).array();
+					DatagramPacket packet = new DatagramPacket(buffer,0,buffer.length,ip,port);
+					signalSender.send(packet);
+				} catch (Exception e1){
+					logger.error(e1);
+				}
 			}
-		/*} else if(o instanceof Long){ // get partition
-			Partition p = new Partition();
-			p.setVersion(partition_version);
-			p.setPartitions(partitions);
-			responses.get((Long)o).setResponse(p);
-			responses.remove((Long)o);*/
-		} else if(o instanceof String){ // set partition
-			String[] cmd = ((String)o).split(",");
-			int ring = Integer.parseInt(cmd[0]);
-			String address = cmd[1];
-			int token = Integer.parseInt(cmd[2]);
-			if(partitions.containsKey(token)){
-				partitions.get(token).add(address);
-			}else{
-				Set<String> s = new HashSet<String>();
-				s.add(address);
-				partitions.put(token,s);
-			}
-			partition_version = instance;			
-			rings.put(token,ring);
-			logger.info("Install new partition map " + partition_version + ":" + partitions + "(" + rings + ")");
-		}		
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -198,6 +273,7 @@ public class DMapReplica<K,V> {
 		Response response = new Response();
 		response.setId(cmd.id);
 		response.setCount(0);
+		response.setPartition(token);
 		if(cmd.getPartition_version() != partition_version){
 			WrongPartition p = new WrongPartition();
 			p.setErrorMsg(cmd.getPartition_version() + "!=" + partition_version);
@@ -277,6 +353,7 @@ public class DMapReplica<K,V> {
 	public RangeResponse range(long instance, RangeCommand cmd) throws MapError, TException {
 		RangeResponse response = new RangeResponse();
 		response.setId(cmd.getId());
+		response.setPartition(token);
 		List<Entry<K,V>> snapshot;
 		SortedMap<K,V> snapshotDB;
 		/*if(cmd.getPartition_version() != partitions_version){ // that's ok on snapshots
@@ -409,9 +486,10 @@ public class DMapReplica<K,V> {
 			//create replica
 			DMapReplica<Object,Object> replica = new DMapReplica<Object,Object>(default_ring,node);
 			Thread.sleep(5000);
-			replica.registerPartition(partition_ring,addrs,token);
+			replica.registerPartition(partition_ring,addr,token);
 			
 			//start thrift server (proposer)
+			@SuppressWarnings({ "rawtypes", "unchecked" })
 			final Dmap.Processor<Iface> processor = new Dmap.Processor<Iface>(new ABSender(replica));
 			final TServerTransport serverTransport = new TServerSocket(port);
 			final TThreadPoolServer.Args serverArgs = new TThreadPoolServer.Args(serverTransport).processor(processor);
@@ -443,4 +521,43 @@ public class DMapReplica<K,V> {
 		}
 	}
 
+	class SignalReceiver implements Runnable {
+
+		private final DatagramSocket socket;
+						
+		public SignalReceiver(DatagramSocket socket) throws SocketException{
+			this.socket = socket;
+		}
+
+		@Override
+		public void run() {
+			while(!socket.isClosed()){
+				try {
+					byte[] buffer = new byte[65535];
+					DatagramPacket packet = new DatagramPacket(buffer,buffer.length);
+					socket.receive(packet);
+					Object o = Utils.getObject(Arrays.copyOfRange(packet.getData(),0,packet.getLength()));
+					logger.debug("Signal received " + o);
+					if(o instanceof Response){
+						Response r = (Response)o;
+						synchronized (signals) {
+							if(signals.get(r.getId()) != null){
+								signals.get(r.getId()).addResponse(o);
+							}else{
+								if(responses.containsKey(r.getId()) || linearizable){
+									// signal received for non wait command
+									if(!signals.containsKey(r.getId())){
+										signals.put(r.getId(),new FutureResponse(partitions.keySet()));
+									}
+									signals.get(r.getId()).addResponse(o);
+								}
+							}
+						}
+					}//TODO: how to handle Exceptions from one Replica (no cmd.id)?
+				} catch (ClassNotFoundException | IOException e) {
+					logger.error(e);
+				}
+			}
+		}
+	}
 }
