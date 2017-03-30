@@ -531,8 +531,8 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			ret = getClient().range(cmd);
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
-				submap = new SnapshotView(snapshotID, ret.getCount());
-				logger.debug(this + " created iterator " + snapshotID);
+				submap = new SnapshotView(snapshotID, sizeLong(snapshotID));
+				logger.debug(this + " created snapshot view " + snapshotID);
 			}
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
@@ -553,7 +553,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		cmd.setPartition_version(partition_version);
 		try {
 			getClient().range(cmd);
-			logger.debug(this + " released iterator " + snapshotID);	
+			logger.debug(this + " released snapshot " + snapshotID);	
 		} catch (MapError e) {
 			logger.error(this + " error!",e);
 		} catch (WrongPartition p){
