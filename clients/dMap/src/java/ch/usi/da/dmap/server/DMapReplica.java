@@ -426,6 +426,17 @@ public class DMapReplica<K,V> {
 					throw e;			
 				}
 				break;
+			case PARTITIONSIZE:
+				id = cmd.getSnapshot();
+				if(snapshots.containsKey(id)){
+					snapshot = snapshots.get(id);  
+					response.setCount(snapshot.size());
+				}else{
+					MapError e = new MapError();
+					e.setErrorMsg("Snaphost " + cmd.getSnapshot() + " does not exist!");
+					throw e;			
+				}
+				break;
 			default:
 				break;
 			}

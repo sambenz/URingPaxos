@@ -48,16 +48,15 @@ public class DMap {
 		local.put("e","5");
 		local.put("f","6");
 		local.put("g","7");
-		local.put("z","8");
 		System.out.println(local.subMap("a","b"));
 		System.out.println(local.subMap("a","z"));
 		System.out.println(local.subMap("b","e"));
 		System.out.println(local.tailMap("b"));
 		System.out.println(local.headMap("b"));
-		
 		System.out.println("###########");*/
 		
 		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b","127.0.0.1:2181");
+		// single partition
 		dmap.put("a","1");
 		dmap.put("b","2");
 		dmap.put("c","3");
@@ -65,47 +64,49 @@ public class DMap {
 		dmap.put("e","5");
 		dmap.put("f","6");
 		dmap.put("g","7");
-		
 		System.out.println(dmap.get("a"));
 		System.out.println(dmap.get("b"));
 		System.out.println(dmap.get("c"));
 		System.out.println(dmap.get("d"));
 		System.out.println(dmap.get("gh"));
-		
-		System.out.println(dmap.size());
-		System.out.println(dmap.containsValue("2"));
-		System.out.println(dmap.containsValue("18"));		
 		System.out.println(dmap.containsKey("a"));
 		System.out.println(dmap.containsKey("not"));
-		
+
+		// multiple partition
+		/*System.out.println(dmap.size());
+		System.out.println(dmap.containsValue("2"));
+		System.out.println(dmap.containsValue("18"));		
 		System.out.println(dmap.firstKey());
-		System.out.println(dmap.lastKey());
+		System.out.println(dmap.lastKey());*/
 		
+		// ranges
+		/*System.out.println(dmap.subMap("a","b").size());
+		System.out.println(dmap.subMap("a","z").size());
+		System.out.println(dmap.subMap("b","e").size());
+		System.out.println(dmap.tailMap("b").size());
+		System.out.println(dmap.headMap("b").size());*/
 		
-//		System.out.println(dmap.subMap("a","b"));
-//		System.out.println(dmap.subMap("a","z"));
-//		System.out.println(dmap.subMap("b","e"));
-//		System.out.println(dmap.tailMap("b"));
-//		System.out.println(dmap.headMap("b"));
-//		
-//
-//		Set<Entry<String, String>> entries = dmap.entrySet();
-//		for(Entry<String,String> e : entries){
-//			System.out.println(e);
-//		}
-//		
-//		System.out.println(entries.contains("a"));
-//		System.out.println(entries.contains(new Pair<String,String>("a","1")));
-//
-//		entries = dmap.subMap("b","e").entrySet();
-//		Iterator<Entry<String,String>> i = entries.iterator();
-//		while(i.hasNext()){
-//			Entry<String,String> e = i.next();
-//			//i.remove();
-//			System.out.println(e);
-//		}
-				
-		//entries.remove(new Pair<String,String>("b","2"));
+		// iterators
+		Set<Entry<String, String>> entries = dmap.entrySet();
+		for(Entry<String,String> e : entries){
+			System.out.println(e);
+		}
+		
+		System.out.println(entries.contains(new Pair<String,String>("a","1")));
+
+		entries = dmap.subMap("b","e").entrySet();
+		Iterator<Entry<String,String>> i = entries.iterator();
+		while(i.hasNext()){
+			Entry<String,String> e = i.next();
+			//i.remove();
+			System.out.println(e);
+		}
+		
+		/*try{
+			entries.remove(new Pair<String,String>("b","2"));
+		}catch(IllegalArgumentException e){
+			// the expected thing
+		}*/
 		
 		//entries.clear(); //close snapshot
 

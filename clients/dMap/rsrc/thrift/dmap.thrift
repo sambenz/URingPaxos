@@ -41,7 +41,8 @@ enum RangeType {
     CREATERANGE = 1,
     PERSISTRANGE = 2,
     GETRANGE = 3,
-    DELETERANGE = 4
+    DELETERANGE = 4,
+    PARTITIONSIZE = 5
 }
 
 struct RangeCommand {

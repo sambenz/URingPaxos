@@ -30,6 +30,7 @@ import ch.usi.da.dmap.thrift.gen.MapError;
 import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
+import ch.usi.da.dmap.thrift.gen.RangeType;
 import ch.usi.da.dmap.thrift.gen.Response;
 import ch.usi.da.dmap.thrift.gen.WrongPartition;
 import ch.usi.da.dmap.utils.Utils;
@@ -158,6 +159,9 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 	@Override
 	public RangeResponse range(RangeCommand cmd) throws MapError, WrongPartition, TException {
 		logger.debug("ABSender received " + cmd);
+		if(cmd.getType() == RangeType.GETRANGE || cmd.getType() == RangeType.PARTITIONSIZE){ // direct response since based on consistent snapshot
+			return replica.range(cmd.snapshot, cmd);
+		}
 		FutureResponse r = new FutureResponse();
 		replica.getResponses().put(cmd.id,r);
 		RangeResponse response = null;

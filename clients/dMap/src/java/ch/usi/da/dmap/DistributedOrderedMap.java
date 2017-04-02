@@ -73,7 +73,7 @@ import ch.usi.da.paxos.lab.DummyWatcher;
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, java.io.Serializable {
+public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedMap<K,V>, Cloneable, java.io.Serializable {
 	
 	private final static long serialVersionUID = -8575201903369745596L;
 
@@ -137,16 +137,18 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	private Dmap.Client getClient(){
 		return getClient(null);
 	}
-	
+
 	private Dmap.Client getClient(Object key){
+		if(key == null){ // random partition
+			return getClient(rand.nextInt());
+		}else{
+			return getClient(key.hashCode());
+		}
+	}
+	
+	private Dmap.Client getClient(int hash){
 		Dmap.Client client = null;
 		int partition = 0;
-		int hash;
-		if(key == null){ // random partition
-			hash = rand.nextInt();
-		}else{
-			hash = key.hashCode();
-		}
 		SortedMap<Integer,Set<String>> tailMap = partitions.tailMap(hash);
 		partition = tailMap.isEmpty() ? partitions.firstKey() : tailMap.firstKey();
 
@@ -531,7 +533,26 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 			ret = getClient().range(cmd);
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
-				submap = new SnapshotView(snapshotID, sizeLong(snapshotID));
+				Map<Integer,Long> partitions_size = new HashMap<Integer,Long>();
+				for(Entry<Integer,Set<String>> e : partitions.entrySet()){
+					// get size of every partition slice
+					RangeResponse r = null;
+					while(r == null){
+						RangeCommand s = new RangeCommand();
+						s.setId(getCmdID());
+						s.setType(RangeType.PARTITIONSIZE);
+						s.setPartition_version(partition_version);
+						s.setSnapshot(snapshotID);
+						try{
+							r = getClient(e.getKey()).range(s);
+						}catch(MapError me){
+							// retry snapshot must exist eventually
+							Thread.sleep(50);
+						}
+					}
+					partitions_size.put(e.getKey(),r.getCount());
+				}
+				submap = new SnapshotView(snapshotID,partitions_size);
 				logger.debug(this + " created snapshot view " + snapshotID);
 			}
 		} catch (MapError e){
@@ -539,7 +560,7 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 		} catch (WrongPartition p){
 			readPartitions(getClient());
 			return subMap(fromKey,toKey,snapshotID);
-		} catch (TException | IOException e) {
+		} catch (TException | IOException | InterruptedException e) {
 			logger.error(this,e);
 		}
 		return submap;
@@ -629,12 +650,19 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	
 	class SnapshotView implements SortedMap<K,V> {
 
+		public final Map<Integer,Long> partitions_size;
+		
 		public final long snapshotID;
 		
 		public final long size;
 		
-		public SnapshotView(long snapshotID, long size){
+		public SnapshotView(long snapshotID, Map<Integer,Long> partitions_size){
+			this.partitions_size = partitions_size;
 			this.snapshotID = snapshotID;
+			long size = 0;
+			for(Long l : partitions_size.values()){
+				size += l;
+			}
 			this.size = size;
 		}
 		
@@ -749,16 +777,27 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
     	private final SnapshotView view;
     	
-    	private final BlockingQueue<Map.Entry<K,V>> queue = new LinkedBlockingQueue<Map.Entry<K,V>>();
-    		
-    	public EntrySet(SnapshotView view){
+    	private final BlockingQueue<Map.Entry<K,V>> queue[];
+    	
+    	private final long queue_size[];
+    	    			    		
+    	@SuppressWarnings("unchecked")
+		public EntrySet(SnapshotView view){
     		this.view = view;
-    		Thread t = new Thread(new QueueFiller(view,queue));
-    		t.start();
+    		queue = (BlockingQueue<Map.Entry<K,V>>[]) new BlockingQueue[view.partitions_size.size()];
+    		queue_size = new long[view.partitions_size.size()];
+    		int i = 0;
+    		for(Entry<Integer,Long> e : view.partitions_size.entrySet()){
+    			queue[i] = new LinkedBlockingQueue<Map.Entry<K,V>>(1000);
+    			queue_size[i] = e.getValue();
+    			Thread t = new Thread(new QueueFiller(view,queue[i],e));
+    			t.start();
+    			i++;
+    		}
     	}
     	
         public Iterator<Map.Entry<K,V>> iterator() {
-            return new EntryIterator<Map.Entry<K,V>>(this,queue);
+            return new EntryIterator<Map.Entry<K,V>>(this,queue,queue_size);
         }
 
         public boolean contains(Object o) {
@@ -799,13 +838,19 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
     	
     	private long delivered = 0;
     	
-        private final BlockingQueue<T> queue;
+        private final BlockingQueue<T> queue[];
+        
+        private final long queue_delivered[];
+        
+        private final long queue_size[];
         
         T last = null;
-
-        EntryIterator(EntrySet set, BlockingQueue<T> queue) {
+        
+        EntryIterator(EntrySet set, BlockingQueue<T> queue[], long[] queue_size) {
         	this.set = set;
         	this.queue = queue;
+        	this.queue_size = queue_size;
+        	queue_delivered = new long[queue.length];
         }
 
         public final boolean hasNext() {
@@ -819,19 +864,33 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
         	set.remove(last);
         }
         
+		@SuppressWarnings("unchecked")
 		@Override
 		public T next() {
 			T o = null;
+			int qi = 0;
 			if(delivered < set.view.size){
-				try {
-					o = queue.take();
-					last = o;	
-				} catch (InterruptedException e) {
-				}	
-			}
-			if(o != null){
+				for(int i=0;i<queue.length;i++){
+					if(queue_delivered[i] < queue_size[i]){
+						T s = null;
+						while(s == null){
+							s = queue[i].peek();
+							if(s == null){
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+								}
+							}
+						}
+						if(o == null || ((Map.Entry<K,V>) s).getKey().compareTo(((Map.Entry<K,V>)o).getKey()) < 0){
+							o = s;
+							qi = i;
+						}
+					}
+				}
 				delivered++;
-				return o;
+				queue_delivered[qi]++;
+				return queue[qi].poll();
 			}else{
 				throw new NoSuchElementException();
 			}
@@ -844,18 +903,21 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 
     	private final BlockingQueue<Map.Entry<K,V>> queue;
     	
-    	public QueueFiller(SnapshotView view,BlockingQueue<Map.Entry<K,V>> queue){
+    	private final Map.Entry<Integer,Long> partitions_size;
+    	
+    	public QueueFiller(SnapshotView view,BlockingQueue<Map.Entry<K,V>> queue,Map.Entry<Integer,Long> partitions_size){
     		this.view = view;
     		this.queue = queue;
+    		this.partitions_size = partitions_size;
     	}
     	
     	@Override
     	public void run() {
     		long snapshotID = view.snapshotID;
-    		long size = view.size;
+    		long size = partitions_size.getValue();
     		long retreived = 0;
     		int from = 0;
-    		while(retreived < size){
+    		do{
 				try {
 	    			RangeCommand cmd = new RangeCommand();
 	    			cmd.setId(getCmdID());
@@ -865,22 +927,25 @@ public class DistributedOrderedMap<K,V> implements SortedMap<K,V>, Cloneable, ja
 	    			cmd.setToid(from+get_range_size);
 	    			cmd.setPartition_version(partition_version);
 	    			from = from+get_range_size;
-	    			RangeResponse ret = getClient().range(cmd); //FIXME: special -> direct call to multiple replicas in multiple partitions!
-	    			if(ret != null && ret.isSetValues()){
-	    				@SuppressWarnings("unchecked")
-						List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
-	    				for(Pair<K,V> e : sublist){
-	    					queue.add(e);
-	    					retreived++;
+	    			RangeResponse ret = getClient(partitions_size.getKey()).range(cmd); //TODO: ask multiple replicas with different offset
+	    			if(ret != null){
+	    				if(ret.isSetValues()){
+		    				@SuppressWarnings("unchecked")
+							List<Pair<K,V>> sublist = (List<Pair<K,V>>) Utils.getObject(ret.getValues());
+		    				for(Pair<K,V> e : sublist){
+		    					queue.put(e);
+		    					retreived++;
+		    				}	    					
 	    				}
 	    			}
 				} catch (MapError e){
 					logger.error(view + " error!",e);
 				} catch (WrongPartition p){
-				} catch (TException | ClassNotFoundException | IOException e) {
+				} catch (TException | ClassNotFoundException | IOException | InterruptedException e) {
 					logger.error(view + " error!",e);
 				}
-    		}
+    		}while(retreived < size);
+    		queue.add(new Pair<K,V>(null,null)); // poison object
     	}
     }
 
