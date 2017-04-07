@@ -7,7 +7,11 @@
   <baseDirectory>${project.name}-${project.version}</baseDirectory>
   <files>
     <file>
-      <source>rsrc/assembly/btree.sh</source>
+      <source>rsrc/assembly/dmap.sh</source>
+      <fileMode>0755</fileMode>
+    </file>   
+    <file>
+      <source>rsrc/assembly/client.sh</source>
       <fileMode>0755</fileMode>
     </file>   
     <file>

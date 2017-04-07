@@ -38,8 +38,12 @@ import ch.usi.da.dmap.utils.Pair;
  */
 public class DMap {
 
-	public static void main(String[] args) {
-				
+	public static void main(String[] args) {		
+		String zoo = "127.0.0.1:2181";
+		if(args.length > 0){
+			zoo = args[0];
+		}
+
 		/*SortedMap<String, String> local = new TreeMap<String,String>();
 		local.put("a","1");
 		local.put("b","2");
@@ -55,7 +59,7 @@ public class DMap {
 		System.out.println(local.headMap("b"));
 		System.out.println("###########");*/
 		
-		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b","127.0.0.1:2181");
+		SortedMap<String, String> dmap = new DistributedOrderedMap<String, String>("83a8c1c0-dcb2-4afa-a447-07f79a0fcd6b",zoo);
 		// single partition
 		dmap.put("a","1");
 		dmap.put("b","2");
@@ -73,18 +77,18 @@ public class DMap {
 		System.out.println(dmap.containsKey("not"));
 
 		// multiple partition
-		/*System.out.println(dmap.size());
+		System.out.println(dmap.size());
 		System.out.println(dmap.containsValue("2"));
 		System.out.println(dmap.containsValue("18"));		
 		System.out.println(dmap.firstKey());
-		System.out.println(dmap.lastKey());*/
+		System.out.println(dmap.lastKey());
 		
 		// ranges
-		/*System.out.println(dmap.subMap("a","b").size());
+		System.out.println(dmap.subMap("a","b").size());
 		System.out.println(dmap.subMap("a","z").size());
 		System.out.println(dmap.subMap("b","e").size());
 		System.out.println(dmap.tailMap("b").size());
-		System.out.println(dmap.headMap("b").size());*/
+		System.out.println(dmap.headMap("b").size());
 		
 		// iterators
 		Set<Entry<String, String>> entries = dmap.entrySet();

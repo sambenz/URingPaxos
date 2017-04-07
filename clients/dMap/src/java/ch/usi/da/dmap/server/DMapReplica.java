@@ -18,7 +18,9 @@ package ch.usi.da.dmap.server;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
@@ -81,6 +83,26 @@ import ch.usi.da.paxos.storage.Decision;
  * @author Samuel Benz benz@geoid.ch
  */
 public class DMapReplica<K,V> {
+	static {
+		// get hostname and pid for log file name
+		String host = "localhost";
+		try {
+			Process proc = Runtime.getRuntime().exec("hostname");
+			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
+			proc.waitFor();
+			byte [] b = new byte[in.available()];
+			in.read(b);
+			in.close();
+			host = new String(b).replace("\n","");
+		} catch (IOException | InterruptedException e) {
+		}
+		int pid = 0;
+		try {
+			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
+		} catch (NumberFormatException | IOException e) {
+		}
+		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
+	}
 
 	private final static Logger logger = Logger.getLogger(DMapReplica.class);
 	
@@ -161,7 +183,7 @@ public class DMapReplica<K,V> {
 			logger.error(e);
 		}
 		// subscribe learner to partition
-		if(node.getLearner() instanceof ElasticLearnerRole){
+		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
 			Control c = new Control(node.getNodeID(),ControlType.Subscribe,node.getGroupID(),ring_id);
 			node.getProposer(default_ring).control(c);
 			node.getProposer(ring_id).control(c);
@@ -201,7 +223,9 @@ public class DMapReplica<K,V> {
 						} catch (InterruptedException e) {
 						}
 					}
-					signals.remove(cmd.id);
+					synchronized(signals){
+						signals.remove(cmd.id);
+					}
 				}
 				if(responses.containsKey(cmd.id)){
 					responses.get(cmd.id).addResponse(r);

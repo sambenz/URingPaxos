@@ -1,5 +1,7 @@
 #!/bin/sh
 
+HOSTNAME=`hostname`
+
 # Setup the JVM
 if [ "x$JAVA" = "x" ]; then
   if [ "x$JAVA_HOME" != "x" ]; then
@@ -16,5 +18,8 @@ for i in $PRGDIR/lib/*.jar; do
   CLASSPATH="$CLASSPATH":"$i"
 done
 
+# GC logging options -- uncomment to enable (this is not the exact PID; but close)
+#JVM_OPTS="$JVM_OPTS -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$HOME/$HOSTNAME-$$.vgc"
+
 # start the program
-$JAVA -cp $PRGDIR/lib:$CLASSPATH ch.usi.da.btree.Btree $@
+$JAVA -cp $PRGDIR/lib:$CLASSPATH -Xms2G -Xmx2G $JVM_OPTS ch.usi.da.dmap.TestClient $@
