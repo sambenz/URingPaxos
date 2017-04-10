@@ -10,9 +10,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.SortedMap;
-import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,7 +39,6 @@ public class TestClient {
 		}
 		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
 	}
-
 	
 	private final static Logger logger = Logger.getLogger(TestClient.class);
 	
