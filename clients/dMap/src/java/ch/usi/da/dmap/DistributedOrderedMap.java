@@ -159,23 +159,29 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		if(c.isEmpty()){
 			Set<String> caddrs = partitions.get(partition);
 			for(String addr : caddrs){
-				String[] as = new String(addr).split(";");
-				String ip = as[0];
-				int port = Integer.parseInt(as[1]);
-				TTransport transport = new TSocket(ip,port);
-				TProtocol protocol = new TBinaryProtocol(transport);
-				client = new Dmap.Client(protocol);
-				try {
-					//TODO: how to handle broken connections
-					transport.open();
-				} catch (TTransportException e) {
-					logger.error(this,e);
-				}
+				client = createClient(addr);
 				c.add(client);				
 			}
 		}else{
 			int pos = rand.nextInt(c.size());			
 			client = c.get(pos);
+		}
+		return client;
+	}
+	
+	private Dmap.Client createClient(String addr){
+		Dmap.Client client;
+		String[] as = new String(addr).split(";");
+		String ip = as[0];
+		int port = Integer.parseInt(as[1]);
+		TTransport transport = new TSocket(ip,port);
+		TProtocol protocol = new TBinaryProtocol(transport);
+		client = new Dmap.Client(protocol);
+		try {
+			//TODO: how to handle broken connections
+			transport.open();
+		} catch (TTransportException e) {
+			logger.error(this,e);
 		}
 		return client;
 	}
@@ -656,6 +662,8 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		
 		public final long size;
 		
+		public volatile boolean closed = false;
+		
 		public SnapshotView(long snapshotID, Map<Integer,Long> partitions_size){
 			this.partitions_size = partitions_size;
 			this.snapshotID = snapshotID;
@@ -716,6 +724,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		}
 		
 		public void removeSnapshot(){
+			closed = true;
 			DistributedOrderedMap.this.removeSnapshot(snapshotID);
 		}
 
@@ -915,6 +924,8 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     	public void run() {
     		long snapshotID = view.snapshotID;
     		long size = partitions_size.getValue();
+    		Set<String> caddrs = partitions.get(partitions_size.getKey());
+    		Dmap.Client client = createClient(caddrs.iterator().next());
     		long retreived = 0;
     		int from = 0;
     		do{
@@ -927,7 +938,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	    			cmd.setToid(from+get_range_size);
 	    			cmd.setPartition_version(partition_version);
 	    			from = from+get_range_size;
-	    			RangeResponse ret = getClient(partitions_size.getKey()).range(cmd); //TODO: ask multiple replicas with different offset
+	    			RangeResponse ret = client.range(cmd); //Idea: ask multiple replicas with different offset
 	    			if(ret != null){
 	    				if(ret.isSetValues()){
 		    				@SuppressWarnings("unchecked")
@@ -939,13 +950,16 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	    				}
 	    			}
 				} catch (MapError e){
-					logger.error(view + " error!",e);
+					/*if(!view.closed){
+						logger.error(view + " error!",e);
+					}*/
 				} catch (WrongPartition p){
 				} catch (TException | ClassNotFoundException | IOException | InterruptedException e) {
 					logger.error(view + " error!",e);
 				}
-    		}while(retreived < size);
-    		queue.add(new Pair<K,V>(null,null)); // poison object
+    		}while(retreived < size || view.closed);
+    		client.getInputProtocol().getTransport().close();
+    		client.getOutputProtocol().getTransport().close();
     	}
     }
 

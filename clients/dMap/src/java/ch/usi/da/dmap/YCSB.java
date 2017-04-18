@@ -18,9 +18,6 @@ package ch.usi.da.dmap;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -46,27 +43,6 @@ import com.yahoo.ycsb.workloads.CoreWorkload;
  * @author Samuel Benz benz@geoid.ch
  */
 public class YCSB extends DB {
-	static {
-		// get hostname and pid for log file name
-		String host = "localhost";
-		try {
-			Process proc = Runtime.getRuntime().exec("hostname");
-			BufferedInputStream in = new BufferedInputStream(proc.getInputStream());
-			proc.waitFor();
-			byte [] b = new byte[in.available()];
-			in.read(b);
-			in.close();
-			host = new String(b).replace("\n","");
-		} catch (IOException | InterruptedException e) {
-		}
-		int pid = 0;
-		try {
-			pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
-		} catch (NumberFormatException | IOException e) {
-		}
-		System.setProperty("logfilename", "L" + host + "-" + pid + ".log");
-	}
-
 
     private static final String HOST = "dmap.host";
     private static final String HOST_DEFAULT = "127.0.0.1:2181";
@@ -106,12 +82,17 @@ public class YCSB extends DB {
 
 	@Override
 	public Status scan(String table, String startkey, int recordcount,	Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
-		for(Entry<String, HashMap<String, String>> e : dmap.tailMap(startkey).entrySet()){
+		Set<Entry<String, HashMap<String, String>>> entries = dmap.tailMap(startkey).entrySet();
+		if(entries == null){
+			return Status.UNEXPECTED_STATE;
+		}
+		for(Entry<String, HashMap<String, String>> e : entries){
 			result.addElement(StringByteIterator.getByteIteratorMap(e.getValue()));
-			if(result.size() == recordcount){
+			if(result.size() >= recordcount){
 				break;
 			}
 		}
+		entries.clear(); // removes the snapshot
 		return Status.OK;
 	}
 
