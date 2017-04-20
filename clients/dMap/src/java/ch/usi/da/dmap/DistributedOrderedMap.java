@@ -85,7 +85,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		
 	private ZooKeeper zoo;
 		
-	private final int get_range_size = 100;
+	private final int get_range_size = 500;
 
 	private long partition_version = 0;
 	
@@ -790,6 +790,8 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     	
     	private final BlockingQueue<Map.Entry<K,V>> queue[];
     	
+    	private final Thread threads[];
+    	
     	private final long queue_size[];
     	    			    		
     	@SuppressWarnings("unchecked")
@@ -797,12 +799,15 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     		this.view = view;
     		queue = (BlockingQueue<Map.Entry<K,V>>[]) new BlockingQueue[view.partitions_size.size()];
     		queue_size = new long[view.partitions_size.size()];
+    		threads = new Thread[view.partitions_size.size()];
     		int i = 0;
     		for(Entry<Integer,Long> e : view.partitions_size.entrySet()){
-    			queue[i] = new LinkedBlockingQueue<Map.Entry<K,V>>(1000);
+    			queue[i] = new LinkedBlockingQueue<Map.Entry<K,V>>(get_range_size);
     			queue_size[i] = e.getValue();
-    			Thread t = new Thread(new QueueFiller(view,queue[i],e));
-    			t.start();
+    			if(queue_size[i] > 0){
+    				threads[i] = new Thread(new QueueFiller(view,queue[i],e));
+    				threads[i].start();
+    			}
     			i++;
     		}
     	}
@@ -839,6 +844,11 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
         public void clear() {
         	view.clear();
+        	for(Thread t : threads){
+        		if(t != null){
+        			t.interrupt();
+        		}
+        	}
         }
         
     }
@@ -927,7 +937,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     		long snapshotID = view.snapshotID;
     		long size = partitions_size.getValue();
     		Set<String> caddrs = partitions.get(partitions_size.getKey());
-    		Dmap.Client client = createClient(caddrs.iterator().next());
+    		Dmap.Client client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
     		long retreived = 0;
     		int from = 0;
     		do{
@@ -956,10 +966,15 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 						logger.error(view + " error!",e);
 					}*/
 				} catch (WrongPartition p){
-				} catch (TException | ClassNotFoundException | IOException | InterruptedException e) {
+				} catch (TException | ClassNotFoundException | IOException e) {
 					logger.error(view + " error!",e);
+				} catch (InterruptedException e){
+					logger.debug(view + " queue filler interrupted.");
+					Thread.currentThread().interrupt();
+					break;
 				}
     		}while(retreived < size || view.closed);
+    		logger.debug(view + " queue filler stopped.");
     		client.getInputProtocol().getTransport().close();
     		client.getOutputProtocol().getTransport().close();
     	}
