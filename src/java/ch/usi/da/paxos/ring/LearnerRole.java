@@ -145,7 +145,7 @@ public class LearnerRole extends Role implements Learner {
 		}
 	}
 	
-	public void deliver(RingManager fromRing,Message m){
+	public synchronized void deliver(RingManager fromRing,Message m){
 		/*if(logger.isDebugEnabled()){
 			logger.debug("learner " + ring.getNodeID() + " received " + m);
 		}*/
@@ -213,6 +213,8 @@ public class LearnerRole extends Role implements Learner {
 						delivery.poll(); // remove duplicate
 					}
 				}
+			}else{
+				logger.error("Learner received decision without value! " + m);
 			}
 		}else if(m.getType() == MessageType.Safe){
 			Value v = null;

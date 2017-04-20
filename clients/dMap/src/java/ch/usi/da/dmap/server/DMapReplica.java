@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
@@ -57,6 +58,7 @@ import ch.usi.da.dmap.thrift.gen.Command;
 import ch.usi.da.dmap.thrift.gen.Dmap;
 import ch.usi.da.dmap.thrift.gen.Dmap.Iface;
 import ch.usi.da.dmap.thrift.gen.MapError;
+import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
 import ch.usi.da.dmap.thrift.gen.Response;
@@ -82,7 +84,7 @@ import ch.usi.da.paxos.storage.Decision;
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class DMapReplica<K,V> {
+public class DMapReplica<K,V> implements Iface {
 	static {
 		// get hostname and pid for log file name
 		String host = "localhost";
@@ -106,6 +108,12 @@ public class DMapReplica<K,V> {
 
 	private final static Logger logger = Logger.getLogger(DMapReplica.class);
 	
+	private final static Logger stats = Logger.getLogger("ch.usi.da.paxos.Stats");
+
+	
+	private final AtomicLong stat_latency = new AtomicLong();		
+	private final AtomicLong stat_command = new AtomicLong();
+	
 	private volatile SortedMap<K,V> db;
 	
 	private final Node node;
@@ -125,19 +133,21 @@ public class DMapReplica<K,V> {
 	private final boolean linearizable = true;
 		
 	public long partition_version = 0;
-	public final Map<Integer,Set<String>> partitions = new HashMap<Integer,Set<String>>();
+	public final SortedMap<Integer,Set<String>> partitions = new TreeMap<Integer,Set<String>>();
 	public final Map<Integer,Integer> rings = new HashMap<Integer,Integer>();
+	
+	private final AtomicLong single_instance_snapshot_id = new AtomicLong(0); // only used for non-replicated Replica
 	
 	private final Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
 		private static final long serialVersionUID = -2704400124020327063L;
 		protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
-			return size() > 10; // hold only 10 snapshots in memory!                                 
+			return size() > 1000; // hold only 1000 snapshots in memory!                                 
 		}};
 
 	private final Map<Long,SortedMap<K,V>> snapshotsDB = new LinkedHashMap<Long,SortedMap<K,V>>(){
 		private static final long serialVersionUID = -2704400124020327063L;
 		protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
-			return size() > 10; // hold only 10 snapshots in memory!                                 
+			return size() > 1000; // hold only 1000 snapshots in memory!                                 
 		}};
 
 	private Map<Long,FutureResponse> responses = new ConcurrentHashMap<Long,FutureResponse>();
@@ -152,6 +162,34 @@ public class DMapReplica<K,V> {
 		this.default_ring = default_ring;
 		this.node = node;
 		db = new TreeMap<K,V>();
+		if(stats.isInfoEnabled()){
+			final Thread writer = new Thread("ABReceiverStatsWriter"){		    			
+				private long last_time = System.nanoTime();
+				private long last_sent_count = 0;
+				private long last_sent_time = 0;
+				@Override
+				public void run() {
+					while(true){
+						try {
+							long time = System.nanoTime();
+							long sent_count = stat_command.get() - last_sent_count;
+							long sent_time = stat_latency.get() - last_sent_time;
+							float t = (float)(time-last_time)/(1000*1000*1000);
+							float count = sent_count/t;
+							stats.info(String.format("DMapReplica executed %.1f command/s avg. latency %.0f ns",count,sent_time/count));
+							last_sent_count += sent_count;
+							last_sent_time += sent_time;
+							last_time = time;
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							break;				
+						}
+					}
+				}
+			};
+			writer.start();
+		}
 	}
 	
 	public Node getNode(){
@@ -191,6 +229,7 @@ public class DMapReplica<K,V> {
 	}
 	
 	public synchronized void receive(Decision d) {
+		long time = System.nanoTime();
 		if(d.getValue() != null){
 			long instance = d.getInstance();
 			Object o = null;
@@ -209,7 +248,7 @@ public class DMapReplica<K,V> {
 					r = e;
 				}
 				// send/wait for signal
-				if(d.getRing() == default_ring){
+				if(d.getRing() == default_ring && default_ring != partition_ring){
 					singal(cmd.id,r);
 					if(responses.containsKey(cmd.id) || linearizable) {
 						try {
@@ -267,6 +306,11 @@ public class DMapReplica<K,V> {
 				logger.info("Install new partition map " + partition_version + ":" + partitions + "(" + rings + ")");
 			}
 		}
+		if(stats.isInfoEnabled()){
+			long lat = System.nanoTime() - time;
+			stat_latency.addAndGet(lat);
+			stat_command.incrementAndGet();
+		}
 	}
 
 	private void singal(Long id, Object o) {
@@ -292,8 +336,9 @@ public class DMapReplica<K,V> {
 		}
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
-	public Response execute(Command cmd) throws MapError, TException {
+	public synchronized Response execute(Command cmd) throws MapError, TException {
 		Response response = new Response();
 		response.setId(cmd.id);
 		response.setCount(0);
@@ -371,6 +416,19 @@ public class DMapReplica<K,V> {
 			throw error;
 		}
 		return response;
+	}
+	
+	@Override
+	public synchronized RangeResponse range(RangeCommand cmd) throws MapError, WrongPartition, TException {
+		return range(single_instance_snapshot_id.incrementAndGet(),cmd);
+	}
+
+	@Override
+	public synchronized Partition partition(long id) throws TException {
+		Partition p = new Partition();
+		p.setVersion(partition_version);
+		p.setPartitions(partitions);
+		return p;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -522,8 +580,26 @@ public class DMapReplica<K,V> {
 			DMapReplica<Object,Object> replica = new DMapReplica<Object,Object>(default_ring,node);
 			Thread.sleep(5000);
 			replica.registerPartition(partition_ring,addr,token);
-			
+			/*replica.partitions.put(0,new HashSet<String>());
+			replica.partitions.get(0).add("192.168.3.1" + ";" + 5001);
+			replica.partitions.get(0).add("192.168.3.2" + ";" + 5002);
+			replica.partitions.get(0).add("192.168.3.3" + ";" + 5003);
+			replica.partitions.put(20000,new HashSet<String>());
+			replica.partitions.get(20000).add("192.168.3.4" + ";" + 5004);
+			replica.partitions.get(20000).add("192.168.3.5" + ";" + 5005);
+			replica.partitions.get(20000).add("192.168.3.6" + ";" + 5006);
+			replica.partitions.put(40000,new HashSet<String>());
+			replica.partitions.get(40000).add("192.168.3.7" + ";" + 5007);
+			replica.partitions.get(40000).add("192.168.3.8" + ";" + 5008);
+			replica.partitions.get(40000).add("192.168.3.9" + ";" + 5009);
+			replica.partition_version = 1L;
+			replica.rings.put(0,1);
+			replica.rings.put(20000,2);
+			replica.rings.put(40000,3);			
+			replica.partition_ring = partition_ring;*/
+				
 			//start thrift server (proposer)
+			//pass ABSender(replica) for replicated Dmap or just replica for non-replicated Dmap
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			final Dmap.Processor<Iface> processor = new Dmap.Processor<Iface>(new ABSender(replica));
 			final TServerTransport serverTransport = new TServerSocket(port);
@@ -595,4 +671,5 @@ public class DMapReplica<K,V> {
 			}
 		}
 	}
+
 }

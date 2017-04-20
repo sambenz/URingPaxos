@@ -1,4 +1,22 @@
 package ch.usi.da.dmap;
+/* 
+ * Copyright (c) 2017 Università della Svizzera italiana (USI)
+ * 
+ * This file is part of URingPaxos.
+ *
+ * URingPaxos is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * URingPaxos is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -18,6 +36,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
+/**
+ * Name: TestClient<br>
+ * Description: <br>
+ * 
+ * Creation date: Jan 28, 2017<br>
+ * $Id$
+ * 
+ * @author Samuel Benz benz@geoid.ch
+ */
 public class TestClient {
 	static {
 		// get hostname and pid for log file name
@@ -41,6 +68,8 @@ public class TestClient {
 	}
 	
 	private final static Logger logger = Logger.getLogger(TestClient.class);
+
+	private final static Logger stats_logger = Logger.getLogger("ch.usi.da.paxos.Stats");
 	
 	private final String mapID;
 	
@@ -59,7 +88,16 @@ public class TestClient {
 		this.zookeeper = zookeeper;
 	}
 
-	public void start(final int concurrent_cmd, final int send_per_thread,final int key_count) throws InterruptedException{
+	public void load(final int key_count) {
+		SortedMap<Integer, String> dmap = new DistributedOrderedMap<Integer, String>(mapID,zookeeper);
+		int send_count = 0;
+		while(send_count < key_count){
+			dmap.put(send_count++,"value of " + send_count); //size on AB: ~380 bytes
+			logger.info(send_count);
+		}
+	}
+	
+	public void start(final int concurrent_cmd, final int send_per_thread,final int key_count) throws InterruptedException {
 		latency.clear();
 		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
 		
@@ -102,7 +140,9 @@ public class TestClient {
 							int k = rnd.nextInt(key_count);
 							dmap.put(k,"value of " + k); //size on AB: ~380 bytes
 							long lat = System.nanoTime() - time;
-							latency.add(lat);
+							if(stats_logger.isDebugEnabled()){
+								latency.add(lat);
+							}
 							stat_latency.addAndGet(lat);
 							stat_command.incrementAndGet();							
 						} catch (Exception e){
@@ -111,7 +151,6 @@ public class TestClient {
 						send_count++;
 					}
 					await.countDown();
-					logger.debug("Thread terminated.");
 				}
 			};
 			t.start();
@@ -133,12 +172,18 @@ public class TestClient {
 		System.out.println("Press a key to start ...");
 		String s = in.readLine();
 		int concurrent_cmd = 10; // # of threads
+		final int send_per_thread = 100000;
+		final int key_count = 60000; // n * 380 byte memory needed at replica
 		if(!s.isEmpty()){
-			concurrent_cmd = Integer.parseInt(s);
+			if(s.contains("load")){
+				t.load(key_count);
+				Thread.sleep(3000);
+				System.exit(0);
+			}else{
+				concurrent_cmd = Integer.parseInt(s);
+			}
 		}
-		final int send_per_thread = 10000;
-		final int key_count = 50000; // n * 380 byte memory needed at replica
-		logger.info("Start performance testing with " + concurrent_cmd + " threads.");
+		stats_logger.info("Start performance testing with " + concurrent_cmd + " threads.");
 		t.start(concurrent_cmd,send_per_thread,key_count);
 		
 	}
@@ -172,9 +217,9 @@ public class TestClient {
 			}
 		}
 		float avg = (float)sum/latency.size()/1000/1000;
-		logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
+		stats_logger.info("client latency histogram: <1ms:" + a + " <10ms:" + b + " <25ms:" + b2 + " <50ms:" + c + " <75ms:" + f + " <100ms:" + d + " >100ms:" + e + " avg:" + avg);
 		for(Entry<Long, Long> bin : histogram.entrySet()){ // details for CDF
-			logger.info(bin.getKey() + "," + bin.getValue());
+			stats_logger.debug(bin.getKey() + "," + bin.getValue());
 		}
 	}
 }

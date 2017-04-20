@@ -174,7 +174,9 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		String[] as = new String(addr).split(";");
 		String ip = as[0];
 		int port = Integer.parseInt(as[1]);
-		TTransport transport = new TSocket(ip,port);
+		TSocket socket = new TSocket(ip,port);
+		//socket.getSocket().getTcpNoDelay();
+		TTransport transport = socket;
 		TProtocol protocol = new TBinaryProtocol(transport);
 		client = new Dmap.Client(protocol);
 		try {
