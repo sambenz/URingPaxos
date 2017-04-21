@@ -159,8 +159,12 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		if(c.isEmpty()){
 			Set<String> caddrs = partitions.get(partition);
 			for(String addr : caddrs){
-				client = createClient(addr);
-				c.add(client);				
+				try {
+					client = createClient(addr);
+					c.add(client);									
+				} catch (TTransportException e) {
+					logger.warn(this + " server connection error to " + addr);
+				}
 			}
 		}else{
 			int pos = rand.nextInt(c.size());			
@@ -169,7 +173,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		return client;
 	}
 	
-	private Dmap.Client createClient(String addr){
+	private Dmap.Client createClient(String addr) throws TTransportException{
 		Dmap.Client client;
 		String[] as = new String(addr).split(";");
 		String ip = as[0];
@@ -179,13 +183,21 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		TTransport transport = socket;
 		TProtocol protocol = new TBinaryProtocol(transport);
 		client = new Dmap.Client(protocol);
-		try {
-			//TODO: how to handle broken connections
-			transport.open();
-		} catch (TTransportException e) {
-			logger.error(this,e);
-		}
+		transport.open();
 		return client;
+	}
+
+	private void removeClient(Dmap.Client client){
+		for(Entry<Integer, List<Dmap.Client>> e : clients.entrySet()){
+			if(e.getValue().contains(client)){
+				e.getValue().remove(client);
+				logger.warn(this + " server connection error. Remove this client.");
+				if(e.getValue().isEmpty()){
+					readPartitions(getClient());
+				}
+				break;
+			}
+		}
 	}
 	
 	private long getCmdID(){
@@ -221,6 +233,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	@SuppressWarnings("unchecked")
 	private V get(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
+		Dmap.Client client = getClient(key);
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -231,11 +244,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient(key).execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return get(key,snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return get(key,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
@@ -258,6 +274,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	@SuppressWarnings("unchecked")
 	private V put(K key,V value,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
+		Dmap.Client client = getClient(key);
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -269,11 +286,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient(key).execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return put(key,value,snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return put(key,value,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
@@ -297,6 +317,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	private V remove(Object key,Long snapshotID) {
 		if(key == null){ throw new NullPointerException(); }
 		Response ret = null;
+		Dmap.Client client = getClient(key);
 		try {
 			Command cmd = new Command();
 			cmd.setId(getCmdID());
@@ -306,11 +327,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient(key).execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return remove(key,snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return remove(key,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
@@ -357,6 +381,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
 	private long sizeLong(Long snapshotID) {
 		Response ret = null;
+		Dmap.Client client = getClient();
 		try {
 			Command cmd = new Command();
 			cmd.setId(getCmdID());
@@ -365,11 +390,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient().execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return sizeLong(snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return sizeLong(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
@@ -398,6 +426,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	private boolean containsValue(Object value,Long snapshotID) {
 		if(value == null){ throw new NullPointerException(); }
 		Response ret = null;
+		Dmap.Client client = getClient();
 		try {
 			Command cmd = new Command();
 			cmd.setId(getCmdID());
@@ -407,11 +436,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient().execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return containsValue(value,snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return containsValue(value,snapshotID);
 		} catch (TException | IOException e) {
 			logger.error(this,e);
@@ -428,6 +460,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	}
 	
 	private void clear(Long snapshotID){
+		Dmap.Client client = getClient();
 		try {
 			Command cmd = new Command();
 			cmd.setId(getCmdID());
@@ -436,11 +469,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			getClient().execute(cmd);
+			client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			clear(snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			clear(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
@@ -454,6 +490,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
 	@SuppressWarnings("unchecked")
 	private K firstKey(Long snapshotID){
+		Dmap.Client client = getClient();
 		Response ret = null;
 		try {
 			Command cmd = new Command();
@@ -463,11 +500,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient().execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return firstKey(snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return firstKey(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
@@ -490,6 +530,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	@SuppressWarnings("unchecked")
 	private K lastKey(Long snapshotID){
 		Response ret = null;
+		Dmap.Client client = getClient();
 		try {
 			Command cmd = new Command();
 			cmd.setId(getCmdID());
@@ -498,11 +539,14 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient().execute(cmd);
+			ret = client.execute(cmd);
 		} catch (MapError e){
 			logger.error(this + " " + e.errorMsg);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			return lastKey(snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			return lastKey(snapshotID);
 		} catch (TException e) {
 			logger.error(this,e);
@@ -523,7 +567,8 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
 	private SortedMap<K,V> subMap(K fromKey,K toKey,Long snapshotID) {
 		RangeResponse ret = null;
-		SortedMap<K,V> submap = null;		
+		SortedMap<K,V> submap = null;
+		Dmap.Client client = getClient();
 		try {
 			RangeCommand cmd = new RangeCommand();
 			cmd.setId(getCmdID());
@@ -538,7 +583,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(snapshotID != null){ // snapshot of a snapshot?
 				cmd.setSnapshot(snapshotID);
 			}
-			ret = getClient().range(cmd);
+			ret = client.range(cmd);
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
 				Map<Integer,Long> partitions_size = new HashMap<Integer,Long>();
@@ -553,7 +598,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 						s.setSnapshot(snapshotID);
 						try{
 							r = getClient(e.getKey()).range(s);
-						}catch(MapError me){
+						}catch(MapError | TTransportException me){
 							// retry snapshot must exist eventually
 							Thread.sleep(50);
 						}
@@ -568,6 +613,9 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		} catch (WrongPartition p){
 			readPartitions(getClient());
 			return subMap(fromKey,toKey,snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
+			return subMap(fromKey,toKey,snapshotID);
 		} catch (TException | IOException | InterruptedException e) {
 			logger.error(this,e);
 		}
@@ -576,17 +624,21 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
 	public void removeSnapshot(Long snapshotID){
 		RangeCommand cmd = new RangeCommand();
+		Dmap.Client client = getClient();
 		cmd.setId(getCmdID());
 		cmd.setType(RangeType.DELETERANGE);
 		cmd.setSnapshot(snapshotID);
 		cmd.setPartition_version(partition_version);
 		try {
-			getClient().range(cmd);
+			client.range(cmd);
 			logger.debug(this + " released snapshot " + snapshotID);	
 		} catch (MapError e) {
 			logger.error(this + " error!",e);
 		} catch (WrongPartition p){
 			readPartitions(getClient());
+			removeSnapshot(snapshotID);
+		} catch (TTransportException e){
+			removeClient(client);
 			removeSnapshot(snapshotID);
 		} catch (TException e) {
 			logger.error(this + " error!",e);
@@ -937,7 +989,13 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     		long snapshotID = view.snapshotID;
     		long size = partitions_size.getValue();
     		Set<String> caddrs = partitions.get(partitions_size.getKey());
-    		Dmap.Client client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
+    		Dmap.Client client = null;
+    		while(client == null){
+	    		try {
+					client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
+				} catch (TTransportException e1) {
+				}
+    		}
     		long retreived = 0;
     		int from = 0;
     		do{
@@ -950,6 +1008,9 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	    			cmd.setToid(from+get_range_size);
 	    			cmd.setPartition_version(partition_version);
 	    			from = from+get_range_size;
+	    			if(client == null){
+	    				throw new TTransportException();
+	    			}
 	    			RangeResponse ret = client.range(cmd); //Idea: ask multiple replicas with different offset
 	    			if(ret != null){
 	    				if(ret.isSetValues()){
@@ -966,6 +1027,12 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 						logger.error(view + " error!",e);
 					}*/
 				} catch (WrongPartition p){
+				} catch (TTransportException e){
+					removeClient(client);
+					try {
+						client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
+					} catch (TTransportException e1) {
+					}
 				} catch (TException | ClassNotFoundException | IOException e) {
 					logger.error(view + " error!",e);
 				} catch (InterruptedException e){
