@@ -53,6 +53,7 @@ import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
 import ch.usi.da.dmap.thrift.gen.RangeType;
+import ch.usi.da.dmap.thrift.gen.Replica;
 import ch.usi.da.dmap.thrift.gen.Response;
 import ch.usi.da.dmap.thrift.gen.WrongPartition;
 import ch.usi.da.dmap.utils.Pair;
@@ -89,7 +90,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 
 	private long partition_version = 0;
 	
-	private SortedMap<Integer,Set<String>> partitions = new TreeMap<Integer,Set<String>>();
+	private SortedMap<Integer,Set<Replica>> partitions = new TreeMap<Integer,Set<Replica>>();
 	
 	private Map<Integer,List<Dmap.Client>> clients = new HashMap<Integer,List<Dmap.Client>>();
 
@@ -149,7 +150,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 	private Dmap.Client getClient(int hash){
 		Dmap.Client client = null;
 		int partition = 0;
-		SortedMap<Integer,Set<String>> tailMap = partitions.tailMap(hash);
+		SortedMap<Integer,Set<Replica>> tailMap = partitions.tailMap(hash);
 		partition = tailMap.isEmpty() ? partitions.firstKey() : tailMap.firstKey();
 
 		if(!clients.containsKey(partition)){
@@ -157,13 +158,13 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 		}
 		List<Dmap.Client> c = clients.get(partition);
 		if(c.isEmpty()){
-			Set<String> caddrs = partitions.get(partition);
-			for(String addr : caddrs){
+			Set<Replica> replicas = partitions.get(partition);
+			for(Replica r : replicas){
 				try {
-					client = createClient(addr);
+					client = createClient(r.address);
 					c.add(client);									
 				} catch (TTransportException e) {
-					logger.warn(this + " server connection error to " + addr);
+					logger.warn(this + " server connection error to " + r.address);
 				}
 			}
 		}else{
@@ -587,7 +588,7 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 			if(ret.isSetSnapshot()){
 				snapshotID = ret.getSnapshot();
 				Map<Integer,Long> partitions_size = new HashMap<Integer,Long>();
-				for(Entry<Integer,Set<String>> e : partitions.entrySet()){
+				for(Entry<Integer,Set<Replica>> e : partitions.entrySet()){
 					// get size of every partition slice
 					RangeResponse r = null;
 					while(r == null){
@@ -988,11 +989,12 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
     	public void run() {
     		long snapshotID = view.snapshotID;
     		long size = partitions_size.getValue();
-    		Set<String> caddrs = partitions.get(partitions_size.getKey());
+    		Set<Replica> replicas = partitions.get(partitions_size.getKey());
     		Dmap.Client client = null;
     		while(client == null){
 	    		try {
-					client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
+	    			Replica replica = (Replica)replicas.toArray()[rand.nextInt(replicas.size())];
+					client = createClient(replica.address);
 				} catch (TTransportException e1) {
 				}
     		}
@@ -1030,7 +1032,8 @@ public class DistributedOrderedMap<K extends Comparable<K>,V> implements SortedM
 				} catch (TTransportException e){
 					removeClient(client);
 					try {
-						client = createClient((String)caddrs.toArray()[rand.nextInt(caddrs.size())]);
+						Replica replica = (Replica)replicas.toArray()[rand.nextInt(replicas.size())];
+						client = createClient(replica.address);
 					} catch (TTransportException e1) {
 					}
 				} catch (TException | ClassNotFoundException | IOException e) {

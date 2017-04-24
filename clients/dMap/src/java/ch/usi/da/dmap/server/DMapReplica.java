@@ -51,16 +51,21 @@ import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.dmap.thrift.gen.Command;
+import ch.usi.da.dmap.thrift.gen.CommandType;
 import ch.usi.da.dmap.thrift.gen.Dmap;
 import ch.usi.da.dmap.thrift.gen.Dmap.Iface;
 import ch.usi.da.dmap.thrift.gen.MapError;
-import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
+import ch.usi.da.dmap.thrift.gen.Replica;
+import ch.usi.da.dmap.thrift.gen.ReplicaCommand;
 import ch.usi.da.dmap.thrift.gen.Response;
 import ch.usi.da.dmap.thrift.gen.WrongPartition;
 import ch.usi.da.dmap.utils.Pair;
@@ -84,7 +89,7 @@ import ch.usi.da.paxos.storage.Decision;
  * 
  * @author Samuel Benz benz@geoid.ch
  */
-public class DMapReplica<K,V> implements Iface {
+public class DMapReplica<K,V> implements Watcher {
 	static {
 		// get hostname and pid for log file name
 		String host = "localhost";
@@ -118,6 +123,8 @@ public class DMapReplica<K,V> implements Iface {
 	
 	private final Node node;
 	
+	private final ZooKeeper zoo;
+	
 	public int default_ring;
 	
 	public int partition_ring;
@@ -133,11 +140,9 @@ public class DMapReplica<K,V> implements Iface {
 	private final boolean linearizable = true;
 		
 	public long partition_version = 0;
-	public final SortedMap<Integer,Set<String>> partitions = new TreeMap<Integer,Set<String>>();
-	public final Map<Integer,Integer> rings = new HashMap<Integer,Integer>();
-	
-	private final AtomicLong single_instance_snapshot_id = new AtomicLong(0); // only used for non-replicated Replica
-	
+
+	public final Map<Integer, Set<Replica>> partitions = new TreeMap<Integer,Set<Replica>>();
+ 		
 	private final Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
 		private static final long serialVersionUID = -2704400124020327063L;
 		protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
@@ -152,15 +157,17 @@ public class DMapReplica<K,V> implements Iface {
 
 	private Map<Long,FutureResponse> responses = new ConcurrentHashMap<Long,FutureResponse>();
 	
-	public DMapReplica(int default_ring,Node node,Comparator<? super K> comparator) {
+	public DMapReplica(int default_ring,Node node,ZooKeeper zoo,Comparator<? super K> comparator) {
 		this.default_ring = default_ring;
 		this.node = node;
+		this.zoo = zoo;
 		db = new TreeMap<K,V>(comparator);
 	}
 	
-	public DMapReplica(int default_ring,Node node) {
+	public DMapReplica(int default_ring,Node node,ZooKeeper zoo) {
 		this.default_ring = default_ring;
 		this.node = node;
+		this.zoo = zoo;
 		db = new TreeMap<K,V>();
 		if(stats.isInfoEnabled()){
 			final Thread writer = new Thread("ABReceiverStatsWriter"){		    			
@@ -200,7 +207,7 @@ public class DMapReplica<K,V> implements Iface {
 		return responses;
 	}
 	
-	public void registerPartition(int ring_id,InetSocketAddress addr,int token){
+	public void registerPartition(String nodeName,int ring_id,InetSocketAddress addr,int token){
 		// register (propose) this partition
 		this.token = token;
 		partition_ring = ring_id;
@@ -214,17 +221,46 @@ public class DMapReplica<K,V> implements Iface {
 		} catch (SocketException e) {
 			logger.error(e);
 		}
-		String cmd = (ring_id + "," + thrift_address + "," + token);
+		Replica replica = new Replica();
+		replica.setName(nodeName);
+		replica.setRing(ring_id);
+		replica.setToken(token);
+		replica.setAddress(thrift_address);
+		ReplicaCommand cmd = new ReplicaCommand();
+		cmd.setId(1L);
+		cmd.setType(CommandType.PUT);
+		cmd.setReplica(replica);
 		try {
-			node.getProposer(default_ring).propose(Utils.getBuffer(cmd).array());
-		} catch (IOException e) {
-			logger.error(e);
+			replica(cmd);
+		} catch (TException e) {
+			logger.error(this + " register replica " + replica,e);
 		}
 		// subscribe learner to partition
 		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
 			Control c = new Control(node.getNodeID(),ControlType.Subscribe,node.getGroupID(),ring_id);
 			node.getProposer(default_ring).control(c);
 			node.getProposer(ring_id).control(c);
+		}
+	}
+
+	@Override
+	public void process(WatchedEvent event) {
+		try {
+			List<String> n = zoo.getChildren(event.getPath(),true);
+			for(Entry<Integer,Set<Replica>> e : partitions.entrySet()){
+				for(Replica r : e.getValue()){
+					if(!n.contains(r.name)){
+						logger.warn("Replica " + r + " offline!");
+						ReplicaCommand cmd = new ReplicaCommand();
+						cmd.setId(2L);
+						cmd.setType(CommandType.REMOVE);
+						cmd.setReplica(r);
+						replica(cmd);
+					}
+				}
+			}
+		} catch (KeeperException | InterruptedException | TException e) {
+			logger.error(this,e);
 		}
 	}
 	
@@ -283,27 +319,28 @@ public class DMapReplica<K,V> implements Iface {
 					responses.get(cmd.id).addResponse(r);
 					responses.remove(cmd.id);
 				}
-			/*} else if(o instanceof Long){ // get partition
-				Partition p = new Partition();
-				p.setVersion(partition_version);
-				p.setPartitions(partitions);
-				responses.get((Long)o).setResponse(p);
-				responses.remove((Long)o);*/
-			} else if(o instanceof String){ // set partition
-				String[] cmd = ((String)o).split(",");
-				int ring = Integer.parseInt(cmd[0]);
-				String address = cmd[1];
-				int token = Integer.parseInt(cmd[2]);
-				if(partitions.containsKey(token)){
-					partitions.get(token).add(address);
-				}else{
-					Set<String> s = new HashSet<String>();
-					s.add(address);
-					partitions.put(token,s);
+			} else if(o instanceof ReplicaCommand){ // set partition
+				ReplicaCommand cmd = (ReplicaCommand)o;
+				Replica r = cmd.getReplica();
+				if(cmd.getType().equals(CommandType.PUT)){
+					if(partitions.containsKey(r.token)){
+						partitions.get(r.token).add(r);
+					}else{
+						Set<Replica> s = new HashSet<Replica>();
+						s.add(r);
+						partitions.put(r.token,s);
+					}
+				}else if(cmd.getType().equals(CommandType.REMOVE)){
+					if(partitions.containsKey(r.token)){
+						partitions.get(r.token).remove(r);
+					}
+				}else if(cmd.getType().equals(CommandType.CLEAR)){
+					if(partitions.containsKey(r.token)){
+						partitions.remove(r.token);
+					}
 				}
 				partition_version = instance;			
-				rings.put(token,ring);
-				logger.info("Install new partition map " + partition_version + ":" + partitions + "(" + rings + ")");
+				logger.info("Install new partition map " + partition_version + ":" + partitions);
 			}
 		}
 		if(stats.isInfoEnabled()){
@@ -320,10 +357,10 @@ public class DMapReplica<K,V> implements Iface {
 				logger.debug("Global command wait for partitions: " + partitions.keySet() + " ...");
 			}
 		}
-		for(Entry<Integer,Set<String>> e : partitions.entrySet()){
-			for(String s : e.getValue()){
+		for(Entry<Integer,Set<Replica>> e : partitions.entrySet()){
+			for(Replica r : e.getValue()){
 				try {
-					String[] addr = s.split(";");
+					String[] addr = r.address.split(";");
 					InetAddress ip = InetAddress.getByName(addr[0]);
 					int port = Integer.parseInt(addr[1]);
 					byte[] buffer = Utils.getBuffer(o).array();
@@ -336,7 +373,6 @@ public class DMapReplica<K,V> implements Iface {
 		}
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized Response execute(Command cmd) throws MapError, TException {
 		Response response = new Response();
@@ -418,19 +454,14 @@ public class DMapReplica<K,V> implements Iface {
 		return response;
 	}
 	
-	@Override
-	public synchronized RangeResponse range(RangeCommand cmd) throws MapError, WrongPartition, TException {
-		return range(single_instance_snapshot_id.incrementAndGet(),cmd);
+	public void replica(ReplicaCommand cmd) throws TException {
+		try {
+			getNode().getProposer(default_ring).propose(Utils.getBuffer(cmd).array());
+		} catch (IOException e) {
+			throw new TException(e);
+		}
 	}
-
-	@Override
-	public synchronized Partition partition(long id) throws TException {
-		Partition p = new Partition();
-		p.setVersion(partition_version);
-		p.setPartitions(partitions);
-		return p;
-	}
-
+	
 	@SuppressWarnings("unchecked")
 	public RangeResponse range(long instance, RangeCommand cmd) throws MapError, TException {
 		RangeResponse response = new RangeResponse();
@@ -569,7 +600,8 @@ public class DMapReplica<K,V> implements Iface {
 			final byte[] b = addrs.getBytes(); // store the SocketAddress
 			final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,new DummyWatcher());
 			Util.checkThenCreateZooNode("/dmap/" + mapID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
-			Util.checkThenCreateZooNode("/dmap/" + mapID + "/node",b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL,zoo);
+			String nodeName = Util.checkThenCreateZooNode("/dmap/" + mapID + "/node",b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL,zoo);
+			nodeName = nodeName.replace("/dmap/" + mapID + "/","");
 			
 			//start URingPaxos node
 			List<RingDescription> rings = Util.parseRingsArgument(roles);
@@ -577,29 +609,13 @@ public class DMapReplica<K,V> implements Iface {
 			node.start();
 
 			//create replica
-			DMapReplica<Object,Object> replica = new DMapReplica<Object,Object>(default_ring,node);
+			DMapReplica<Object,Object> replica = new DMapReplica<Object,Object>(default_ring,node,zoo);
+			zoo.register(replica);
+			zoo.getChildren("/dmap/" + mapID, true);
 			Thread.sleep(5000);
-			replica.registerPartition(partition_ring,addr,token);
-			/*replica.partitions.put(0,new HashSet<String>());
-			replica.partitions.get(0).add("192.168.3.1" + ";" + 5001);
-			replica.partitions.get(0).add("192.168.3.2" + ";" + 5002);
-			replica.partitions.get(0).add("192.168.3.3" + ";" + 5003);
-			replica.partitions.put(20000,new HashSet<String>());
-			replica.partitions.get(20000).add("192.168.3.4" + ";" + 5004);
-			replica.partitions.get(20000).add("192.168.3.5" + ";" + 5005);
-			replica.partitions.get(20000).add("192.168.3.6" + ";" + 5006);
-			replica.partitions.put(40000,new HashSet<String>());
-			replica.partitions.get(40000).add("192.168.3.7" + ";" + 5007);
-			replica.partitions.get(40000).add("192.168.3.8" + ";" + 5008);
-			replica.partitions.get(40000).add("192.168.3.9" + ";" + 5009);
-			replica.partition_version = 1L;
-			replica.rings.put(0,1);
-			replica.rings.put(20000,2);
-			replica.rings.put(40000,3);			
-			replica.partition_ring = partition_ring;*/
+			replica.registerPartition(nodeName,partition_ring,addr,token);
 				
 			//start thrift server (proposer)
-			//pass ABSender(replica) for replicated Dmap or just replica for non-replicated Dmap
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			final Dmap.Processor<Iface> processor = new Dmap.Processor<Iface>(new ABSender(replica));
 			final TServerTransport serverTransport = new TServerSocket(port);

@@ -31,6 +31,7 @@ import ch.usi.da.dmap.thrift.gen.Partition;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
 import ch.usi.da.dmap.thrift.gen.RangeType;
+import ch.usi.da.dmap.thrift.gen.ReplicaCommand;
 import ch.usi.da.dmap.thrift.gen.Response;
 import ch.usi.da.dmap.thrift.gen.WrongPartition;
 import ch.usi.da.dmap.utils.Utils;
@@ -184,20 +185,19 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 
 	@Override
 	public Partition partition(long id) throws TException {
-		logger.debug("ABSender received partition cmd");
 		Partition p = new Partition();
 		p.setVersion(replica.partition_version);
 		p.setPartitions(replica.partitions);
-		/*FutureResponse r = new FutureResponse();
-		replica.getResponses().put(id,r);
-		Partition p = null;
-		try {
-			replica.getNode().getProposer(replica.default_ring).propose(Utils.getBuffer(id).array());
-			p = (Partition) r.getResponse();
-		} catch (InterruptedException | IOException e) {
-			throw new TException(e);
-		}*/
 		return p;
+	}
+
+	@Override
+	public void replica(ReplicaCommand cmd) throws TException {
+		try {
+			replica.getNode().getProposer(replica.default_ring).propose(Utils.getBuffer(cmd).array());
+		} catch (IOException e) {
+			throw new TException(e);
+		}
 	}
 
 }

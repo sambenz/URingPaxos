@@ -42,6 +42,8 @@ public class Dmap {
 
     public Partition partition(long id) throws org.apache.thrift.TException;
 
+    public void replica(ReplicaCommand cmd) throws org.apache.thrift.TException;
+
   }
 
   public interface AsyncIface {
@@ -51,6 +53,8 @@ public class Dmap {
     public void range(RangeCommand cmd, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
     public void partition(long id, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
+
+    public void replica(ReplicaCommand cmd, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -153,6 +157,26 @@ public class Dmap {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "partition failed: unknown result");
+    }
+
+    public void replica(ReplicaCommand cmd) throws org.apache.thrift.TException
+    {
+      send_replica(cmd);
+      recv_replica();
+    }
+
+    public void send_replica(ReplicaCommand cmd) throws org.apache.thrift.TException
+    {
+      replica_args args = new replica_args();
+      args.setCmd(cmd);
+      sendBase("replica", args);
+    }
+
+    public void recv_replica() throws org.apache.thrift.TException
+    {
+      replica_result result = new replica_result();
+      receiveBase(result, "replica");
+      return;
     }
 
   }
@@ -269,6 +293,38 @@ public class Dmap {
       }
     }
 
+    public void replica(ReplicaCommand cmd, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      replica_call method_call = new replica_call(cmd, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class replica_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private ReplicaCommand cmd;
+      public replica_call(ReplicaCommand cmd, org.apache.thrift.async.AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.cmd = cmd;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("replica", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        replica_args args = new replica_args();
+        args.setCmd(cmd);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_replica();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -285,6 +341,7 @@ public class Dmap {
       processMap.put("execute", new execute());
       processMap.put("range", new range());
       processMap.put("partition", new partition());
+      processMap.put("replica", new replica());
       return processMap;
     }
 
@@ -360,6 +417,26 @@ public class Dmap {
       }
     }
 
+    public static class replica<I extends Iface> extends org.apache.thrift.ProcessFunction<I, replica_args> {
+      public replica() {
+        super("replica");
+      }
+
+      public replica_args getEmptyArgsInstance() {
+        return new replica_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public replica_result getResult(I iface, replica_args args) throws org.apache.thrift.TException {
+        replica_result result = new replica_result();
+        iface.replica(args.cmd);
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends org.apache.thrift.TBaseAsyncProcessor<I> {
@@ -376,6 +453,7 @@ public class Dmap {
       processMap.put("execute", new execute());
       processMap.put("range", new range());
       processMap.put("partition", new partition());
+      processMap.put("replica", new replica());
       return processMap;
     }
 
@@ -551,6 +629,56 @@ public class Dmap {
 
       public void start(I iface, partition_args args, org.apache.thrift.async.AsyncMethodCallback<Partition> resultHandler) throws TException {
         iface.partition(args.id,resultHandler);
+      }
+    }
+
+    public static class replica<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, replica_args, Void> {
+      public replica() {
+        super("replica");
+      }
+
+      public replica_args getEmptyArgsInstance() {
+        return new replica_args();
+      }
+
+      public AsyncMethodCallback<Void> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Void>() { 
+          public void onComplete(Void o) {
+            replica_result result = new replica_result();
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            replica_result result = new replica_result();
+            {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, replica_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
+        iface.replica(args.cmd,resultHandler);
       }
     }
 
@@ -3106,6 +3234,611 @@ public class Dmap {
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }
+      }
+    }
+
+  }
+
+  public static class replica_args implements org.apache.thrift.TBase<replica_args, replica_args._Fields>, java.io.Serializable, Cloneable, Comparable<replica_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("replica_args");
+
+    private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new replica_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new replica_argsTupleSchemeFactory());
+    }
+
+    public ReplicaCommand cmd; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      CMD((short)1, "cmd");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // CMD
+            return CMD;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.CMD, new org.apache.thrift.meta_data.FieldMetaData("cmd", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, ReplicaCommand.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(replica_args.class, metaDataMap);
+    }
+
+    public replica_args() {
+    }
+
+    public replica_args(
+      ReplicaCommand cmd)
+    {
+      this();
+      this.cmd = cmd;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public replica_args(replica_args other) {
+      if (other.isSetCmd()) {
+        this.cmd = new ReplicaCommand(other.cmd);
+      }
+    }
+
+    public replica_args deepCopy() {
+      return new replica_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.cmd = null;
+    }
+
+    public ReplicaCommand getCmd() {
+      return this.cmd;
+    }
+
+    public replica_args setCmd(ReplicaCommand cmd) {
+      this.cmd = cmd;
+      return this;
+    }
+
+    public void unsetCmd() {
+      this.cmd = null;
+    }
+
+    /** Returns true if field cmd is set (has been assigned a value) and false otherwise */
+    public boolean isSetCmd() {
+      return this.cmd != null;
+    }
+
+    public void setCmdIsSet(boolean value) {
+      if (!value) {
+        this.cmd = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case CMD:
+        if (value == null) {
+          unsetCmd();
+        } else {
+          setCmd((ReplicaCommand)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case CMD:
+        return getCmd();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case CMD:
+        return isSetCmd();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof replica_args)
+        return this.equals((replica_args)that);
+      return false;
+    }
+
+    public boolean equals(replica_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_cmd = true && this.isSetCmd();
+      boolean that_present_cmd = true && that.isSetCmd();
+      if (this_present_cmd || that_present_cmd) {
+        if (!(this_present_cmd && that_present_cmd))
+          return false;
+        if (!this.cmd.equals(that.cmd))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(replica_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetCmd()).compareTo(other.isSetCmd());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCmd()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmd, other.cmd);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("replica_args(");
+      boolean first = true;
+
+      sb.append("cmd:");
+      if (this.cmd == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.cmd);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (cmd != null) {
+        cmd.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class replica_argsStandardSchemeFactory implements SchemeFactory {
+      public replica_argsStandardScheme getScheme() {
+        return new replica_argsStandardScheme();
+      }
+    }
+
+    private static class replica_argsStandardScheme extends StandardScheme<replica_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, replica_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // CMD
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.cmd = new ReplicaCommand();
+                struct.cmd.read(iprot);
+                struct.setCmdIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, replica_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.cmd != null) {
+          oprot.writeFieldBegin(CMD_FIELD_DESC);
+          struct.cmd.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class replica_argsTupleSchemeFactory implements SchemeFactory {
+      public replica_argsTupleScheme getScheme() {
+        return new replica_argsTupleScheme();
+      }
+    }
+
+    private static class replica_argsTupleScheme extends TupleScheme<replica_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, replica_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetCmd()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetCmd()) {
+          struct.cmd.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, replica_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.cmd = new ReplicaCommand();
+          struct.cmd.read(iprot);
+          struct.setCmdIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class replica_result implements org.apache.thrift.TBase<replica_result, replica_result._Fields>, java.io.Serializable, Cloneable, Comparable<replica_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("replica_result");
+
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new replica_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new replica_resultTupleSchemeFactory());
+    }
+
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+;
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(replica_result.class, metaDataMap);
+    }
+
+    public replica_result() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public replica_result(replica_result other) {
+    }
+
+    public replica_result deepCopy() {
+      return new replica_result(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof replica_result)
+        return this.equals((replica_result)that);
+      return false;
+    }
+
+    public boolean equals(replica_result that) {
+      if (that == null)
+        return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(replica_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("replica_result(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class replica_resultStandardSchemeFactory implements SchemeFactory {
+      public replica_resultStandardScheme getScheme() {
+        return new replica_resultStandardScheme();
+      }
+    }
+
+    private static class replica_resultStandardScheme extends StandardScheme<replica_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, replica_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, replica_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class replica_resultTupleSchemeFactory implements SchemeFactory {
+      public replica_resultTupleScheme getScheme() {
+        return new replica_resultTupleScheme();
+      }
+    }
+
+    private static class replica_resultTupleScheme extends TupleScheme<replica_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, replica_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, replica_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
       }
     }
 

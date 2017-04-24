@@ -45,7 +45,7 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
   }
 
   public long version; // required
-  public Map<Integer,Set<String>> partitions; // required
+  public Map<Integer,Set<Replica>> partitions; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -120,7 +120,7 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
         new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32), 
             new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
-                new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)))));
+                new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Replica.class)))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Partition.class, metaDataMap);
   }
@@ -130,7 +130,7 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
 
   public Partition(
     long version,
-    Map<Integer,Set<String>> partitions)
+    Map<Integer,Set<Replica>> partitions)
   {
     this();
     this.version = version;
@@ -145,15 +145,18 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
     __isset_bitfield = other.__isset_bitfield;
     this.version = other.version;
     if (other.isSetPartitions()) {
-      Map<Integer,Set<String>> __this__partitions = new HashMap<Integer,Set<String>>(other.partitions.size());
-      for (Map.Entry<Integer, Set<String>> other_element : other.partitions.entrySet()) {
+      Map<Integer,Set<Replica>> __this__partitions = new HashMap<Integer,Set<Replica>>(other.partitions.size());
+      for (Map.Entry<Integer, Set<Replica>> other_element : other.partitions.entrySet()) {
 
         Integer other_element_key = other_element.getKey();
-        Set<String> other_element_value = other_element.getValue();
+        Set<Replica> other_element_value = other_element.getValue();
 
         Integer __this__partitions_copy_key = other_element_key;
 
-        Set<String> __this__partitions_copy_value = new HashSet<String>(other_element_value);
+        Set<Replica> __this__partitions_copy_value = new HashSet<Replica>(other_element_value.size());
+        for (Replica other_element_value_element : other_element_value) {
+          __this__partitions_copy_value.add(new Replica(other_element_value_element));
+        }
 
         __this__partitions.put(__this__partitions_copy_key, __this__partitions_copy_value);
       }
@@ -199,18 +202,18 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
     return (this.partitions == null) ? 0 : this.partitions.size();
   }
 
-  public void putToPartitions(int key, Set<String> val) {
+  public void putToPartitions(int key, Set<Replica> val) {
     if (this.partitions == null) {
-      this.partitions = new HashMap<Integer,Set<String>>();
+      this.partitions = new HashMap<Integer,Set<Replica>>();
     }
     this.partitions.put(key, val);
   }
 
-  public Map<Integer,Set<String>> getPartitions() {
+  public Map<Integer,Set<Replica>> getPartitions() {
     return this.partitions;
   }
 
-  public Partition setPartitions(Map<Integer,Set<String>> partitions) {
+  public Partition setPartitions(Map<Integer,Set<Replica>> partitions) {
     this.partitions = partitions;
     return this;
   }
@@ -244,7 +247,7 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
       if (value == null) {
         unsetPartitions();
       } else {
-        setPartitions((Map<Integer,Set<String>>)value);
+        setPartitions((Map<Integer,Set<Replica>>)value);
       }
       break;
 
@@ -433,19 +436,20 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
                 org.apache.thrift.protocol.TMap _map0 = iprot.readMapBegin();
-                struct.partitions = new HashMap<Integer,Set<String>>(2*_map0.size);
+                struct.partitions = new HashMap<Integer,Set<Replica>>(2*_map0.size);
                 for (int _i1 = 0; _i1 < _map0.size; ++_i1)
                 {
                   int _key2;
-                  Set<String> _val3;
+                  Set<Replica> _val3;
                   _key2 = iprot.readI32();
                   {
                     org.apache.thrift.protocol.TSet _set4 = iprot.readSetBegin();
-                    _val3 = new HashSet<String>(2*_set4.size);
+                    _val3 = new HashSet<Replica>(2*_set4.size);
                     for (int _i5 = 0; _i5 < _set4.size; ++_i5)
                     {
-                      String _elem6;
-                      _elem6 = iprot.readString();
+                      Replica _elem6;
+                      _elem6 = new Replica();
+                      _elem6.read(iprot);
                       _val3.add(_elem6);
                     }
                     iprot.readSetEnd();
@@ -481,14 +485,14 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
         oprot.writeFieldBegin(PARTITIONS_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.SET, struct.partitions.size()));
-          for (Map.Entry<Integer, Set<String>> _iter7 : struct.partitions.entrySet())
+          for (Map.Entry<Integer, Set<Replica>> _iter7 : struct.partitions.entrySet())
           {
             oprot.writeI32(_iter7.getKey());
             {
-              oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, _iter7.getValue().size()));
-              for (String _iter8 : _iter7.getValue())
+              oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, _iter7.getValue().size()));
+              for (Replica _iter8 : _iter7.getValue())
               {
-                oprot.writeString(_iter8);
+                _iter8.write(oprot);
               }
               oprot.writeSetEnd();
             }
@@ -528,14 +532,14 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
       if (struct.isSetPartitions()) {
         {
           oprot.writeI32(struct.partitions.size());
-          for (Map.Entry<Integer, Set<String>> _iter9 : struct.partitions.entrySet())
+          for (Map.Entry<Integer, Set<Replica>> _iter9 : struct.partitions.entrySet())
           {
             oprot.writeI32(_iter9.getKey());
             {
               oprot.writeI32(_iter9.getValue().size());
-              for (String _iter10 : _iter9.getValue())
+              for (Replica _iter10 : _iter9.getValue())
               {
-                oprot.writeString(_iter10);
+                _iter10.write(oprot);
               }
             }
           }
@@ -554,19 +558,20 @@ public class Partition implements org.apache.thrift.TBase<Partition, Partition._
       if (incoming.get(1)) {
         {
           org.apache.thrift.protocol.TMap _map11 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.SET, iprot.readI32());
-          struct.partitions = new HashMap<Integer,Set<String>>(2*_map11.size);
+          struct.partitions = new HashMap<Integer,Set<Replica>>(2*_map11.size);
           for (int _i12 = 0; _i12 < _map11.size; ++_i12)
           {
             int _key13;
-            Set<String> _val14;
+            Set<Replica> _val14;
             _key13 = iprot.readI32();
             {
-              org.apache.thrift.protocol.TSet _set15 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-              _val14 = new HashSet<String>(2*_set15.size);
+              org.apache.thrift.protocol.TSet _set15 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+              _val14 = new HashSet<Replica>(2*_set15.size);
               for (int _i16 = 0; _i16 < _set15.size; ++_i16)
               {
-                String _elem17;
-                _elem17 = iprot.readString();
+                Replica _elem17;
+                _elem17 = new Replica();
+                _elem17.read(iprot);
                 _val14.add(_elem17);
               }
             }

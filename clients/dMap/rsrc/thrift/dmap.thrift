@@ -64,13 +64,27 @@ struct RangeResponse {
   5: i32 partition,
 }
 
+struct Replica {
+  1: string name,
+  2: i32 token,
+  3: i32 ring,
+  4: string address
+}
+
 struct Partition {
   1: i64 version,
-  2: map<i32,set<string>> partitions
+  2: map<i32,set<Replica>> partitions
+}
+
+struct ReplicaCommand {
+  1: i64 id,
+  2: CommandType type,
+  3: Replica replica,
 }
 
 service Dmap {
 	Response execute(1: Command cmd) throws (1: MapError e, 2: WrongPartition p),
 	RangeResponse range(1: RangeCommand cmd) throws (1: MapError e, 2: WrongPartition p),
-	Partition partition(1: i64 id)
+	Partition partition(1: i64 id),
+	void replica(1: ReplicaCommand cmd)
 }
