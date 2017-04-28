@@ -18,8 +18,14 @@ package ch.usi.da.paxos.ring;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -27,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.Util;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.PaxosNode;
@@ -73,7 +80,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 	private long v_subscribe = 0;
 	
 	private boolean deliver_skip_messages = false;
-
+	
+	private final Map<Integer,Map<Long, Long>> instance_values = new HashMap<Integer,Map<Long, Long>>();
+	
 	/**
 	 * @param initial_ring the RingDescription of the initial ring
 	 */
@@ -100,6 +109,16 @@ public class ElasticLearnerRole extends Role implements Learner {
 		int initial_ring = rings.get(0);
 		startLearner(initial_ring);
 		int rr_count = 0;
+		
+		try {
+			DatagramSocket signalReceiver = new DatagramSocket(ringmap.get(deliverRing).getRingManager().getNodeAddress());
+			Thread t = new Thread(new SignalReceiver(signalReceiver));
+			t.setName("SignalReceiver");
+			t.start();
+		} catch (SocketException e) {
+			logger.error(e);
+		}
+		
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
@@ -109,6 +128,11 @@ public class ElasticLearnerRole extends Role implements Learner {
 					//logger.debug("ElasticLearnerRole " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
 				}else{
 					Decision d = learner[deliverRing].getDecisions().take();
+					if(v_count[deliverRing] == 0 && d.getInstance() > 1){
+						v_count[deliverRing] = recoverVCount(d.getInstance(),deliverRing);
+					}
+					instance_values.get(deliverRing).put(d.getInstance(),v_count[deliverRing]);
+
 					if(d.getValue() != null && d.getValue().isControl()){
 						v_count[deliverRing]++;
 						// control message
@@ -151,9 +175,14 @@ public class ElasticLearnerRole extends Role implements Learner {
 									}
 									startLearner(newRing);
 								}
-								if(learner[ring] != null && replication_group == group){
+								if(rings.contains(ring)){
+									logger.warn("ElatisLearner received subscribed for already registered ring!");
+								}else if(learner[ring] != null && replication_group == group){
 									while(true){
 										Decision d2 = learner[newRing].getDecisions().take();
+										if(v_count[newRing] == 0 && d2.getInstance() > 1){
+											v_count[newRing] = recoverVCount(d2.getInstance(),newRing);
+										}
 										if(d2.getValue() != null && d2.getValue().isSkip()){
 											try {
 												long skip = Long.parseLong(new String(d2.getValue().getValue()));
@@ -247,6 +276,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 					}else{
 						rr_count++;
 						v_count[deliverRing]++;
+						logger.error(v_count[deliverRing]);
 						values.add(d); // deliver an actual proposed value
 					}
 				}
@@ -271,6 +301,13 @@ public class ElasticLearnerRole extends Role implements Learner {
 		t.setName(PaxosRole.Learner + "-" + ringID);
 		t.start();
 		skip_count[ringID] = 0;
+		Map<Long, Long> map = new LinkedHashMap<Long,Long>(10000,0.75F,false){
+		private static final long serialVersionUID = -2704400128020326063L;
+			protected boolean removeEldestEntry(Map.Entry<Long, Long> eldest) {  
+				return size() > 15000; // hold only 15'000 values in memory !                                 
+			}
+		};
+		instance_values.put(ringID,map);
 	}
 	
 	private int getRingSuccessor(int id){
@@ -309,6 +346,58 @@ public class ElasticLearnerRole extends Role implements Learner {
 
 	public void setSafeInstance(Integer ring, Long instance) {
 		learner[ring].setSafeInstance(ring,instance);
+	}
+
+	private long recoverVCount(long instance, int ringID){
+		// ask an existing ElatisLearner for instance (get v_count before this instance)
+		logger.warn("ElasticLearner must recover the value count for ring " + ringID + "!");
+		List<Integer> learners = ringmap.get(ringID).getRingManager().getLearners();
+		try {
+			InetSocketAddress ip = ringmap.get(ringID).getRingManager().getNodeAddress(learners.get(0)); //TODO. not itself
+			byte[] buffer = new String(instance + "," + ringID).getBytes();
+			DatagramPacket packet = new DatagramPacket(buffer,0,buffer.length,ip);
+			DatagramSocket signalSender = new DatagramSocket();
+			signalSender.send(packet);
+			buffer = new byte[65535];
+			packet = new DatagramPacket(buffer,buffer.length);
+			signalSender.receive(packet);
+			long vc = Util.byteToLong(packet.getData());
+			signalSender.close();
+			logger.info("Received value count for instance " + instance + " " + vc);
+			return vc;
+		} catch (IOException e) {
+			logger.error(e);
+		}
+		return 0;
+	}
+	
+	class SignalReceiver implements Runnable {
+
+		private final DatagramSocket socket;
+						
+		public SignalReceiver(DatagramSocket socket) throws SocketException{
+			this.socket = socket;
+		}
+
+		@Override
+		public void run() {
+			while(!socket.isClosed()){
+				try {
+					byte[] buffer = new byte[65535];
+					DatagramPacket packet = new DatagramPacket(buffer,buffer.length);
+					socket.receive(packet);
+					String[] s = new String(packet.getData()).trim().split(",");
+					long instance = Long.parseLong(s[0]);//Util.byteToLong(packet.getData());
+					int ringID = Integer.parseInt(s[1]);
+					long vc = instance_values.get(ringID).get(instance);
+					buffer = Util.longToByte(vc);
+					packet = new DatagramPacket(buffer,0,buffer.length,packet.getAddress(),packet.getPort());
+					socket.send(packet);
+				} catch (IOException e) {
+					logger.error(e);
+				}
+			}
+		}
 	}
 
 }
