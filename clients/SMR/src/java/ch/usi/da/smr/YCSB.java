@@ -33,6 +33,7 @@ import ch.usi.da.smr.transport.Response;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
+import com.yahoo.ycsb.Status;
 import com.yahoo.ycsb.StringByteIterator;
 import com.yahoo.ycsb.workloads.CoreWorkload;
 
@@ -58,10 +59,6 @@ public class YCSB extends DB {
 	private Client client;
 	
 	private AtomicInteger cmd_id = new AtomicInteger(0);
-	
-    public static final int OK = 0;
-    public static final int ERROR = -1;
-    public static final int NOT_FOUND = -2;
     
     private boolean writeallfields;
 
@@ -81,37 +78,37 @@ public class YCSB extends DB {
 	}
 
 	@Override
-	public int read(String table, String key, Set<String> fields, HashMap<String, ByteIterator> result) {
+	public Status read(String table, String key, Set<String> fields, HashMap<String, ByteIterator> result) {
     	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GET,key,new byte[0]);
 		try {
 			Response r = client.send(cmd);
 			if(r != null){
 				List<Command> lc = r.getResponse(10000);
 				if(lc.size() == 0){
-					return NOT_FOUND;
+					return Status.NOT_FOUND;
 				}else if(lc.get(0).getType() == CommandType.RESPONSE){
 					if(lc.get(0).getValue() != null){
 						decode(fields, new String(lc.get(0).getValue()), result); 
-						return OK;
+						return Status.OK;
 					}else{
-						return NOT_FOUND;
+						return Status.NOT_FOUND;
 					}
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return ERROR;
+		return Status.ERROR;
 	}
 
 	@Override
-	public int scan(String table, String startkey, int recordcount,	Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+	public Status scan(String table, String startkey, int recordcount,	Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
     	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.GETRANGE,startkey,("").getBytes(),recordcount);
 		try {
 			Response r = client.send(cmd);
 			if(r != null){
 				List<Command> lc = r.getResponse(10000);
-				if(lc.isEmpty()){ return ERROR; }
+				if(lc.isEmpty()){ return Status.ERROR; }
     			for(Command c : lc){
 	    			if(c.getType() == CommandType.RESPONSE){
 	    				HashMap<String, ByteIterator> tuple = new HashMap<String, ByteIterator>();
@@ -122,16 +119,16 @@ public class YCSB extends DB {
 	    				}
 	    			}			    				
     			}
-				return OK;
+				return Status.OK;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return ERROR;
+		return Status.ERROR;
 	}
 
 	@Override
-	public int update(String table, String key, HashMap<String, ByteIterator> values) {
+	public Status update(String table, String key, HashMap<String, ByteIterator> values) {
         if(!writeallfields) {
             HashMap<String, ByteIterator> oldval = new HashMap<String, ByteIterator>();
             read(table, key, null, oldval);
@@ -144,39 +141,39 @@ public class YCSB extends DB {
 	}
 
 	@Override
-	public int insert(String table, String key, HashMap<String, ByteIterator> values) {
+	public Status insert(String table, String key, HashMap<String, ByteIterator> values) {
     	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.PUT,key,encode(values).array());
 		try {
 			Response r = client.send(cmd);
 			if(r != null){
 				List<Command> lc = r.getResponse(10000);
-				if(lc.isEmpty()){ return ERROR; }
+				if(lc.isEmpty()){ return Status.ERROR; }
 				if(lc.get(0).getType() == CommandType.RESPONSE){
-					return OK;
+					return Status.OK;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return ERROR;
+		return Status.ERROR;
 	}
 
 	@Override
-	public int delete(String table, String key) {
+	public Status delete(String table, String key) {
     	Command cmd = new Command(cmd_id.incrementAndGet(),CommandType.DELETE,key,new byte[0]);
 		try {
 			Response r = client.send(cmd);
 			if(r != null){
 				List<Command> lc = r.getResponse(10000);
-				if(lc.isEmpty()){ return ERROR; }
+				if(lc.isEmpty()){ return Status.ERROR; }
 				if(lc.get(0).getType() == CommandType.RESPONSE){
-					return OK;
+					return Status.OK;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return ERROR;
+		return Status.ERROR;
 	}
 
 	public Client getClient(){
