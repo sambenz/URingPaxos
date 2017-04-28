@@ -159,9 +159,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 											startLearner(newRing);
 						    			}
 									};
-									start.start();									
+									start.start();
+									logger.info("ElasticLearner prepare end in " + (System.nanoTime()-time));									
 								}
-								logger.info("ElasticLearner prepare end in " + (System.nanoTime()-time));
 							}else if(type == ControlType.Subscribe){
 								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
 								if(learner[ring] == null && replication_group == group){
@@ -351,21 +351,25 @@ public class ElasticLearnerRole extends Role implements Learner {
 		// ask an existing ElatisLearner for instance (get v_count before this instance)
 		logger.warn("ElasticLearner must recover the value count for ring " + ringID + "!");
 		List<Integer> learners = ringmap.get(ringID).getRingManager().getLearners();
-		try {
-			InetSocketAddress ip = ringmap.get(ringID).getRingManager().getNodeAddress(learners.get(0)); //TODO. not itself
-			byte[] buffer = new String(instance + "," + ringID).getBytes();
-			DatagramPacket packet = new DatagramPacket(buffer,0,buffer.length,ip);
-			DatagramSocket signalSender = new DatagramSocket();
-			signalSender.send(packet);
-			buffer = new byte[65535];
-			packet = new DatagramPacket(buffer,buffer.length);
-			signalSender.receive(packet);
-			long vc = Util.byteToLong(packet.getData());
-			signalSender.close();
-			logger.info("Received value count for instance " + instance + " " + vc);
-			return vc;
-		} catch (IOException e) {
-			logger.error(e);
+		for(Integer learner : learners){
+			if(learner != node.getNodeID()){
+				try {
+					InetSocketAddress ip = ringmap.get(ringID).getRingManager().getNodeAddress(learner);
+					byte[] buffer = new String(instance + "," + ringID).getBytes();
+					DatagramPacket packet = new DatagramPacket(buffer,0,buffer.length,ip);
+					DatagramSocket signalSender = new DatagramSocket();
+					signalSender.send(packet);
+					buffer = new byte[65535];
+					packet = new DatagramPacket(buffer,buffer.length);
+					signalSender.receive(packet);
+					long vc = Util.byteToLong(packet.getData());
+					signalSender.close();
+					logger.info("Received value count for instance " + instance + " " + vc);
+					return vc;
+				} catch (IOException e) {
+					logger.error(e);
+				}
+			}
 		}
 		return 0;
 	}
