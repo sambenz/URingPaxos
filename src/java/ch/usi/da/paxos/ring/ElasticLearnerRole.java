@@ -276,7 +276,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 					}else{
 						rr_count++;
 						v_count[deliverRing]++;
-						logger.error(v_count[deliverRing]);
 						values.add(d); // deliver an actual proposed value
 					}
 				}
