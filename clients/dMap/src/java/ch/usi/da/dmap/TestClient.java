@@ -96,7 +96,68 @@ public class TestClient {
 			logger.info(send_count);
 		}
 	}
-	
+
+	public void startIterator(final int concurrent_iterator) throws InterruptedException {
+		latency.clear();
+		final CountDownLatch await = new CountDownLatch(concurrent_iterator);
+		
+		final Thread stats = new Thread("ClientStatsWriter"){		    			
+			private long last_time = System.nanoTime();
+			private long last_sent_count = 0;
+			private long last_sent_time = 0;
+			@Override
+			public void run() {
+				while(await.getCount() > 0){
+					try {
+						long time = System.nanoTime();
+						long sent_count = stat_command.get() - last_sent_count;
+						long sent_time = stat_latency.get() - last_sent_time;
+						float t = (float)(time-last_time)/(1000*1000*1000);
+						float count = sent_count/t;
+						logger.info(String.format("Client sent %.1f command/s avg. latency %.0f ns",count,sent_time/count));
+						last_sent_count += sent_count;
+						last_sent_time += sent_time;
+						last_time = time;
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;				
+					}
+				}
+			}
+		};
+		stats.start();
+		
+		for(int i=0;i<concurrent_iterator;i++){
+			Thread t = new Thread("Command Sender " + i){
+				@Override
+				public void run(){
+					SortedMap<Integer, String> dmap = new DistributedOrderedMap<Integer, String>(mapID,zookeeper);
+					long time = System.nanoTime();
+					for(Entry<Integer, String> e : dmap.entrySet()){
+						if(logger.isDebugEnabled()){
+							logger.debug(e);
+						}
+						long ntime = System.nanoTime();
+						long lat = ntime - time;
+						time = ntime;
+						if(stats_logger.isDebugEnabled()){
+							latency.add(lat);
+						}
+						stat_latency.addAndGet(lat);
+						stat_command.incrementAndGet();							
+					}
+					await.countDown();
+				}
+			};
+			t.start();
+		}
+		
+		await.await(); // wait until finished
+		Thread.sleep(5000);
+		printHistogram();
+	}
+
 	public void start(final int concurrent_cmd, final int send_per_thread,final int key_count) throws InterruptedException {
 		latency.clear();
 		final CountDownLatch await = new CountDownLatch(concurrent_cmd);
@@ -184,8 +245,8 @@ public class TestClient {
 			}
 		}
 		stats_logger.info("Start performance testing with " + concurrent_cmd + " threads.");
+		//t.startIterator(concurrent_cmd);
 		t.start(concurrent_cmd,send_per_thread,key_count);
-		
 	}
 
 	private void printHistogram(){
