@@ -110,15 +110,6 @@ public class ElasticLearnerRole extends Role implements Learner {
 		startLearner(initial_ring);
 		int rr_count = 0;
 		
-		try {
-			DatagramSocket signalReceiver = new DatagramSocket(ringmap.get(deliverRing).getRingManager().getNodeAddress());
-			Thread t = new Thread(new SignalReceiver(signalReceiver));
-			t.setName("SignalReceiver");
-			t.start();
-		} catch (SocketException e) {
-			logger.error(e);
-		}
-		
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
@@ -160,7 +151,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 						    			}
 									};
 									start.start();
-									logger.info("ElasticLearner prepare end in " + (System.nanoTime()-time));									
+									logger.debug("ElasticLearner prepare end in " + (System.nanoTime()-time));									
 								}
 							}else if(type == ControlType.Subscribe){
 								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
@@ -307,6 +298,14 @@ public class ElasticLearnerRole extends Role implements Learner {
 			}
 		};
 		instance_values.put(ringID,map);
+		try {
+			DatagramSocket signalReceiver = new DatagramSocket(ringmap.get(ringID).getRingManager().getNodeAddress());
+			Thread t2 = new Thread(new SignalReceiver(signalReceiver));
+			t2.setName("SignalReceiver-" + ringID);
+			t2.start();
+		} catch (SocketException e) {
+			logger.error(e);
+		}
 	}
 	
 	private int getRingSuccessor(int id){

@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,6 +158,9 @@ public class DMapReplica<K,V> implements Watcher {
 
 	private Map<Long,FutureResponse> responses = new ConcurrentHashMap<Long,FutureResponse>();
 	
+	private boolean ignore_cmd = false;
+	private long ignore_cmd_instance = 0;
+	
 	public DMapReplica(int default_ring,Node node,ZooKeeper zoo,Comparator<? super K> comparator) {
 		this.default_ring = default_ring;
 		this.node = node;
@@ -207,10 +211,11 @@ public class DMapReplica<K,V> implements Watcher {
 		return responses;
 	}
 	
-	public void registerPartition(String nodeName,int ring_id,InetSocketAddress addr,int token){
-		// register (propose) this partition
+	public void registerPartition(String nodeName,int ring_id,InetSocketAddress addr,int token,RecoveryClient<K,V> recovery){
 		this.token = token;
 		partition_ring = ring_id;
+		
+		// start signal sender /receiver
 		String thrift_address = addr.getHostString() + ";" + addr.getPort();
 		try {
 			signalSender = new DatagramSocket();
@@ -221,6 +226,53 @@ public class DMapReplica<K,V> implements Watcher {
 		} catch (SocketException e) {
 			logger.error(e);
 		}
+		
+		// subscribing with recovery from trim point requires prepare msg!
+		if(recovery != null){
+			if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
+				Control c = new Control(1,ControlType.Prepare,node.getGroupID(),ring_id);
+				node.getProposer(default_ring).control(c);
+				node.getProposer(ring_id).control(c);
+			}
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+		}
+		
+		// subscribe learner to partition (ring)
+		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
+			Control c = new Control(1,ControlType.Subscribe,node.getGroupID(),ring_id);
+			node.getProposer(default_ring).control(c);
+			node.getProposer(ring_id).control(c);
+		}
+
+		// recover state
+		if(recovery != null){
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+			}
+			// recover partitions
+			ignore_cmd = true;
+			partition_version = recovery.getPartitionVersion();
+			partitions.putAll(recovery.getPartitions());
+			logger.info("Recovered partition map: " + partitions);
+			// create snapshot
+			long snapshotID = recovery.snapshot();
+			// install data
+			Iterator<Entry<K,V>> entries = recovery.iterator(token, snapshotID);
+			while(entries.hasNext()){
+				Entry<K,V> e = entries.next();
+				db.put(e.getKey(),e.getValue());
+			}
+			logger.info("Recovered " + db.size() + " DB entries");
+			// remove snapshot
+			recovery.removeSnapshot(snapshotID);
+			ignore_cmd_instance = snapshotID;
+		}
+		
+		// register partition
 		Replica replica = new Replica();
 		replica.setName(nodeName);
 		replica.setRing(ring_id);
@@ -235,14 +287,21 @@ public class DMapReplica<K,V> implements Watcher {
 		} catch (TException e) {
 			logger.error(this + " register replica " + replica,e);
 		}
-		// subscribe learner to partition
-		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
-			Control c = new Control(node.getNodeID(),ControlType.Subscribe,node.getGroupID(),ring_id);
-			node.getProposer(default_ring).control(c);
-			node.getProposer(ring_id).control(c);
-		}
 	}
-
+	
+	public void splitPartition(){
+		//TODO:
+		// recover old partition (token left of new one)
+		// register new partition (token)
+		// unsubscribe old partition ring
+		// (release (delete) data in old partition) -> otherwise they are included in the iterators
+	}
+	
+	public void joinPartition(){
+		//TODO:
+		
+	}
+	
 	@Override
 	public void process(WatchedEvent event) {
 		try {
@@ -265,6 +324,13 @@ public class DMapReplica<K,V> implements Watcher {
 	}
 	
 	public synchronized void receive(Decision d) {
+		if(ignore_cmd){
+			if(d.getRing() == default_ring && d.getInstance() == ignore_cmd_instance){
+				ignore_cmd = false; // recovered
+			}
+			return;
+		}
+		
 		long time = System.nanoTime();
 		if(d.getValue() != null){
 			long instance = d.getInstance();
@@ -583,14 +649,19 @@ public class DMapReplica<K,V> implements Watcher {
 				roles = args[5];
 				token = Integer.parseInt(args[6]);
 			}else{
-				System.err.println("Plese use \"DMapReplica\" \"map ID\" \"node ID\" \"group ID\" \"default ring\" \"partition ring\" \"roles\" \"token\" \"[zookeeper]\"");
+				System.err.println("Plese use \"DMapReplica\" \"map ID\" \"node ID\" \"group ID\" \"default ring\" \"partition ring\" \"roles\" \"token\" \"[zookeeper]\" \"[recovery]\"");
 				System.exit(1);
 			}
 			String zoo_host = "127.0.0.1:2181";
 			if (args.length > 7) {
 				zoo_host = args[7];
 			}
-						
+			boolean recovery = false;
+			if (args.length > 8) {
+				if(args[8].contains("1") || args[8].contains("true")){
+					recovery = true;
+				}
+			}			
 			//register this node at zookeeper
 			final Random rand = new Random();
 			final int port = 5000 + rand.nextInt(1000); // assign port between 5000-6000
@@ -613,7 +684,11 @@ public class DMapReplica<K,V> implements Watcher {
 			zoo.register(replica);
 			zoo.getChildren("/dmap/" + mapID, true);
 			Thread.sleep(5000);
-			replica.registerPartition(nodeName,partition_ring,addr,token);
+			RecoveryClient<Object,Object> rclient = null;
+			if(recovery){
+				rclient = new RecoveryClient<Object,Object>(mapID,zoo_host);
+			}
+			replica.registerPartition(nodeName,partition_ring,addr,token,rclient);
 				
 			//start thrift server (proposer)
 			@SuppressWarnings({ "rawtypes", "unchecked" })
