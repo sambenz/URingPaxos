@@ -133,8 +133,9 @@ public class ElasticLearnerRole extends Role implements Learner {
 							int group = control.getGroupID();
 							int ring = control.getRingID();
 							if(type == ControlType.Prepare){
-								long time = System.nanoTime();
-								logger.info("ElasticLearner received prepare: " + ring + " for group " + group);
+								if(replication_group == group){
+									logger.info("ElasticLearner received prepare: " + ring + " for group " + group);
+								}
 								if(learner[ring] == null && replication_group == group){
 									newRing = ring;
 									List<PaxosRole> rl = new ArrayList<PaxosRole>();
@@ -151,10 +152,11 @@ public class ElasticLearnerRole extends Role implements Learner {
 						    			}
 									};
 									start.start();
-									logger.debug("ElasticLearner prepare end in " + (System.nanoTime()-time));									
 								}
 							}else if(type == ControlType.Subscribe){
-								logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
+								if(replication_group == group){
+									logger.info("ElasticLearner received subscribe: " + ring + " for group " + group);
+								}
 								if(learner[ring] == null && replication_group == group){
 									newRing = ring;
 									List<PaxosRole> rl = new ArrayList<PaxosRole>();
@@ -166,7 +168,7 @@ public class ElasticLearnerRole extends Role implements Learner {
 									}
 									startLearner(newRing);
 								}
-								if(rings.contains(ring)){
+								if(replication_group == group && (rings.contains(ring) || v_subscribe != 0)){
 									logger.warn("ElatisLearner received subscribed for already registered ring!");
 								}else if(learner[ring] != null && replication_group == group){
 									while(true){
@@ -220,13 +222,20 @@ public class ElasticLearnerRole extends Role implements Learner {
 											}
 										}
 									}
-									deliverRing = getRingSuccessor(deliverRing);
 									logger.info("ElasticLearner subscribe to ring " + newRing + " in group " + group + " at position " + v_subscribe);
+									if(logger.isDebugEnabled()){
+										for(Integer r : rings){
+											logger.debug("ElasticLearner subsciption v_count for " + r + " -> " + v_count[r]);
+										}
+									}
+									deliverRing = getRingSuccessor(deliverRing);
 								}else{
 									rr_count++; //skip it in queue
 								}
 							}else if(type == ControlType.Unsubscribe){
-								logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
+								if(replication_group == group){
+									logger.info("ElasticLearner received unsubscribe for ring " + ring + " in group " + group);
+								}
 								if(learner[ring] != null && replication_group == group){
 									rings.remove(new Integer(ring)); // remove entry not index position
 									final int close = ring;
@@ -317,6 +326,8 @@ public class ElasticLearnerRole extends Role implements Learner {
 		}
 		if(add){
 			rings.add(newRing);
+			v_subscribe = 0;
+			logger.debug("ElasticLearner added new ring " + newRing + " to rings " + rings);
 			return minRing(rings);
 		}
 		int pos = rings.indexOf(new Integer(id));
