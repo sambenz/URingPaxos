@@ -270,13 +270,13 @@ public class RecoveryClient<K,V> {
 			return r.getCount();
 		} catch (MapError e) {
 			logger.error(this + " error!",e);
-			partitionSize(token,snapshotID); // must exist eventually
+			return partitionSize(token,snapshotID); // must exist eventually
 		} catch (WrongPartition p){
 			readPartitions(getClient());
-			partitionSize(token,snapshotID);
+			return partitionSize(token,snapshotID);
 		} catch (TTransportException e){
 			removeClient(client);
-			partitionSize(token,snapshotID);
+			return partitionSize(token,snapshotID);
 		} catch (TException e) {
 			logger.error(this + " error!",e);
 		}
