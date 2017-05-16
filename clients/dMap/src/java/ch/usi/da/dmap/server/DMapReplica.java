@@ -289,12 +289,67 @@ public class DMapReplica<K,V> implements Watcher {
 		}
 	}
 	
-	public void splitPartition(){
-		//TODO:
-		// recover old partition (token left of new one)
-		// register new partition (token)
+	public void splitPartition(String nodeName,int new_ring,InetSocketAddress addr,int new_token){
+		// subscribe learner to partition (ring)
+		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
+			Control c = new Control(1,ControlType.Subscribe,node.getGroupID(),new_ring);
+			node.getProposer(default_ring).control(c);
+			node.getProposer(new_ring).control(c);
+		}
+
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e1) {
+		}
+
+		// remove old partition
+		String thrift_address = addr.getHostString() + ";" + addr.getPort();
+		Replica replica = new Replica();
+		replica.setName(nodeName);
+		replica.setRing(partition_ring);
+		replica.setToken(token);
+		replica.setAddress(thrift_address);
+		ReplicaCommand cmd = new ReplicaCommand();
+		cmd.setId(2L);
+		cmd.setType(CommandType.REMOVE);
+		cmd.setReplica(replica);
+		try {
+			replica(cmd);
+		} catch (TException e) {
+			logger.error(this + " register replica " + replica,e);
+		}
+
+		// register partition
+		replica = new Replica();
+		replica.setName(nodeName);
+		replica.setRing(new_ring);
+		replica.setToken(new_token);
+		replica.setAddress(thrift_address);
+		cmd = new ReplicaCommand();
+		cmd.setId(3L);
+		cmd.setType(CommandType.PUT);
+		cmd.setReplica(replica);
+		try {
+			replica(cmd);
+		} catch (TException e) {
+			logger.error(this + " register replica " + replica,e);
+		}
+
 		// unsubscribe old partition ring
-		// (release (delete) data in old partition) -> otherwise they are included in the iterators
+		if(node.getLearner() instanceof ElasticLearnerRole && partition_ring != default_ring){
+			Control c = new Control(2,ControlType.Unsubscribe,node.getGroupID(),partition_ring);
+			node.getProposer(default_ring).control(c);
+			node.getProposer(new_ring).control(c);
+		}
+
+		//TODO: (release (delete) data in old partition)
+		/* garbageCollect data if partition map (size) changes
+		 * loop over DB; hash not in range add to delete_set
+		 * delete all in delete_set
+		 */
+
+		token = new_token;
+		partition_ring = new_ring;
 	}
 	
 	public void joinPartition(){
@@ -711,6 +766,13 @@ public class DMapReplica<K,V> implements Watcher {
 			receiver.setName("ABReceiver");
 			receiver.start();
 			
+			/*if(nodeID == 4 || nodeID == 5 || nodeID == 6){
+				Thread.sleep(45000);
+				int new_ring = 2;
+				int new_token = 20000;
+				replica.splitPartition(nodeName,new_ring,addr,new_token);
+			}*/
+
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			in.readLine();
 			node.stop();
