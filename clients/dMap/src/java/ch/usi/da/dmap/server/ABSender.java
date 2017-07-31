@@ -72,6 +72,8 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 			break;
 		case GET:
 		case PUT:
+		case PUTIFABSENT:
+		case REPLACE:
 		case REMOVE:
 			r = new FutureResponse();
 			break;
@@ -145,6 +147,8 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 				break;
 			case GET:
 			case PUT:
+			case PUTIFABSENT:
+			case REPLACE:
 			case REMOVE:
 			case CLEAR:
 				response = (Response)ol.get(0);
