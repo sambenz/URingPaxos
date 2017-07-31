@@ -43,6 +43,7 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
   private static final org.apache.thrift.protocol.TField TOID_FIELD_DESC = new org.apache.thrift.protocol.TField("toid", org.apache.thrift.protocol.TType.I32, (short)6);
   private static final org.apache.thrift.protocol.TField SNAPSHOT_FIELD_DESC = new org.apache.thrift.protocol.TField("snapshot", org.apache.thrift.protocol.TType.I64, (short)7);
   private static final org.apache.thrift.protocol.TField PARTITION_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("partition_version", org.apache.thrift.protocol.TType.I64, (short)8);
+  private static final org.apache.thrift.protocol.TField MAP_NUMBER_FIELD_DESC = new org.apache.thrift.protocol.TField("map_number", org.apache.thrift.protocol.TType.I32, (short)9);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -62,6 +63,7 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
   public int toid; // optional
   public long snapshot; // optional
   public long partition_version; // required
+  public int map_number; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -76,7 +78,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     FROMID((short)5, "fromid"),
     TOID((short)6, "toid"),
     SNAPSHOT((short)7, "snapshot"),
-    PARTITION_VERSION((short)8, "partition_version");
+    PARTITION_VERSION((short)8, "partition_version"),
+    MAP_NUMBER((short)9, "map_number");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -107,6 +110,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
           return SNAPSHOT;
         case 8: // PARTITION_VERSION
           return PARTITION_VERSION;
+        case 9: // MAP_NUMBER
+          return MAP_NUMBER;
         default:
           return null;
       }
@@ -152,8 +157,9 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
   private static final int __TOID_ISSET_ID = 2;
   private static final int __SNAPSHOT_ISSET_ID = 3;
   private static final int __PARTITION_VERSION_ISSET_ID = 4;
+  private static final int __MAP_NUMBER_ISSET_ID = 5;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.FROMKEY,_Fields.TOKEY,_Fields.FROMID,_Fields.TOID,_Fields.SNAPSHOT};
+  private _Fields optionals[] = {_Fields.FROMKEY,_Fields.TOKEY,_Fields.FROMID,_Fields.TOID,_Fields.SNAPSHOT,_Fields.MAP_NUMBER};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -173,6 +179,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.PARTITION_VERSION, new org.apache.thrift.meta_data.FieldMetaData("partition_version", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
+    tmpMap.put(_Fields.MAP_NUMBER, new org.apache.thrift.meta_data.FieldMetaData("map_number", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(RangeCommand.class, metaDataMap);
   }
@@ -214,6 +222,7 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     this.toid = other.toid;
     this.snapshot = other.snapshot;
     this.partition_version = other.partition_version;
+    this.map_number = other.map_number;
   }
 
   public RangeCommand deepCopy() {
@@ -235,6 +244,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     this.snapshot = 0;
     setPartition_versionIsSet(false);
     this.partition_version = 0;
+    setMap_numberIsSet(false);
+    this.map_number = 0;
   }
 
   public long getId() {
@@ -452,6 +463,29 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PARTITION_VERSION_ISSET_ID, value);
   }
 
+  public int getMap_number() {
+    return this.map_number;
+  }
+
+  public RangeCommand setMap_number(int map_number) {
+    this.map_number = map_number;
+    setMap_numberIsSet(true);
+    return this;
+  }
+
+  public void unsetMap_number() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __MAP_NUMBER_ISSET_ID);
+  }
+
+  /** Returns true if field map_number is set (has been assigned a value) and false otherwise */
+  public boolean isSetMap_number() {
+    return EncodingUtils.testBit(__isset_bitfield, __MAP_NUMBER_ISSET_ID);
+  }
+
+  public void setMap_numberIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __MAP_NUMBER_ISSET_ID, value);
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ID:
@@ -518,6 +552,14 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       }
       break;
 
+    case MAP_NUMBER:
+      if (value == null) {
+        unsetMap_number();
+      } else {
+        setMap_number((Integer)value);
+      }
+      break;
+
     }
   }
 
@@ -547,6 +589,9 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     case PARTITION_VERSION:
       return Long.valueOf(getPartition_version());
 
+    case MAP_NUMBER:
+      return Integer.valueOf(getMap_number());
+
     }
     throw new IllegalStateException();
   }
@@ -574,6 +619,8 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       return isSetSnapshot();
     case PARTITION_VERSION:
       return isSetPartition_version();
+    case MAP_NUMBER:
+      return isSetMap_number();
     }
     throw new IllegalStateException();
   }
@@ -660,6 +707,15 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (!(this_present_partition_version && that_present_partition_version))
         return false;
       if (this.partition_version != that.partition_version)
+        return false;
+    }
+
+    boolean this_present_map_number = true && this.isSetMap_number();
+    boolean that_present_map_number = true && that.isSetMap_number();
+    if (this_present_map_number || that_present_map_number) {
+      if (!(this_present_map_number && that_present_map_number))
+        return false;
+      if (this.map_number != that.map_number)
         return false;
     }
 
@@ -759,6 +815,16 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetMap_number()).compareTo(other.isSetMap_number());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetMap_number()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.map_number, other.map_number);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -832,6 +898,12 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
     sb.append("partition_version:");
     sb.append(this.partition_version);
     first = false;
+    if (isSetMap_number()) {
+      if (!first) sb.append(", ");
+      sb.append("map_number:");
+      sb.append(this.map_number);
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -941,6 +1013,14 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 9: // MAP_NUMBER
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.map_number = iprot.readI32();
+              struct.setMap_numberIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -996,6 +1076,11 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       oprot.writeFieldBegin(PARTITION_VERSION_FIELD_DESC);
       oprot.writeI64(struct.partition_version);
       oprot.writeFieldEnd();
+      if (struct.isSetMap_number()) {
+        oprot.writeFieldBegin(MAP_NUMBER_FIELD_DESC);
+        oprot.writeI32(struct.map_number);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -1038,7 +1123,10 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (struct.isSetPartition_version()) {
         optionals.set(7);
       }
-      oprot.writeBitSet(optionals, 8);
+      if (struct.isSetMap_number()) {
+        optionals.set(8);
+      }
+      oprot.writeBitSet(optionals, 9);
       if (struct.isSetId()) {
         oprot.writeI64(struct.id);
       }
@@ -1063,12 +1151,15 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (struct.isSetPartition_version()) {
         oprot.writeI64(struct.partition_version);
       }
+      if (struct.isSetMap_number()) {
+        oprot.writeI32(struct.map_number);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, RangeCommand struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(8);
+      BitSet incoming = iprot.readBitSet(9);
       if (incoming.get(0)) {
         struct.id = iprot.readI64();
         struct.setIdIsSet(true);
@@ -1100,6 +1191,10 @@ public class RangeCommand implements org.apache.thrift.TBase<RangeCommand, Range
       if (incoming.get(7)) {
         struct.partition_version = iprot.readI64();
         struct.setPartition_versionIsSet(true);
+      }
+      if (incoming.get(8)) {
+        struct.map_number = iprot.readI32();
+        struct.setMap_numberIsSet(true);
       }
     }
   }

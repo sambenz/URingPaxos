@@ -38,6 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
@@ -120,7 +121,13 @@ public class DMapReplica<K,V> implements Watcher {
 	private final AtomicLong stat_latency = new AtomicLong();		
 	private final AtomicLong stat_command = new AtomicLong();
 	
-	private volatile SortedMap<K,V> db;
+	private static final int maxSubMap = 20; // 20 sub maps allowed
+	
+	private volatile List<SortedMap<K,V>> db = new ArrayList<SortedMap<K,V>>(maxSubMap);
+
+	private final List<Map<Long, List<Entry<K, V>>>> snapshots = new ArrayList<Map<Long, List<Entry<K, V>>>>(maxSubMap);
+
+	private final List<Map<Long,SortedMap<K,V>>> snapshotsDB = new ArrayList<Map<Long,SortedMap<K,V>>>(maxSubMap);			
 	
 	private final Node node;
 	
@@ -143,18 +150,6 @@ public class DMapReplica<K,V> implements Watcher {
 	public long partition_version = 0;
 
 	public final Map<Integer, Set<Replica>> partitions = new TreeMap<Integer,Set<Replica>>();
- 		
-	private final Map<Long, List<Entry<K, V>>> snapshots = new LinkedHashMap<Long,List<Entry<K,V>>>(){
-		private static final long serialVersionUID = -2704400124020327063L;
-		protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
-			return size() > 1000; // hold only 1000 snapshots in memory!                                 
-		}};
-
-	private final Map<Long,SortedMap<K,V>> snapshotsDB = new LinkedHashMap<Long,SortedMap<K,V>>(){
-		private static final long serialVersionUID = -2704400124020327063L;
-		protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
-			return size() > 1000; // hold only 1000 snapshots in memory!                                 
-		}};
 
 	private Map<Long,FutureResponse> responses = new ConcurrentHashMap<Long,FutureResponse>();
 	
@@ -165,14 +160,42 @@ public class DMapReplica<K,V> implements Watcher {
 		this.default_ring = default_ring;
 		this.node = node;
 		this.zoo = zoo;
-		db = new TreeMap<K,V>(comparator);
+		for(int i=0;i<maxSubMap;i++){
+			db.add(new TreeMap<K,V>(comparator));
+			Map<Long, List<Entry<K, V>>> s = new LinkedHashMap<Long,List<Entry<K,V>>>(){
+				private static final long serialVersionUID = -2704400124020327063L;
+				protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
+					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+				}};
+			snapshots.add(s);
+			Map<Long,SortedMap<K,V>> m = new LinkedHashMap<Long,SortedMap<K,V>>(){
+				private static final long serialVersionUID = -2704400124020327063L;
+				protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
+					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+				}};
+			snapshotsDB.add(m);
+		}
 	}
 	
 	public DMapReplica(int default_ring,Node node,ZooKeeper zoo) {
 		this.default_ring = default_ring;
 		this.node = node;
 		this.zoo = zoo;
-		db = new TreeMap<K,V>();
+		for(int i=0;i<maxSubMap;i++){
+			db.add(new TreeMap<K,V>());
+			Map<Long, List<Entry<K, V>>> s = new LinkedHashMap<Long,List<Entry<K,V>>>(){
+				private static final long serialVersionUID = -2704400124020327063L;
+				protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
+					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+				}};
+			snapshots.add(s);
+			Map<Long,SortedMap<K,V>> m = new LinkedHashMap<Long,SortedMap<K,V>>(){
+				private static final long serialVersionUID = -2704400124020327063L;
+				protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
+					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+				}};
+			snapshotsDB.add(m);
+		}
 		if(stats.isInfoEnabled()){
 			final Thread writer = new Thread("ABReceiverStatsWriter"){		    			
 				private long last_time = System.nanoTime();
@@ -261,10 +284,10 @@ public class DMapReplica<K,V> implements Watcher {
 			// create snapshot
 			long snapshotID = recovery.snapshot();
 			// install data
-			Iterator<Entry<K,V>> entries = recovery.iterator(token, snapshotID);
+			Iterator<Entry<K,V>> entries = recovery.iterator(token, snapshotID); //TODO: only map0 get currently recovered !
 			while(entries.hasNext()){
 				Entry<K,V> e = entries.next();
-				db.put(e.getKey(),e.getValue());
+				db.get(0).put(e.getKey(),e.getValue());
 			}
 			logger.info("Recovered " + db.size() + " DB entries");
 			// remove snapshot
@@ -496,6 +519,7 @@ public class DMapReplica<K,V> implements Watcher {
 
 	@SuppressWarnings("unchecked")
 	public synchronized Response execute(Command cmd) throws MapError, TException {
+		logger.debug("DMapReplica execute " + cmd);
 		Response response = new Response();
 		response.setId(cmd.id);
 		response.setCount(0);
@@ -515,13 +539,18 @@ public class DMapReplica<K,V> implements Watcher {
 				value = (V) Utils.getObject(cmd.getValue());
 			}
 			K retK = null;
-			V retV = null; 
+			V retV = null;
 
-			SortedMap<K,V> snapshotDB = db;
+			int map = 0;
+			if(cmd.isSetMap_number()){
+				map = cmd.getMap_number();
+			}
+			
+			SortedMap<K,V> snapshotDB = db.get(map);
 			if(cmd.isSetSnapshot()){
 				long snapshot = cmd.getSnapshot();
-				if(snapshotsDB.containsKey(snapshot)){
-					snapshotDB = snapshotsDB.get(snapshot);
+				if(snapshotsDB.get(map).containsKey(snapshot)){
+					snapshotDB = snapshotsDB.get(map).get(snapshot);
 				}else{
 					MapError e = new MapError();
 					e.setErrorMsg("Snaphost " + cmd.getSnapshot() + " does not exist!");
@@ -543,17 +572,50 @@ public class DMapReplica<K,V> implements Watcher {
 			case PUT:
 				retV = snapshotDB.put(key,value);
 				break;
+			case PUTIFABSENT:
+				if (!snapshotDB.containsKey(key)){
+					retV = snapshotDB.put(key, value);
+				} else {
+					retV = snapshotDB.get(key);
+				}
+				break;
+			case REPLACE:
+				if(cmd.isSetValue2()){
+					V oldValue = (V) Utils.getObject(cmd.getValue2());
+					if (snapshotDB.containsKey(key) && snapshotDB.get(key).equals(oldValue)) {
+						snapshotDB.put(key, value);
+						retV = value;
+					}
+				}else{
+					if (snapshotDB.containsKey(key)) {
+						retV = snapshotDB.put(key, value);
+					}
+				}
+				break;
 			case REMOVE:
-				retV = snapshotDB.remove(key);
+				if(value != null){
+					V old = snapshotDB.get(key);
+					if(old.equals(value)){
+						retV = snapshotDB.remove(key);
+					}
+				}else{
+					retV = snapshotDB.remove(key);
+				}
 				break;
 			case SIZE:
 				response.setCount(snapshotDB.size());
 				break;
 			case FIRSTKEY:
-				retK = snapshotDB.firstKey();
+				try{
+					retK = snapshotDB.firstKey();
+				}catch(NoSuchElementException e){
+				}
 				break;
 			case LASTKEY:
-				retK = snapshotDB.lastKey();
+				try{
+					retK = snapshotDB.lastKey();
+				}catch(NoSuchElementException e){
+				}
 				break;	
 			default:
 				break;
@@ -585,11 +647,16 @@ public class DMapReplica<K,V> implements Watcher {
 	
 	@SuppressWarnings("unchecked")
 	public RangeResponse range(long instance, RangeCommand cmd) throws MapError, TException {
+		logger.debug("DMapReplica range " + cmd);
 		RangeResponse response = new RangeResponse();
 		response.setId(cmd.getId());
 		response.setPartition(token);
 		List<Entry<K,V>> snapshot;
 		SortedMap<K,V> snapshotDB;
+		int map = 0;
+		if(cmd.isSetMap_number()){
+			map = cmd.getMap_number();
+		}
 		/*if(cmd.getPartition_version() != partitions_version){ // that's ok on snapshots
 			WrongPartition p = new WrongPartition();
 			p.setErrorMsg(cmd.getPartition_version() + "!=" + partitions_version);
@@ -598,7 +665,7 @@ public class DMapReplica<K,V> implements Watcher {
 		try {
 			switch(cmd.type){
 			case PERSISTRANGE:
-				if(cmd.isSetSnapshot() && snapshots.containsKey(cmd.getSnapshot())){
+				if(cmd.isSetSnapshot() && snapshots.get(map).containsKey(cmd.getSnapshot())){
 					//TODO: persist
 				}
 				break;
@@ -606,27 +673,27 @@ public class DMapReplica<K,V> implements Watcher {
 				if(cmd.isSetFromkey() && cmd.isSetTokey()){
 					K from = (K) Utils.getObject(cmd.getFromkey());
 					K to = (K) Utils.getObject(cmd.getTokey());
-					snapshotDB = new TreeMap<K,V>(db.subMap(from,to));
+					snapshotDB = new TreeMap<K,V>(db.get(map).subMap(from,to));
 				}else if(cmd.isSetFromkey() && !cmd.isSetTokey()){
 					K from = (K) Utils.getObject(cmd.getFromkey());
-					snapshotDB = new TreeMap<K,V>(db.tailMap(from));
+					snapshotDB = new TreeMap<K,V>(db.get(map).tailMap(from));
 				}else if(!cmd.isSetFromkey() && cmd.isSetTokey()){
 					K to = (K) Utils.getObject(cmd.getTokey());
-					snapshotDB = new TreeMap<K,V>(db.headMap(to));
+					snapshotDB = new TreeMap<K,V>(db.get(map).headMap(to));
 				}else{
-					snapshotDB = new TreeMap<K,V>(db);
+					snapshotDB = new TreeMap<K,V>(db.get(map));
 				}
 				long id = instance;
-				snapshots.put(id,new ArrayList<Entry<K,V>>(snapshotDB.entrySet()));
-				snapshotsDB.put(id,snapshotDB);
+				snapshots.get(map).put(id,new ArrayList<Entry<K,V>>(snapshotDB.entrySet()));
+				snapshotsDB.get(map).put(id,snapshotDB);
 				response.setCount(snapshotDB.size());
 				response.setSnapshot(id);
 				break;
 			case DELETERANGE:
 				if(cmd.isSetSnapshot()){
-					if(snapshots.containsKey(cmd.getSnapshot())){
-						snapshots.remove(cmd.getSnapshot());
-						snapshotsDB.remove(cmd.getSnapshot());
+					if(snapshots.get(map).containsKey(cmd.getSnapshot())){
+						snapshots.get(map).remove(cmd.getSnapshot());
+						snapshotsDB.get(map).remove(cmd.getSnapshot());
 						response.setCount(1);
 					}else{
 						MapError e = new MapError();
@@ -637,8 +704,8 @@ public class DMapReplica<K,V> implements Watcher {
 				break;
 			case GETRANGE:
 				id = cmd.getSnapshot();
-				if(snapshots.containsKey(id)){
-					snapshot = snapshots.get(id);  
+				if(snapshots.get(map).containsKey(id)){
+					snapshot = snapshots.get(map).get(id);  
 					int from = 0;
 					int size = snapshot.size();
 					int to = size;
@@ -662,8 +729,8 @@ public class DMapReplica<K,V> implements Watcher {
 				break;
 			case PARTITIONSIZE:
 				id = cmd.getSnapshot();
-				if(snapshots.containsKey(id)){
-					snapshot = snapshots.get(id);  
+				if(snapshots.get(map).containsKey(id)){
+					snapshot = snapshots.get(map).get(id);  
 					response.setCount(snapshot.size());
 				}else{
 					MapError e = new MapError();
@@ -728,7 +795,7 @@ public class DMapReplica<K,V> implements Watcher {
 			Util.checkThenCreateZooNode("/dmap/" + mapID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT,zoo);
 			String nodeName = Util.checkThenCreateZooNode("/dmap/" + mapID + "/node",b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL,zoo);
 			nodeName = nodeName.replace("/dmap/" + mapID + "/","");
-			
+
 			//start URingPaxos node
 			List<RingDescription> rings = Util.parseRingsArgument(roles);
 			final Node node = new Node(nodeID,groupID,zoo_host,rings);
@@ -744,7 +811,7 @@ public class DMapReplica<K,V> implements Watcher {
 				rclient = new RecoveryClient<Object,Object>(mapID,zoo_host);
 			}
 			replica.registerPartition(nodeName,partition_ring,addr,token,rclient);
-				
+
 			//start thrift server (proposer)
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			final Dmap.Processor<Iface> processor = new Dmap.Processor<Iface>(new ABSender(replica));
@@ -760,7 +827,7 @@ public class DMapReplica<K,V> implements Watcher {
 				};
 			};
 			s.start();
-			
+
 			//start receiver (learner)
 			Thread receiver = new Thread(new ABReceiver(replica));
 			receiver.setName("ABReceiver");
@@ -772,7 +839,7 @@ public class DMapReplica<K,V> implements Watcher {
 				int new_token = 20000;
 				replica.splitPartition(nodeName,new_ring,addr,new_token);
 			}*/
-
+			logger.info("DMap started ...");
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			in.readLine();
 			node.stop();

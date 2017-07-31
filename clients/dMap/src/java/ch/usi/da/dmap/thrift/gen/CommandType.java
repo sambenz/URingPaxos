@@ -19,7 +19,9 @@ public enum CommandType implements org.apache.thrift.TEnum {
   CLEAR(4),
   CONTAINSVALUE(5),
   FIRSTKEY(6),
-  LASTKEY(7);
+  LASTKEY(7),
+  PUTIFABSENT(8),
+  REPLACE(9);
 
   private final int value;
 
@@ -56,6 +58,10 @@ public enum CommandType implements org.apache.thrift.TEnum {
         return FIRSTKEY;
       case 7:
         return LASTKEY;
+      case 8:
+        return PUTIFABSENT;
+      case 9:
+        return REPLACE;
       default:
         return null;
     }

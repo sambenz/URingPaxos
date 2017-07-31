@@ -18,6 +18,8 @@ enum CommandType {
     CONTAINSVALUE = 5,
     FIRSTKEY = 6,
     LASTKEY = 7;
+    PUTIFABSENT = 8;
+    REPLACE = 9;
 }
 
 struct Command {
@@ -27,6 +29,8 @@ struct Command {
   4: optional binary value,
   5: optional i64 snapshot,
   6: i64 partition_version,
+  7: optional i32 map_number,
+  8: optional binary value2,
 }
 
 struct Response {
@@ -54,6 +58,7 @@ struct RangeCommand {
   6: optional i32 toid,
   7: optional i64 snapshot,
   8: i64 partition_version,
+  9: optional i32 map_number,
 }
 
 struct RangeResponse {
