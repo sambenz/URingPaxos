@@ -367,7 +367,7 @@ public class DistributedOrderedMap<K,V> implements ConcurrentMap<K,V>, SortedMap
 	@Override
 	public boolean replace(K key,V oldValue,V newValue) {
 		V ret = replace(key,newValue,oldValue,null);
-		if(ret.equals(newValue)){
+		if(ret != null && ret.equals(newValue)){
 			return true;
 		}
 		return false;
@@ -427,7 +427,7 @@ public class DistributedOrderedMap<K,V> implements ConcurrentMap<K,V>, SortedMap
 	@Override
 	public boolean remove(Object key, Object value) {
 		Object old = remove(key,value,null);
-		if(value.equals(old)){
+		if(old != null && value.equals(old)){
 			return true;
 		}
 		return false;
@@ -946,14 +946,12 @@ public class DistributedOrderedMap<K,V> implements ConcurrentMap<K,V>, SortedMap
 
 		@Override
 		public Set<K> keySet() {
-			//TODO:
-			return null;
+			return new KeySet(this);
 		}
 
 		@Override
 		public Collection<V> values() {
-			//TODO:
-			return null;
+			return new ValueSet(this);
 		}
 
 		@Override
@@ -967,7 +965,254 @@ public class DistributedOrderedMap<K,V> implements ConcurrentMap<K,V>, SortedMap
 		}
 	}
 
-	
+    class KeySet extends AbstractSet<K> {
+
+    	private final SnapshotView view;
+    	
+    	private final BlockingQueue<Map.Entry<K,V>> queue[];
+    	
+    	private final Thread threads[];
+    	
+    	private final long queue_size[];
+    	    			    		
+    	@SuppressWarnings("unchecked")
+		public KeySet(SnapshotView view){
+    		this.view = view;
+    		queue = (BlockingQueue<Map.Entry<K,V>>[]) new BlockingQueue[view.partitions_size.size()];
+    		queue_size = new long[view.partitions_size.size()];
+    		threads = new Thread[view.partitions_size.size()];
+    		int i = 0;
+    		for(Entry<Integer,Long> e : view.partitions_size.entrySet()){
+    			queue[i] = new LinkedBlockingQueue<Map.Entry<K,V>>(get_range_size);
+    			queue_size[i] = e.getValue();
+    			if(queue_size[i] > 0){
+    				threads[i] = new Thread(new QueueFiller(view,queue[i],e));
+    				threads[i].start();
+    			}
+    			i++;
+    		}
+    	}
+
+        public boolean contains(Object o) {
+            return o != null && view.containsKey(o);
+        }
+
+        public boolean remove(Object o) {
+        	V v = view.remove(o);
+        	if(v != null){
+        		return true;
+        	}
+        	return false;
+        }
+
+		@Override
+		public Iterator<K> iterator() {
+			return new KeyIterator<K>(this,queue,queue_size);
+		}
+
+		@Override
+		public int size() {
+            return view.size();
+        }
+
+        public void clear() {
+        	view.clear();
+        	for(Thread t : threads){
+        		if(t != null){
+        			t.interrupt();
+        		}
+        	}
+        }
+
+    }
+    
+    class KeyIterator<T> implements Iterator<T> {
+        
+    	private final KeySet set;
+    	
+    	private long delivered = 0;
+    	
+        private final BlockingQueue<Map.Entry<K,V>> queue[];
+        
+        private final long queue_delivered[];
+        
+        private final long queue_size[];
+        
+        T last = null;
+        
+        KeyIterator(KeySet set, BlockingQueue<Map.Entry<K,V>> queue[], long[] queue_size) {
+        	this.set = set;
+        	this.queue = queue;
+        	this.queue_size = queue_size;
+        	queue_delivered = new long[queue.length];
+        }
+
+        public final boolean hasNext() {
+        	return delivered < set.view.size ? true : false;
+        }
+
+        public void remove() {
+        	if(last == null){
+        		throw new IllegalStateException();
+        	}
+        	set.remove(last);
+        }
+        
+		@SuppressWarnings("unchecked")
+		@Override
+		public T next() {
+			Map.Entry<K,V> o = null;
+			int qi = 0;
+			if(delivered < set.view.size){
+				for(int i=0;i<queue.length;i++){
+					if(queue_delivered[i] < queue_size[i]){
+						Map.Entry<K,V> s = null;
+						while(s == null){
+							s = queue[i].peek();
+							if(s == null){
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+								}
+							}
+						}
+						if(o == null || ((Map.Entry<Comparable<K>,V>) s).getKey().compareTo(((Map.Entry<K,V>)o).getKey()) < 0){
+							o = s;
+							qi = i;
+						}
+					}
+				}
+				delivered++;
+				queue_delivered[qi]++;
+				return (T)queue[qi].poll().getKey();
+			}else{
+				throw new NoSuchElementException();
+			}
+		}
+    }
+
+    class ValueSet extends AbstractSet<V> {
+
+    	private final SnapshotView view;
+    	
+    	private final BlockingQueue<Map.Entry<K,V>> queue[];
+    	
+    	private final Thread threads[];
+    	
+    	private final long queue_size[];
+    	    			    		
+    	@SuppressWarnings("unchecked")
+		public ValueSet(SnapshotView view){
+    		this.view = view;
+    		queue = (BlockingQueue<Map.Entry<K,V>>[]) new BlockingQueue[view.partitions_size.size()];
+    		queue_size = new long[view.partitions_size.size()];
+    		threads = new Thread[view.partitions_size.size()];
+    		int i = 0;
+    		for(Entry<Integer,Long> e : view.partitions_size.entrySet()){
+    			queue[i] = new LinkedBlockingQueue<Map.Entry<K,V>>(get_range_size);
+    			queue_size[i] = e.getValue();
+    			if(queue_size[i] > 0){
+    				threads[i] = new Thread(new QueueFiller(view,queue[i],e));
+    				threads[i].start();
+    			}
+    			i++;
+    		}
+    	}
+
+        public boolean contains(Object o) {
+            return o != null && view.containsValue(o);
+        }
+
+        public boolean remove(Object o) {
+        	throw new IllegalArgumentException();
+        }
+
+		@Override
+		public Iterator<V> iterator() {
+			return new ValueIterator<V>(this,queue,queue_size);
+		}
+
+		@Override
+		public int size() {
+            return view.size();
+        }
+
+        public void clear() {
+        	view.clear();
+        	for(Thread t : threads){
+        		if(t != null){
+        			t.interrupt();
+        		}
+        	}
+        }
+
+    }
+
+    class ValueIterator<T> implements Iterator<T> {
+        
+    	private final ValueSet set;
+    	
+    	private long delivered = 0;
+    	
+        private final BlockingQueue<Map.Entry<K,V>> queue[];
+        
+        private final long queue_delivered[];
+        
+        private final long queue_size[];
+        
+        T last = null;
+        
+        ValueIterator(ValueSet set, BlockingQueue<Map.Entry<K,V>> queue[], long[] queue_size) {
+        	this.set = set;
+        	this.queue = queue;
+        	this.queue_size = queue_size;
+        	queue_delivered = new long[queue.length];
+        }
+
+        public final boolean hasNext() {
+        	return delivered < set.view.size ? true : false;
+        }
+
+        public void remove() {
+        	if(last == null){
+        		throw new IllegalStateException();
+        	}
+        	set.remove(last);
+        }
+        
+		@SuppressWarnings("unchecked")
+		@Override
+		public T next() {
+			Map.Entry<K,V> o = null;
+			int qi = 0;
+			if(delivered < set.view.size){
+				for(int i=0;i<queue.length;i++){
+					if(queue_delivered[i] < queue_size[i]){
+						Map.Entry<K,V> s = null;
+						while(s == null){
+							s = queue[i].peek();
+							if(s == null){
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+								}
+							}
+						}
+						if(o == null || ((Map.Entry<Comparable<K>,V>) s).getKey().compareTo(((Map.Entry<K,V>)o).getKey()) < 0){
+							o = s;
+							qi = i;
+						}
+					}
+				}
+				delivered++;
+				queue_delivered[qi]++;
+				return (T)queue[qi].poll().getValue();
+			}else{
+				throw new NoSuchElementException();
+			}
+		}
+    }
+
     class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
     	private final SnapshotView view;

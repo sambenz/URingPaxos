@@ -19,6 +19,7 @@ package ch.usi.da.dmap;
  */
 
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -104,6 +105,16 @@ public class DMap {
 			Entry<String,String> e = i.next();
 			//i.remove();
 			System.out.println(e);
+		}
+		
+		Set<String> keys = dmap.keySet();
+		for(String s : keys){
+			System.out.println(s);
+		}
+		
+		Collection<String> values = dmap.values();
+		for(String s : values){
+			System.out.println(s);
 		}
 		
 		/*try{

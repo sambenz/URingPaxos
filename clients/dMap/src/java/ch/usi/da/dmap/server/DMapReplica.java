@@ -121,7 +121,7 @@ public class DMapReplica<K,V> implements Watcher {
 	private final AtomicLong stat_latency = new AtomicLong();		
 	private final AtomicLong stat_command = new AtomicLong();
 	
-	private static final int maxSubMap = 20; // 20 sub maps allowed
+	private static final int maxSubMap = 50; // max sub maps allowed
 	
 	private volatile List<SortedMap<K,V>> db = new ArrayList<SortedMap<K,V>>(maxSubMap);
 
