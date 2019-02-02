@@ -63,7 +63,7 @@ struct Cmd {
 
 struct Message {
   1: i32 id,
-  2: string from,
-  3: string to,
+  2: string sender,
+  3: string receiver,
   4: list<Cmd> commands,
 }

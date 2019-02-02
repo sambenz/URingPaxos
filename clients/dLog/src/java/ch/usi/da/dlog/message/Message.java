@@ -122,8 +122,8 @@ public class Message {
 		TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 		ch.usi.da.dlog.thrift.gen.Message msg = new ch.usi.da.dlog.thrift.gen.Message();
 		msg.setId(m.getID());
-		msg.setFrom(m.getFrom());
-		msg.setTo(m.getTo());
+		msg.setSender(m.getFrom());
+		msg.setReceiver(m.getTo());
 		List<Cmd> cmds = new ArrayList<Cmd>();
 		for(Command c : m.getCommands()){
 			cmds.add(Command.toCmd(c));
@@ -171,7 +171,7 @@ public class Message {
 		ch.usi.da.dlog.thrift.gen.Message m = new ch.usi.da.dlog.thrift.gen.Message();
 		try {
 			deserializer.deserialize(m, b);
-			if(m.to == null){
+			if(m.receiver == null){
 				return null;
 			}
 		} catch (TException e) {
@@ -181,6 +181,6 @@ public class Message {
 		for(Cmd c : m.getCommands()){
 			cmds.add(Command.toCommand(c));
 		}
-		return new Message(m.getId(),m.getFrom(),m.getTo(),cmds);
+		return new Message(m.getId(),m.getSender(),m.getReceiver(),cmds);
 	}
 }
