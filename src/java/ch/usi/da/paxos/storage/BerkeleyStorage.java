@@ -19,7 +19,7 @@ package ch.usi.da.paxos.storage;
  */
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 
@@ -83,17 +83,17 @@ public class BerkeleyStorage implements StableStorage {
 	
 	public BerkeleyStorage(File file, boolean readonly, boolean async){
 		if(file == null){
-	        int pid = 0;
+	        int subdirectory = 0;
 	        try {
-				pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
-			} catch (NumberFormatException | IOException e) {
+				subdirectory = (new Random(System.nanoTime())).nextInt(Integer.MAX_VALUE);
+			} catch (NumberFormatException e) {
 			}
 	        String path = "/tmp";
 			String db_path = System.getenv("DB");
 			if(db_path != null){
 				path = db_path;
 			}
-	        file = new File(path + "/ringpaxos-db/" + pid);
+	        file = new File(path + "/ringpaxos-db/" + subdirectory);
 	        file.mkdirs();
 		}
         EnvironmentConfig envConfig = new EnvironmentConfig();
