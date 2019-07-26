@@ -46,7 +46,7 @@ public class ABReceiver implements Runnable {
 		while(true) {
 			try {
 				Decision d = replica.getNode().getLearner().getDecisions().take();
-				logger.debug("ABReceiver received " + d);
+				logger.trace("ABReceiver received " + d);
 				if(d != null){					
 					replica.receive(d);
 				}

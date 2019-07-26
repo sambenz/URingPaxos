@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
@@ -9,91 +10,96 @@
 	<version>trunk</version>
 
 	<properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-	
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
 	<dependencies>
-	   	<dependency>
-       		<groupId>ch.usi.da</groupId>
-       		<artifactId>paxos</artifactId>
-       		<version>trunk</version>
-    		<type>jar</type>
-       	</dependency>
-    	<dependency>
-       		<groupId>com.yahoo.ycsb</groupId>
-       		<artifactId>core</artifactId>
-       		<version>0.13.0-SNAPSHOT</version>
-    		<type>jar</type>
-       	</dependency>
-	    <dependency>
+		<dependency>
+			<groupId>ch.usi.da</groupId>
+			<artifactId>paxos</artifactId>
+			<version>trunk</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.ycsb</groupId>
+			<artifactId>core</artifactId>
+			<version>0.13.0-SNAPSHOT</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
 			<artifactId>zookeeper</artifactId>
-			<version>3.4.6</version>
+			<version>3.5.5</version>
 			<type>jar</type>
 			<exclusions>
-        		<exclusion>
-          		<groupId>com.sun.jdmk</groupId>
-          		<artifactId>jmxtools</artifactId>
-        	</exclusion>
-        	<exclusion>
-          		<groupId>com.sun.jmx</groupId>
-          		<artifactId>jmxri</artifactId>
-        		</exclusion>
-    		</exclusions>
+				<exclusion>
+					<groupId>com.sun.jdmk</groupId>
+					<artifactId>jmxtools</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jmx</groupId>
+					<artifactId>jmxri</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-  		<dependency>
-  			<artifactId>je</artifactId>
-  			<groupId>com.sleepycat</groupId>
-  			<version>5.0.58</version>	
-  		</dependency>
-  		<dependency>
-            <groupId>com.espertech</groupId>
-            <artifactId>esper</artifactId>
-            <version>4.9.0</version>
-        </dependency>
-  		<dependency>
-    		<groupId>log4j</groupId>
-    		<artifactId>log4j</artifactId>
-    		<version>1.2.15</version>
-    		<type>jar</type>
+		<dependency>
+			<artifactId>je</artifactId>
+			<groupId>com.sleepycat</groupId>
+			<version>5.0.58</version>
+		</dependency>
+		<dependency>
+			<groupId>com.espertech</groupId>
+			<artifactId>esper</artifactId>
+			<version>4.9.0</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.15</version>
+			<type>jar</type>
 			<exclusions>
-        		<exclusion>
-          		<groupId>com.sun.jdmk</groupId>
-          		<artifactId>jmxtools</artifactId>
-        	</exclusion>
-        	<exclusion>
-          		<groupId>com.sun.jmx</groupId>
-          		<artifactId>jmxri</artifactId>
-        	</exclusion>
-        	<exclusion>
-                <groupId>javax.jms</groupId>
-                <artifactId>jms</artifactId>
-            </exclusion>
-    		</exclusions>
-  		</dependency>
-  		<dependency>
-  			<groupId>org.apache.thrift</groupId>
-  			<artifactId>libthrift</artifactId>
-  			<version>0.12.0</version>
+				<exclusion>
+					<groupId>com.sun.jdmk</groupId>
+					<artifactId>jmxtools</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jmx</groupId>
+					<artifactId>jmxri</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>javax.jms</groupId>
+					<artifactId>jms</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
-  			<groupId>org.slf4j</groupId>
-  			<artifactId>slf4j-api</artifactId>
-  			<version>1.7.7</version>
+			<groupId>org.apache.thrift</groupId>
+			<artifactId>libthrift</artifactId>
+			<version>0.12.0</version>
 		</dependency>
 		<dependency>
-    			<groupId>org.slf4j</groupId>
-    			<artifactId>slf4j-log4j12</artifactId>
-    			<version>1.7.7</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.7</version>
 		</dependency>
 		<dependency>
-  			<groupId>junit</groupId>
-  			<artifactId>junit</artifactId>
-  			<version>4.11</version>
-  			<scope>test</scope>
-  		</dependency>    	
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.7</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+		</dependency>
 	</dependencies>
-			
+
 	<build>
 		<sourceDirectory>src/java</sourceDirectory>
 		<testSourceDirectory>src/test</testSourceDirectory>
@@ -107,35 +113,63 @@
 			</resource>
 		</resources>
 		<testResources>
-            <testResource>
-                <directory>rsrc/test</directory>
+			<testResource>
+				<directory>rsrc/test</directory>
 				<includes>
 					<include>**/*</include>
 				</includes>
 				<filtering>false</filtering>
-            </testResource>
-        </testResources>
-		
+			</testResource>
+		</testResources>
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0-M2</version>
+				<executions>
+					<execution>
+						<id>enforce-maven</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.0.5</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.7</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<generateBackupPoms>false</generateBackupPoms>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>11</source>
+					<target>11</target>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.4</version>
+				<version>3.1.2</version>
 				<configuration>
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<!-- <classpathPrefix>lib/</classpathPrefix> -->
-							<mainClass>ch.usi.da.smr.Replica</mainClass>
+							<mainClass>ch.usi.da.paxos.Proposer</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -143,7 +177,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>2.2.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -156,7 +190,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9</version>
+				<version>3.1.1</version>
+				<configuration>
+					<excludePackageNames>*.thrift.gen</excludePackageNames>
+				</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadoc</id>
@@ -168,7 +205,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>2.2-beta-3</version>
+				<version>3.1.1</version>
 				<configuration>
 					<!-- <appendAssemblyId>false</appendAssemblyId> -->
 					<finalName>${project.name}-${project.version}</finalName>
@@ -182,10 +219,30 @@
 						<id>make-assembly</id>
 						<phase>package</phase>
 						<goals>
-							<goal>assembly</goal>
+							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M3</version>
+				<configuration>
+					<argLine>
+						--illegal-access=permit
+					</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>3.0.0-M3</version>
+				<configuration>
+					<argLine>
+						--illegal-access=permit
+					</argLine>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

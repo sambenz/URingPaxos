@@ -66,6 +66,7 @@ import ch.usi.da.dmap.thrift.gen.Dmap.Iface;
 import ch.usi.da.dmap.thrift.gen.MapError;
 import ch.usi.da.dmap.thrift.gen.RangeCommand;
 import ch.usi.da.dmap.thrift.gen.RangeResponse;
+import ch.usi.da.dmap.thrift.gen.RangeType;
 import ch.usi.da.dmap.thrift.gen.Replica;
 import ch.usi.da.dmap.thrift.gen.ReplicaCommand;
 import ch.usi.da.dmap.thrift.gen.Response;
@@ -120,6 +121,8 @@ public class DMapReplica<K,V> implements Watcher {
 	
 	private final AtomicLong stat_latency = new AtomicLong();		
 	private final AtomicLong stat_command = new AtomicLong();
+	private final Map<CommandType,AtomicLong> stat_type = new HashMap<CommandType,AtomicLong>();
+	private final Map<RangeType,AtomicLong> stat_rtype = new HashMap<RangeType,AtomicLong>();	
 	
 	private static final int maxSubMap = 50; // max sub maps allowed
 	
@@ -165,13 +168,13 @@ public class DMapReplica<K,V> implements Watcher {
 			Map<Long, List<Entry<K, V>>> s = new LinkedHashMap<Long,List<Entry<K,V>>>(){
 				private static final long serialVersionUID = -2704400124020327063L;
 				protected boolean removeEldestEntry(Map.Entry<Long, List<Entry<K, V>>> eldest) {  
-					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+					return size() > 5000; // hold only 1000 snapshots in memory!                                 
 				}};
 			snapshots.add(s);
 			Map<Long,SortedMap<K,V>> m = new LinkedHashMap<Long,SortedMap<K,V>>(){
 				private static final long serialVersionUID = -2704400124020327063L;
 				protected boolean removeEldestEntry(Map.Entry<Long,SortedMap<K,V>> eldest) {  
-					return size() > 1000; // hold only 1000 snapshots in memory!                                 
+					return size() > 5000; // hold only 1000 snapshots in memory!                                 
 				}};
 			snapshotsDB.add(m);
 		}
@@ -197,7 +200,7 @@ public class DMapReplica<K,V> implements Watcher {
 			snapshotsDB.add(m);
 		}
 		if(stats.isInfoEnabled()){
-			final Thread writer = new Thread("ABReceiverStatsWriter"){		    			
+			final Thread writer = new Thread("DMapStatsWriter"){		    			
 				private long last_time = System.nanoTime();
 				private long last_sent_count = 0;
 				private long last_sent_time = 0;
@@ -211,6 +214,16 @@ public class DMapReplica<K,V> implements Watcher {
 							float t = (float)(time-last_time)/(1000*1000*1000);
 							float count = sent_count/t;
 							stats.info(String.format("DMapReplica executed %.1f command/s avg. latency %.0f ns",count,sent_time/count));
+							if(stats.isDebugEnabled()){
+								for(Entry<CommandType,AtomicLong> e : stat_type.entrySet()){
+									stats.debug("CommandType " + e.getKey() + " " + e.getValue().get());
+									e.getValue().set(0);
+								}
+								for(Entry<RangeType,AtomicLong> e : stat_rtype.entrySet()){
+									stats.debug("CommandType " + e.getKey() + " " + e.getValue().get());
+									e.getValue().set(0);
+								}								
+							}
 							last_sent_count += sent_count;
 							last_sent_time += sent_time;
 							last_time = time;
@@ -420,7 +433,6 @@ public class DMapReplica<K,V> implements Watcher {
 			}
 			if(o instanceof Command){
 				Command cmd = (Command)o;
-				logger.debug("DMapReplica execute " + cmd);
 				Object r = null;
 				try {
 					r = execute(cmd);
@@ -452,7 +464,6 @@ public class DMapReplica<K,V> implements Watcher {
 				}
 			} else if(o instanceof RangeCommand){
 				RangeCommand cmd = (RangeCommand)o;
-				logger.debug("DMapReplica execute " + cmd);
 				Object r = null;
 				try {
 					r = range(instance,cmd);
@@ -519,7 +530,13 @@ public class DMapReplica<K,V> implements Watcher {
 
 	@SuppressWarnings("unchecked")
 	public synchronized Response execute(Command cmd) throws MapError, TException {
-		logger.debug("DMapReplica execute " + cmd);
+		logger.debug("DMapReplica execute " + cmd.getType());
+		if(stats.isDebugEnabled()){
+			if(!stat_type.containsKey(cmd.getType())){
+				stat_type.put(cmd.getType(),new AtomicLong(0));
+			}
+			stat_type.get(cmd.getType()).incrementAndGet();
+		}
 		Response response = new Response();
 		response.setId(cmd.id);
 		response.setCount(0);
@@ -628,7 +645,7 @@ public class DMapReplica<K,V> implements Watcher {
 				response.setValue(Utils.getBuffer(retV));
 				response.setCount(1);
 			}
-		} catch (ClassNotFoundException | IOException e) {
+		} catch (Exception e) {
 			logger.error("DMapReplica error: ",e);
 			MapError error = new MapError();
 			error.setErrorMsg(e.getMessage());
@@ -647,7 +664,13 @@ public class DMapReplica<K,V> implements Watcher {
 	
 	@SuppressWarnings("unchecked")
 	public RangeResponse range(long instance, RangeCommand cmd) throws MapError, TException {
-		logger.debug("DMapReplica range " + cmd);
+		logger.debug("DMapReplica range " + cmd.getType());
+		if(stats.isDebugEnabled()){
+			if(!stat_rtype.containsKey(cmd.getType())){
+				stat_rtype.put(cmd.getType(),new AtomicLong(0));
+			}
+			stat_rtype.get(cmd.getType()).incrementAndGet();
+		}
 		RangeResponse response = new RangeResponse();
 		response.setId(cmd.getId());
 		response.setPartition(token);
@@ -741,7 +764,7 @@ public class DMapReplica<K,V> implements Watcher {
 			default:
 				break;
 			}
-		} catch (ClassNotFoundException | IOException e) {
+		} catch (Exception e) {
 			logger.error("DMapReplica error: ",e);
 			MapError error = new MapError();
 			error.setErrorMsg(e.getMessage());

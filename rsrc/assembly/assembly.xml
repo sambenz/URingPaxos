@@ -1,5 +1,5 @@
 <assembly>
-  <id></id>
+  <id>release</id>
   <formats>
     <format>tar.gz</format>
     <format>zip</format>
@@ -40,17 +40,17 @@
     </file> 
     <file>
       <source>src/c/libpaxos.so</source>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
 	  <fileMode>0755</fileMode>
     </file>
     <file>
       <source>rsrc/java/paxos.properties</source>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
 	  <fileMode>0644</fileMode>
     </file>
     <file>
       <source>rsrc/java/log4j.xml</source>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
 	  <fileMode>0644</fileMode>
     </file>  
   </files>

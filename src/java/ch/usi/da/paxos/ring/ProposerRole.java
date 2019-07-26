@@ -181,7 +181,7 @@ public class ProposerRole extends Role implements Proposer {
 	/**
 	 * Use this method to send control messages from outside!
 	 * 
-	 * @param s A string which describes the subscribe command
+	 * @param c A control command
 	 * @return A FutureDecision object on which you can wait until the value is proposed
 	 */
 	public synchronized FutureDecision control(Control c){

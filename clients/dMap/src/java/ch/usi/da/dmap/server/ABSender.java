@@ -58,7 +58,7 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Response execute(Command cmd) throws MapError, WrongPartition, TException {
-		logger.debug("ABSender received " + cmd);
+		logger.trace("ABSender received " + cmd);
 		FutureResponse r = null;
 		int send_ring = replica.partition_ring;
 		switch(cmd.type){
@@ -163,7 +163,7 @@ public class ABSender<K extends Comparable<K>,V> implements Iface {
 
 	@Override
 	public RangeResponse range(RangeCommand cmd) throws MapError, WrongPartition, TException {
-		logger.debug("ABSender received " + cmd);
+		logger.trace("ABSender received " + cmd);
 		if(cmd.getType() == RangeType.GETRANGE || cmd.getType() == RangeType.PARTITIONSIZE){ // direct response since based on consistent snapshot
 			return replica.range(cmd.snapshot, cmd);
 		}

@@ -1,5 +1,5 @@
 <assembly>
-  <id></id>
+  <id>release</id>
   <formats>
     <format>tar.gz</format>
     <format>zip</format>
@@ -16,7 +16,7 @@
     </file>   
     <file>
       <source>rsrc/java/log4j.xml</source>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
 	  <fileMode>0644</fileMode>
     </file>  
   </files>

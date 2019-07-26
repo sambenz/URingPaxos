@@ -45,7 +45,7 @@
 	</category>
 
 	<root>
-		<priority value="info" />
+		<priority value="debug" />
 		<appender-ref ref="STDOUT" />
 		<!-- <appender-ref ref="FILE" /> -->
 	</root>
