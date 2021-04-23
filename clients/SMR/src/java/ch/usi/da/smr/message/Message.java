@@ -174,7 +174,6 @@ public class Message {
 		b.get(a);
 		return a;*/
 
-		TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message msg = new ch.usi.da.smr.thrift.gen.Message();
 		msg.setId(m.getID());
 		msg.setSender(m.getFrom());
@@ -185,6 +184,7 @@ public class Message {
 		}
 		msg.setCommands(cmds);
 		try {
+			TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 			return serializer.serialize(msg);
 		} catch (TException e) {
 			return new byte[0];
@@ -269,9 +269,9 @@ public class Message {
 		
 		return m;
 		*/
-		TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 		ch.usi.da.smr.thrift.gen.Message m = new ch.usi.da.smr.thrift.gen.Message();
 		try {
+			TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 			deserializer.deserialize(m, b);
 			if(m.receiver == null){
 				return null;

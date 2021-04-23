@@ -18,18 +18,17 @@ package ch.usi.da.smr.transport;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
-
 import ch.usi.da.smr.message.Message;
 import ch.usi.da.smr.thrift.gen.Decision;
 import ch.usi.da.smr.thrift.gen.PaxosLearnerService;
 import ch.usi.da.smr.thrift.gen.PaxosLearnerService.Client;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.layered.TFramedTransport;
 
 /**
  * Name: ABListener<br>

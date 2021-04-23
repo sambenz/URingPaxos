@@ -101,14 +101,14 @@ public class RecoveryClient<K,V> {
 					String[] as = new String(a).split(";");
 					String ip = as[0];
 					int port = Integer.parseInt(as[1]);
-					TTransport transport = new TSocket(ip,port);
-					TProtocol protocol = new TBinaryProtocol(transport);
-					Dmap.Client client = new Dmap.Client(protocol);
-				    try {
+					try {
+						TTransport transport = new TSocket(ip,port);
+						TProtocol protocol = new TBinaryProtocol(transport);
+						Dmap.Client client = new Dmap.Client(protocol);
 						transport.open();
+						readPartitions(client);
 					} catch (TTransportException e) {
 					}
-					readPartitions(client);
 				}
 			}
 		} catch (IOException | KeeperException | InterruptedException e) {

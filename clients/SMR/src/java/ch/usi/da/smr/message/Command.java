@@ -123,9 +123,9 @@ public class Command {
 	}
 	
 	public static byte[] toByteArray(Command c){
-		TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 		Cmd cmd = toCmd(c);
 		try {
+			TSerializer serializer = new TSerializer(new TBinaryProtocol.Factory());
 			return serializer.serialize(cmd);
 		} catch (TException e) {
 			return new byte[0];
@@ -173,9 +173,9 @@ public class Command {
 	}
 	
 	public static Command fromByteArray(byte[] b){
-		TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 		Cmd c = new Cmd();
 		try {
+			TDeserializer deserializer = new TDeserializer(new TBinaryProtocol.Factory());
 			deserializer.deserialize(c, b);
 			if(c.type == null){
 				return null;

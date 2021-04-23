@@ -18,19 +18,17 @@ package ch.usi.da.dlog.transport;
  * along with URingPaxos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.nio.ByteBuffer;
-
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
-
 import ch.usi.da.dlog.message.Message;
 import ch.usi.da.dlog.thrift.gen.PaxosProposerService;
 import ch.usi.da.dlog.thrift.gen.Value;
+import java.nio.ByteBuffer;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.layered.TFramedTransport;
 
 /**
  * Name: ThriftABSender<br>
